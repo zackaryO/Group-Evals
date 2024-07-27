@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-const Register = ({ history }) => {
+const Register = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('student');
@@ -9,13 +10,16 @@ const Register = ({ history }) => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [subject, setSubject] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('/api/auth/register', { username, password, role, teamName, firstName, lastName, subject });
+      const res = await axios.post('http://localhost:5000/api/auth/register', {
+        username, password, role, teamName, firstName, lastName, subject
+      });
       localStorage.setItem('token', res.data.token);
-      history.push('/');
+      navigate('/');
     } catch (error) {
       console.error(error);
     }

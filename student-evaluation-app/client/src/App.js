@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
 import Login from './components/Auth/Login';
@@ -12,15 +12,15 @@ import ManageStudents from './components/Instructor/ManageStudents';
 const App = () => (
   <Router>
     <Navbar />
-    <Switch>
-      <Route path="/" exact component={Home} />
-      <Route path="/login" component={Login} />
-      <Route path="/register" component={Register} />
-      <Route path="/evaluation" component={EvaluationForm} />
-      <Route path="/gradebook" component={Gradebook} />
-      <Route path="/define-areas" component={DefineAreas} />
-      <Route path="/manage-students" component={ManageStudents} />
-    </Switch>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/evaluation" element={<EvaluationForm />} />
+      <Route path="/gradebook" element={<Gradebook />} />
+      <Route path="/define-areas" element={<DefineAreas />} />
+      <Route path="/manage-students" element={<ManageStudents />} />
+    </Routes>
   </Router>
 );
 

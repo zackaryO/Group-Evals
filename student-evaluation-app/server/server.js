@@ -9,7 +9,7 @@ const userRoutes = require('./routes/users');
 
 const app = express();
 
-mongoose.connect('your-mongodb-connection-string', { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect('mongodb+srv://zackotterstrom:K0F26MMFtJ7NZAbA@studenteval.btvyzzz.mongodb.net/', { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error(err));
 
