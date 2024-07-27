@@ -10,6 +10,7 @@ const Register = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [subject, setSubject] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -18,10 +19,10 @@ const Register = () => {
       const res = await axios.post('http://localhost:5000/api/auth/register', {
         username, password, role, teamName, firstName, lastName, subject
       });
-      localStorage.setItem('token', res.data.token);
+      setError('');
       navigate('/');
     } catch (error) {
-      console.error(error);
+      setError('Failed to register user. Please try again.');
     }
   };
 
@@ -50,6 +51,7 @@ const Register = () => {
             <input type="text" value={subject} onChange={(e) => setSubject(e.target.value)} />
           </>
         )}
+        {error && <p style={{ color: 'red' }}>{error}</p>}
         <button type="submit">Register</button>
       </form>
     </div>

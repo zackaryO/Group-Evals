@@ -9,7 +9,9 @@ const EvaluationForm = () => {
 
   useEffect(() => {
     // Fetch evaluators and other necessary data
-    axios.get('/api/users').then(response => setEvaluators(response.data));
+    axios.get('http://localhost:5000/api/users')
+      .then(response => setEvaluators(response.data))
+      .catch(error => console.error(error));
   }, []);
 
   const handleSubmit = async (e) => {
@@ -17,7 +19,7 @@ const EvaluationForm = () => {
     try {
       const evaluator = localStorage.getItem('userId');
       const type = localStorage.getItem('role');
-      await axios.post('/api/evaluations/submit', { presenter, evaluator, scores, comments, type });
+      await axios.post('http://localhost:5000/api/evaluations/submit', { presenter, evaluator, scores, comments, type });
       // Handle success
     } catch (error) {
       console.error(error);
