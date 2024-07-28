@@ -2,6 +2,9 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// Hard-coded secret key for JWT
+const JWT_SECRET = 'my_super_secret_key';
+
 const register = async (req, res) => {
   const { username, password, role, teamName, firstName, lastName, subject } = req.body;
   try {
@@ -32,8 +35,8 @@ const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token, userId: user._id, role: user.role });
+    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
+    res.json({ token, role: user.role });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

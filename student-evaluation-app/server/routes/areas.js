@@ -1,8 +1,10 @@
 const express = require('express');
-const { setEvaluationAreas, getEvaluationAreas } = require('../controllers/areaController');
+const { getAreas, createArea, updateArea, deleteArea } = require('../controllers/areasController');
 const router = express.Router();
 
-router.post('/set', setEvaluationAreas);
-router.get('/', getEvaluationAreas);
+router.get('/', getAreas);
+router.post('/', createArea);
+router.put('/:id', updateArea);
+router.delete('/:id', deleteArea);
 
 module.exports = router;

@@ -1,6 +1,6 @@
 const express = require('express');
-const { submitEvaluation, getEvaluations } = require('../controllers/evaluationController');
 const router = express.Router();
+const { submitEvaluation, getEvaluations } = require('../controllers/evaluationController');
 
 router.post('/submit', submitEvaluation);
 router.get('/', getEvaluations);
