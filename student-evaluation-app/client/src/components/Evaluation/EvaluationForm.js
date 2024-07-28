@@ -9,20 +9,30 @@ const EvaluationForm = () => {
 
   useEffect(() => {
     // Fetch evaluators and other necessary data
-    axios.get('http://localhost:5000/api/users')
-      .then(response => setEvaluators(response.data))
-      .catch(error => console.error(error));
+    axios.get('http://localhost:5000/api/users').then(response => setEvaluators(response.data));
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const evaluator = localStorage.getItem('userId');
+    const type = localStorage.getItem('role');
+    console.log('Evaluator:', evaluator, 'Type:', type); // Add logging
+    if (!evaluator || !type) {
+      console.error('Evaluator or type is missing');
+      return;
+    }
+
     try {
-      const evaluator = localStorage.getItem('userId');
-      const type = localStorage.getItem('role');
-      await axios.post('http://localhost:5000/api/evaluations/submit', { presenter, evaluator, scores, comments, type });
-      // Handle success
+      const response = await axios.post('http://localhost:5000/api/evaluations/submit', {
+        presenter,
+        evaluator,
+        scores,
+        comments,
+        type
+      });
+      console.log('Evaluation submitted:', response.data);
     } catch (error) {
-      console.error(error);
+      console.error('Error submitting evaluation:', error.response ? error.response.data.message : error.message);
     }
   };
 

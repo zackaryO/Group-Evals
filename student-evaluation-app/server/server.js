@@ -9,7 +9,8 @@ const userRoutes = require('./routes/users');
 
 const app = express();
 
-mongoose.connect('mongodb+srv://zackotterstrom:K0F26MMFtJ7NZAbA@studenteval.btvyzzz.mongodb.net/', { useNewUrlParser: true, useUnifiedTopology: true })
+// Update MongoDB connection string without deprecated options
+mongoose.connect('mongodb+srv://zackotterstrom:K0F26MMFtJ7NZAbA@studenteval.btvyzzz.mongodb.net/')
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error(err));
 
