@@ -1,6 +1,10 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const dotenv = require('dotenv');
+
+dotenv.config();
+
 const authRoutes = require('./routes/auth');
 const evaluationRoutes = require('./routes/evaluations');
 const userRoutes = require('./routes/users');
@@ -16,9 +20,12 @@ app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/areas', areaRoutes);
 
-const mongoURI = 'mongodb+srv://<username>:<password>@sandbox.a6a9lpv.mongodb.net/<dbname>?retryWrites=true&w=majority';
+const mongoURI = process.env.MONGODB_URI;
 
-mongoose.connect(mongoURI);
+mongoose.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
 const db = mongoose.connection;
 db.on('error', (error) => console.error(error));
