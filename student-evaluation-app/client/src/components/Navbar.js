@@ -39,11 +39,13 @@ const Navbar = ({ user }) => (
           <FontAwesomeIcon icon={faBook} /> Gradebook
         </Link>
       </li>
+      {user && user.role === 'instructor' && (
       <li className="navbar-item">
         <Link to="/define-areas" className="navbar-link">
           <FontAwesomeIcon icon={faList} /> Define Areas
         </Link>
       </li>
+      )}
       <li className="navbar-item">
         <Link to="/" onClick={handleLogout} className="navbar-link">
           <FontAwesomeIcon icon={faSignOutAlt} /> Logout

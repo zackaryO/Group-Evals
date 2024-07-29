@@ -44,11 +44,26 @@ const Gradebook = ({ user }) => {
   };
 
   const calculateFinalScore = (evaluations) => {
-    const totalScore = evaluations.reduce((total, evaluation) => {
+    const studentEvaluations = evaluations.filter(evaluation => evaluation.evaluator.role === 'student');
+    const instructorEvaluations = evaluations.filter(evaluation => evaluation.evaluator.role === 'instructor');
+
+    const totalStudentScore = studentEvaluations.reduce((total, evaluation) => {
       const score = evaluation.scores.area1 + evaluation.scores.area2 + evaluation.scores.area3 + evaluation.scores.area4 + evaluation.scores.extraCredit;
       return total + score;
     }, 0);
-    return totalScore;
+
+    const totalInstructorScore = instructorEvaluations.reduce((total, evaluation) => {
+      const score = evaluation.scores.area1 + evaluation.scores.area2 + evaluation.scores.area3 + evaluation.scores.area4 + evaluation.scores.extraCredit;
+      return total + score;
+    }, 0);
+
+    const studentCount = studentEvaluations.length;
+    const instructorCount = instructorEvaluations.length;
+
+    const studentFinalScore = studentCount > 0 ? (totalStudentScore / (studentCount * 25)) * 80 : 0;
+    const instructorFinalScore = instructorCount > 0 ? (totalInstructorScore / (instructorCount * 25)) * 20 : 0;
+
+    return studentFinalScore + instructorFinalScore;
   };
 
   const deleteEvaluation = (evaluationId) => {
@@ -104,7 +119,7 @@ const Gradebook = ({ user }) => {
               return (
                 <tr key={index}>
                   <td className="student-column">{presenterUsername}</td>
-                  <td className="score-column">{finalScore}</td>
+                  <td className="score-column">{finalScore.toFixed(2)}%</td>
                   <td>
                     <button onClick={() => toggleDetails(presenterUsername)}>Toggle Details</button>
                     {details[presenterUsername] && (
