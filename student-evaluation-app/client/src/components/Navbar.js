@@ -13,7 +13,7 @@ const Navbar = ({ user }) => (
   <nav className="navbar">
     <ul className="navbar-list">
       <li className="navbar-item">
-        <Link to="/" className="navbar-link">
+        <Link to="/evaluation" className="navbar-link">
           <FontAwesomeIcon icon={faHome} /> Home
         </Link>
       </li>

@@ -33,7 +33,7 @@ const App = () => {
       <Routes>
         <Route path="/login" element={<Login setUser={setUser} />} />
         <Route path="/register" element={<PrivateRoute user={user} role="instructor"><Register user={user} /></PrivateRoute>} /> {/* Accessible only to instructors */}
-        <Route path="/" element={<PrivateRoute user={user}><Home user={user} /></PrivateRoute>} />
+        <Route path="/" element={<PrivateRoute user={user}><EvaluationForm user={user} /></PrivateRoute>} />
         <Route path="/evaluation" element={<PrivateRoute user={user}><EvaluationForm user={user} /></PrivateRoute>} />
         <Route path="/gradebook" element={<PrivateRoute user={user}><Gradebook user={user} /></PrivateRoute>} />
         <Route path="/define-areas" element={<InstructorRoute user={user}><DefineAreas user={user} /></InstructorRoute>} /> {/* Accessible only to instructors */}

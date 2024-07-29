@@ -20,4 +20,17 @@ const getEvaluations = async (req, res) => {
   }
 };
 
-module.exports = { submitEvaluation, getEvaluations };
+const deleteEvaluation = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const evaluation = await Evaluation.findByIdAndDelete(id);
+    if (!evaluation) {
+      return res.status(404).json({ message: 'Evaluation not found' });
+    }
+    res.status(200).json({ message: 'Evaluation deleted successfully' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+module.exports = { submitEvaluation, getEvaluations, deleteEvaluation };

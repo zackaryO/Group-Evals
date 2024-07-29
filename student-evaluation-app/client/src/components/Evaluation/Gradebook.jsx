@@ -51,6 +51,17 @@ const Gradebook = ({ user }) => {
     return totalScore;
   };
 
+  const deleteEvaluation = (evaluationId) => {
+    axios.delete(`http://localhost:5000/api/evaluations/${evaluationId}`)
+      .then(response => {
+        console.log(response.data.message);
+        setGrades(grades.filter(grade => grade._id !== evaluationId)); // Remove deleted evaluation from state
+      })
+      .catch(error => {
+        console.error('Error deleting evaluation:', error);
+      });
+  };
+
   const groupByPresenter = (grades) => {
     const grouped = {};
     grades.forEach(grade => {
@@ -112,6 +123,9 @@ const Gradebook = ({ user }) => {
                                 <div>Extra Credit: <StarDisplay value={evaluation.scores.extraCredit} /></div>
                               </div>
                               <strong>Comments:</strong> {evaluation.comments}
+                              {user.role === 'instructor' && (
+                                <button onClick={() => deleteEvaluation(evaluation._id)}>Delete</button>
+                              )}
                             </div>
                           ))}
                         </div>
