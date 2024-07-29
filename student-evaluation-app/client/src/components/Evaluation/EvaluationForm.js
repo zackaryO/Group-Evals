@@ -3,32 +3,65 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const EvaluationForm = ({ user }) => {
-  const [areas, setAreas] = useState({});
+  const [areas, setAreas] = useState([]);
   const [presenter, setPresenter] = useState('');
-  const [scores, setScores] = useState({
-    area1: 0,
-    area2: 0,
-    area3: 0,
-    area4: 0,
-    extraCredit: 0
-  });
+  const [presenters, setPresenters] = useState([]);
+  const [scores, setScores] = useState({});
   const [comments, setComments] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch the defined areas from the server
-    axios.get('/api/areas')
-      .then(response => {
-        setAreas(response.data);
-      })
-      .catch(error => {
+    console.log('User in EvaluationForm useEffect:', user); // Log the user object
+
+    const fetchAreas = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/areas');
+        console.log('Fetched areas:', response.data);  // Log the fetched areas
+        const areasObject = response.data;
+        const areasArray = Object.keys(areasObject).filter(key => key.startsWith('area')).map(key => ({
+          key,
+          name: areasObject[key]
+        }));
+        setAreas(areasArray);
+
+        // Initialize scores state based on fetched areas
+        const initialScores = {};
+        areasArray.forEach(area => {
+          initialScores[area.key] = 0;
+        });
+        setScores(initialScores);
+      } catch (error) {
         console.error('Error fetching areas:', error);
-      });
-  }, []);
+        setErrorMessage('Error fetching areas');
+      }
+    };
+
+    const fetchPresenters = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/users/students');
+        console.log('Fetched presenters:', response.data);  // Log the fetched presenters
+        setPresenters(response.data);
+      } catch (error) {
+        console.error('Error fetching presenters:', error);
+        setErrorMessage('Error fetching presenters');
+      }
+    };
+
+    fetchAreas();
+    fetchPresenters();
+  }, [user]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    if (!user || !user._id) {
+      setErrorMessage('User is not defined');
+      return;
+    }
+
+    console.log('Submitting evaluation with user:', user);  // Log the user object
 
     const evaluation = {
       presenter,
@@ -38,69 +71,48 @@ const EvaluationForm = ({ user }) => {
       type: user.role
     };
 
-    axios.post('/api/evaluations/submit', evaluation)
+    axios.post('http://localhost:5000/api/evaluations/submit', evaluation)
       .then(response => {
         console.log('Evaluation submitted successfully');
         navigate('/gradebook');
       })
       .catch(error => {
         console.error('Error submitting evaluation:', error);
+        setErrorMessage('Error submitting evaluation');
       });
   };
 
   return (
     <form onSubmit={handleSubmit}>
       <h2>Evaluation Form</h2>
+      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
       <label>
         Presenter:
-        <input
-          type="text"
-          value={presenter}
-          onChange={(e) => setPresenter(e.target.value)}
-          required
-        />
+        <select value={presenter} onChange={(e) => setPresenter(e.target.value)} required>
+          <option value="">Select Presenter</option>
+          {presenters.map((presenter) => (
+            <option key={presenter._id} value={presenter._id}>
+              {presenter.firstName} {presenter.lastName}
+            </option>
+          ))}
+        </select>
       </label>
-      <label>
-        Area 1:
-        <input
-          type="number"
-          value={scores.area1}
-          onChange={(e) => setScores({ ...scores, area1: e.target.value })}
-          required
-        />
-      </label>
-      <label>
-        Area 2:
-        <input
-          type="number"
-          value={scores.area2}
-          onChange={(e) => setScores({ ...scores, area2: e.target.value })}
-          required
-        />
-      </label>
-      <label>
-        Area 3:
-        <input
-          type="number"
-          value={scores.area3}
-          onChange={(e) => setScores({ ...scores, area3: e.target.value })}
-          required
-        />
-      </label>
-      <label>
-        Area 4:
-        <input
-          type="number"
-          value={scores.area4}
-          onChange={(e) => setScores({ ...scores, area4: e.target.value })}
-          required
-        />
-      </label>
+      {areas.map((area, index) => (
+        <label key={index}>
+          {area.name}:
+          <input
+            type="number"
+            value={scores[area.key]}
+            onChange={(e) => setScores({ ...scores, [area.key]: e.target.value })}
+            required
+          />
+        </label>
+      ))}
       <label>
         Extra Credit:
         <input
           type="number"
-          value={scores.extraCredit}
+          value={scores.extraCredit || 0}
           onChange={(e) => setScores({ ...scores, extraCredit: e.target.value })}
           required
         />
