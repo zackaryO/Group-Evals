@@ -14,7 +14,7 @@ const StarDisplay = ({ value }) => {
   );
 };
 
-const Gradebook = () => {
+const Gradebook = ({ user }) => {
   const [grades, setGrades] = useState([]);
   const [details, setDetails] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
@@ -54,7 +54,7 @@ const Gradebook = () => {
   const groupByPresenter = (grades) => {
     const grouped = {};
     grades.forEach(grade => {
-      const presenterUsername = grade.presenter.firstName +" "+ grade.presenter.lastName;
+      const presenterUsername = grade.presenter.firstName + " " + grade.presenter.lastName;
       if (!grouped[presenterUsername]) {
         grouped[presenterUsername] = [];
       }
@@ -84,6 +84,12 @@ const Gradebook = () => {
             {Object.keys(groupedGrades).map((presenterUsername, index) => {
               const evaluations = groupedGrades[presenterUsername];
               const finalScore = calculateFinalScore(evaluations);
+
+              // If the user is a student, only show their grades
+              if (user.role === 'student' && evaluations[0].presenter.username !== user.username) {
+                return null;
+              }
+
               return (
                 <tr key={index}>
                   <td className="student-column">{presenterUsername}</td>
