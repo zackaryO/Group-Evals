@@ -1,0 +1,75 @@
+    .evaluation-form {
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #f9f9f9;
+}
+
+.evaluation-form h2 {
+  text-align: center;
+  color: #333;
+}
+
+.evaluation-form label {
+  display: block;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.evaluation-form select, .evaluation-form textarea {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.evaluation-form .area-rating {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.star-rating {
+  display: flex;
+  gap: 5px;
+}
+
+.star {
+  font-size: 24px;
+  cursor: pointer;
+  color: #ccc;
+}
+
+.star.filled {
+  color: #ffcc00;
+}
+
+.comments-textarea {
+  height: 100px;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.submit-button:hover {
+  background-color: #0056b3;
+}
+
+.error-message {
+  color: red;
+  text-align: center;
+}

@@ -4,8 +4,8 @@ import Navbar from './components/Navbar';
 import Home from './components/Home';
 import Login from './components/Auth/Login';
 import Register from './components/Auth/Register'; // For instructors to add users
-import EvaluationForm from './components/Evaluation/EvaluationForm';
-import Gradebook from './components/Evaluation/Gradebook';
+import EvaluationForm from './components/Evaluation/EvaluationForm.jsx';
+import Gradebook from './components/Evaluation/Gradebook.jsx';
 import DefineAreas from './components/Instructor/DefineAreas';
 import ManageStudents from './components/Instructor/ManageStudents';
 import PrivateRoute from './components/Auth/PrivateRoute';
@@ -13,6 +13,8 @@ import InstructorRoute from './components/Auth/InstructorRoute';
 
 const App = () => {
   const [user, setUser] = useState(null);
+
+  console.log('User in App:', user); // Log the user object in App
 
   return (
     <Router>

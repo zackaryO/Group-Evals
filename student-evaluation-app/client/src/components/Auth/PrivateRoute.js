@@ -4,7 +4,7 @@ import { Navigate } from 'react-router-dom';
 const PrivateRoute = ({ user, children, role }) => {
   const token = localStorage.getItem('token');
 
-  if (!token || !user) {
+  if (!token || !user || !user._id) {
     return <Navigate to="/login" />;
   }
 

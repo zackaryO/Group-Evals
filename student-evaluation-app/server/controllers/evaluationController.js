@@ -13,7 +13,7 @@ const submitEvaluation = async (req, res) => {
 
 const getEvaluations = async (req, res) => {
   try {
-    const evaluations = await Evaluation.find().populate('presenter evaluator', 'username firstName lastName');
+    const evaluations = await Evaluation.find().populate('presenter evaluator', 'username firstName lastName role');
     res.status(200).json(evaluations);
   } catch (error) {
     res.status(400).json({ error: error.message });

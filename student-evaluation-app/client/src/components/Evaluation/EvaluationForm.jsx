@@ -1,6 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import './EvaluationForm.css'; // Assuming you have a CSS file for styling
+
+const StarRating = ({ name, value, onChange }) => {
+  const [hoverValue, setHoverValue] = useState(undefined);
+
+  const handleClick = (val) => {
+    onChange(name, val);
+  };
+
+  const handleMouseOver = (val) => {
+    setHoverValue(val);
+  };
+
+  const handleMouseLeave = () => {
+    setHoverValue(undefined);
+  };
+
+  return (
+    <div className="star-rating">
+      {[1, 2, 3, 4, 5].map((val) => (
+        <span
+          key={val}
+          className={`star ${hoverValue >= val || value >= val ? 'filled' : ''}`}
+          onClick={() => handleClick(val)}
+          onMouseOver={() => handleMouseOver(val)}
+          onMouseLeave={handleMouseLeave}
+        >
+          &#9733;
+        </span>
+      ))}
+    </div>
+  );
+};
 
 const EvaluationForm = ({ user }) => {
   const [areas, setAreas] = useState([]);
@@ -13,12 +46,12 @@ const EvaluationForm = ({ user }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('User in EvaluationForm useEffect:', user); // Log the user object
+    console.log('User in EvaluationForm useEffect:', user);
 
     const fetchAreas = async () => {
       try {
         const response = await axios.get('http://localhost:5000/api/areas');
-        console.log('Fetched areas:', response.data);  // Log the fetched areas
+        console.log('Fetched areas:', response.data);
         const areasObject = response.data;
         const areasArray = Object.keys(areasObject).filter(key => key.startsWith('area')).map(key => ({
           key,
@@ -26,7 +59,6 @@ const EvaluationForm = ({ user }) => {
         }));
         setAreas(areasArray);
 
-        // Initialize scores state based on fetched areas
         const initialScores = {};
         areasArray.forEach(area => {
           initialScores[area.key] = 0;
@@ -41,7 +73,7 @@ const EvaluationForm = ({ user }) => {
     const fetchPresenters = async () => {
       try {
         const response = await axios.get('http://localhost:5000/api/users/students');
-        console.log('Fetched presenters:', response.data);  // Log the fetched presenters
+        console.log('Fetched presenters:', response.data);
         setPresenters(response.data);
       } catch (error) {
         console.error('Error fetching presenters:', error);
@@ -61,7 +93,7 @@ const EvaluationForm = ({ user }) => {
       return;
     }
 
-    console.log('Submitting evaluation with user:', user);  // Log the user object
+    console.log('Submitting evaluation with user:', user);
 
     const evaluation = {
       presenter,
@@ -82,10 +114,14 @@ const EvaluationForm = ({ user }) => {
       });
   };
 
+  const handleScoreChange = (area, value) => {
+    setScores({ ...scores, [area]: value });
+  };
+
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="evaluation-form">
       <h2>Evaluation Form</h2>
-      {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
       <label>
         Presenter:
         <select value={presenter} onChange={(e) => setPresenter(e.target.value)} required>
@@ -98,33 +134,24 @@ const EvaluationForm = ({ user }) => {
         </select>
       </label>
       {areas.map((area, index) => (
-        <label key={index}>
-          {area.name}:
-          <input
-            type="number"
-            value={scores[area.key]}
-            onChange={(e) => setScores({ ...scores, [area.key]: e.target.value })}
-            required
-          />
-        </label>
+        <div key={index} className="area-rating">
+          <label>{area.name}:</label>
+          <StarRating name={area.key} value={scores[area.key]} onChange={handleScoreChange} />
+        </div>
       ))}
       <label>
         Extra Credit:
-        <input
-          type="number"
-          value={scores.extraCredit || 0}
-          onChange={(e) => setScores({ ...scores, extraCredit: e.target.value })}
-          required
-        />
+        <StarRating name="extraCredit" value={scores.extraCredit || 0} onChange={handleScoreChange} />
       </label>
       <label>
         Comments:
         <textarea
           value={comments}
           onChange={(e) => setComments(e.target.value)}
+          className="comments-textarea"
         />
       </label>
-      <button type="submit">Submit Evaluation</button>
+      <button type="submit" className="submit-button">Submit Evaluation</button>
     </form>
   );
 };
