@@ -99,7 +99,7 @@ button:hover {
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
-  table-layout: fixed; /* Ensures table layout is fixed */
+  table-layout: auto; /* Allows the username column to auto-size */
 }
 
 .users-table th, .users-table td {
@@ -118,8 +118,32 @@ button:hover {
   background-color: #f9f9f9;
 }
 
+.users-table th:nth-child(1), .users-table td:nth-child(1) {
+  width: auto; /* Username column auto-sizes */
+}
+
+.users-table th:nth-child(2), .users-table td:nth-child(2) {
+  width: 10%; /* Role column */
+}
+
+.users-table th:nth-child(3), .users-table td:nth-child(3) {
+  width: 20%; /* Team Name column */
+}
+
+.users-table th:nth-child(4), .users-table td:nth-child(4) {
+  width: 15%; /* First Name column */
+}
+
+.users-table th:nth-child(5), .users-table td:nth-child(5) {
+  width: 15%; /* Last Name column */
+}
+
+.users-table th:nth-child(6), .users-table td:nth-child(6) {
+  width: 15%; /* Subject column */
+}
+
 .users-table th:nth-child(7), .users-table td:nth-child(7) {
-  width: 130px; /* Ensure actions column is wide enough */
+  width: 10%; /* Actions column */
 }
 
 .actions {
