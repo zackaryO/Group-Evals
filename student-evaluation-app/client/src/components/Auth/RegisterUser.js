@@ -23,7 +23,6 @@ const RegisterUser = () => {
   const fetchUsers = async () => {
     try {
       const response = await axios.get('https://group-evals.onrender.com/api/users');
-      //const response = await axios.get('http://localhost:5000/api/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -42,7 +41,6 @@ const RegisterUser = () => {
     e.preventDefault();
     try {
       const response = await axios.post('https://group-evals.onrender.com/api/users/add', formData);
-      //const response = await axios.post('http://localhost:5000/api/users/add', formData);
       setMessage(`User ${response.data.username} added successfully!`);
       fetchUsers(); // Refresh the user list
     } catch (error) {
@@ -50,15 +48,14 @@ const RegisterUser = () => {
     }
   };
 
-const handleDelete = async (userId) => {
-  try {
-    await axios.delete(`https://group-evals.onrender.com/api/users/${userId}`);
-    //await axios.delete(`http://localhost:5000/api/users/${userId}`);
-    fetchUsers(); // Refresh the user list
-  } catch (error) {
-    console.error('Error deleting user:', error);
-  }
-};
+  const handleDelete = async (userId) => {
+    try {
+      await axios.delete(`https://group-evals.onrender.com/api/users/${userId}`);
+      fetchUsers(); // Refresh the user list
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
+  };
 
   const handleEdit = (user) => {
     setEditUser(user);
@@ -77,7 +74,6 @@ const handleDelete = async (userId) => {
     e.preventDefault();
     try {
       const response = await axios.put(`https://group-evals.onrender.com/api/users/${editUser._id}`, formData);
-      //const response = await axios.put(`http://localhost:5000/api/users/${editUser._id}`, formData);      
       setMessage(`User ${response.data.username} updated successfully!`);
       setEditUser(null);
       fetchUsers(); // Refresh the user list

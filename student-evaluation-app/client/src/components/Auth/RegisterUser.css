@@ -99,13 +99,15 @@ button:hover {
   width: 100%;
   border-collapse: collapse;
   margin-top: 20px;
-  table-layout: fixed;
+  table-layout: fixed; /* Ensures table layout is fixed */
 }
 
 .users-table th, .users-table td {
   border: 1px solid #dddddd;
   text-align: left;
   padding: 8px;
+  word-wrap: break-word; /* Ensures text wrapping */
+  white-space: normal;   /* Ensures text wrapping */
 }
 
 .users-table th {
