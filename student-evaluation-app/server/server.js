@@ -13,8 +13,19 @@ const areaRoutes = require('./routes/areas');
 const app = express();
 
 // CORS configuration
+const allowedOrigins = [
+  'https://group-evals.vercel.app',
+  'https://group-evals-dbg0fumxc-zacks-projects-18c38742.vercel.app'
+];
+
 const corsOptions = {
-  origin: 'https://group-evals.vercel.app', // Allow only this origin
+  origin: (origin, callback) => {
+    if (allowedOrigins.includes(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed methods
   allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
 };
