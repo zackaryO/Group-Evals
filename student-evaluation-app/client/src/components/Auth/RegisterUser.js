@@ -40,7 +40,8 @@ const RegisterUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5000/api/users/add', formData);
+      const response = await axios.post('https://group-evals.onrender.com/api/users/add', formData);
+      //const response = await axios.post('http://localhost:5000/api/users/add', formData);
       setMessage(`User ${response.data.username} added successfully!`);
       fetchUsers(); // Refresh the user list
     } catch (error) {
@@ -50,7 +51,8 @@ const RegisterUser = () => {
 
 const handleDelete = async (userId) => {
   try {
-    await axios.delete(`http://localhost:5000/api/users/${userId}`);
+    await axios.delete(`https://group-evals.onrender.com/api/users/${userId}`);
+    //await axios.delete(`http://localhost:5000/api/users/${userId}`);
     fetchUsers(); // Refresh the user list
   } catch (error) {
     console.error('Error deleting user:', error);
@@ -74,6 +76,7 @@ const handleDelete = async (userId) => {
     e.preventDefault();
     try {
       const response = await axios.put(`http://localhost:5000/api/users/${editUser._id}`, formData);
+      //const response = await axios.put(`http://localhost:5000/api/users/${editUser._id}`, formData);      
       setMessage(`User ${response.data.username} updated successfully!`);
       setEditUser(null);
       fetchUsers(); // Refresh the user list

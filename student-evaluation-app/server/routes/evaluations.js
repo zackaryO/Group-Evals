@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { submitEvaluation, getEvaluations, deleteEvaluation } = require('../controllers/EvaluationController');
+const { submitEvaluation, getEvaluations, deleteEvaluation } = require('../controllers/evaluationController');
 
 // Routes for evaluations
 router.post('/submit', submitEvaluation);

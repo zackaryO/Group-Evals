@@ -12,7 +12,8 @@ const Login = ({ setUser }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', { username, password });
+      const res = await axios.post('https://group-evals.onrender.com/api/auth/login', { username, password });
+      // const res = await axios.post('http://localhost:5000/api/auth/login', { username, password });
       console.log('Login response:', res.data); // Logging the response data
 
       if (res.data && res.data.token && res.data.user) {
