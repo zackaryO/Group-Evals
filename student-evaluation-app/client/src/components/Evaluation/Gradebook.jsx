@@ -20,8 +20,9 @@ const Gradebook = ({ user }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/evaluations')
-      .then(response => {
+    axios.get('https://group-evals.onrender.com/api/evaluations')
+    //axios.get('http://localhost:5000/api/evaluations')      
+    .then(response => {
         console.log('Fetched grades:', response.data);
         if (response.data.length > 0) {
           setGrades(response.data);
@@ -67,7 +68,8 @@ const Gradebook = ({ user }) => {
   };
 
   const deleteEvaluation = (evaluationId) => {
-    axios.delete(`http://localhost:5000/api/evaluations/${evaluationId}`)
+    axios.delete(`https://group-evals.onrender.com/api/evaluations/${evaluationId}`)
+    // axios.delete(`http://localhost:5000/api/evaluations/${evaluationId}`)      
       .then(response => {
         console.log(response.data.message);
         setGrades(grades.filter(grade => grade._id !== evaluationId)); // Remove deleted evaluation from state

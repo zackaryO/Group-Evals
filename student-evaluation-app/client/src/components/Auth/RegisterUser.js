@@ -22,7 +22,8 @@ const RegisterUser = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/users');
+      const response = await axios.get('https://group-evals.onrender.com/api/users');
+      //const response = await axios.get('http://localhost:5000/api/users');
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -75,7 +76,7 @@ const handleDelete = async (userId) => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.put(`http://localhost:5000/api/users/${editUser._id}`, formData);
+      const response = await axios.put(`https://group-evals.onrender.com/api/users/${editUser._id}`, formData);
       //const response = await axios.put(`http://localhost:5000/api/users/${editUser._id}`, formData);      
       setMessage(`User ${response.data.username} updated successfully!`);
       setEditUser(null);
