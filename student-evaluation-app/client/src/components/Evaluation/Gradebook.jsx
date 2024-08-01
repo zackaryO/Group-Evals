@@ -21,8 +21,7 @@ const Gradebook = ({ user }) => {
 
   useEffect(() => {
     axios.get('https://group-evals.onrender.com/api/evaluations')
-    //axios.get('http://localhost:5000/api/evaluations')      
-    .then(response => {
+      .then(response => {
         console.log('Fetched grades:', response.data);
         if (response.data.length > 0) {
           setGrades(response.data);
@@ -69,7 +68,6 @@ const Gradebook = ({ user }) => {
 
   const deleteEvaluation = (evaluationId) => {
     axios.delete(`https://group-evals.onrender.com/api/evaluations/${evaluationId}`)
-    // axios.delete(`http://localhost:5000/api/evaluations/${evaluationId}`)      
       .then(response => {
         console.log(response.data.message);
         setGrades(grades.filter(grade => grade._id !== evaluationId)); // Remove deleted evaluation from state
@@ -82,24 +80,24 @@ const Gradebook = ({ user }) => {
   const groupByPresenter = (grades) => {
     const grouped = {};
     grades.forEach(grade => {
-      const presenterUsername = grade.presenter.firstName + " " + grade.presenter.lastName;
-      if (!grouped[presenterUsername]) {
-        grouped[presenterUsername] = [];
+      if (grade.presenter) {
+        const presenterUsername = grade.presenter.firstName + " " + grade.presenter.lastName;
+        if (!grouped[presenterUsername]) {
+          grouped[presenterUsername] = [];
+        }
+        grouped[presenterUsername].push(grade);
       }
-      grouped[presenterUsername].push(grade);
     });
     return grouped;
   };
 
   const groupedGrades = groupByPresenter(grades);
 
-  const studentEvaluations = groupedGrades[user.username];
-
   return (
     <div className="gradebook">
       <h2>Gradebook</h2>
       {errorMessage && <p className="error-message">{errorMessage}</p>}
-      {user.role === 'student' && (!studentEvaluations || studentEvaluations.length === 0) ? (
+      {user.role === 'student' && (!groupedGrades[user.username] || groupedGrades[user.username].length === 0) ? (
         <p>No evaluations found</p>
       ) : (
         <>
