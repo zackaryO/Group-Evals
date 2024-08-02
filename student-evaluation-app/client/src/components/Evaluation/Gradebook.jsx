@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Gradebook.css'; // Assuming you have a CSS file for styling
 
+const baseURL = 'https://group-evals.onrender.com/api';
+
 const StarDisplay = ({ value }) => {
   return (
     <div className="star-rating">
@@ -20,9 +22,8 @@ const Gradebook = ({ user }) => {
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    axios.get('https://group-evals.onrender.com/api/evaluations')
-    //axios.get('http://localhost:5000/api/evaluations')      
-    .then(response => {
+    axios.get(`${baseURL}/evaluations`)
+      .then(response => {
         console.log('Fetched grades:', response.data);
         if (response.data.length > 0) {
           setGrades(response.data);
@@ -68,8 +69,7 @@ const Gradebook = ({ user }) => {
   };
 
   const deleteEvaluation = (evaluationId) => {
-    axios.delete(`https://group-evals.onrender.com/api/evaluations/${evaluationId}`)
-    // axios.delete(`http://localhost:5000/api/evaluations/${evaluationId}`)      
+    axios.delete(`${baseURL}/evaluations/${evaluationId}`)
       .then(response => {
         console.log(response.data.message);
         setGrades(grades.filter(grade => grade._id !== evaluationId)); // Remove deleted evaluation from state
@@ -82,78 +82,89 @@ const Gradebook = ({ user }) => {
   const groupByPresenter = (grades) => {
     const grouped = {};
     grades.forEach(grade => {
-      const presenterUsername = grade.presenter.firstName + " " + grade.presenter.lastName;
-      if (!grouped[presenterUsername]) {
-        grouped[presenterUsername] = [];
+      if (grade.presenter) {
+        const presenterUsername = `${grade.presenter.firstName} ${grade.presenter.lastName}`;
+        if (!grouped[presenterUsername]) {
+          grouped[presenterUsername] = [];
+        }
+        grouped[presenterUsername].push(grade);
       }
-      grouped[presenterUsername].push(grade);
     });
     return grouped;
   };
 
   const groupedGrades = groupByPresenter(grades);
 
+  const currentStudentGrades = groupedGrades[`${user.firstName} ${user.lastName}`] || [];
+
   return (
     <div className="gradebook">
       <h2>Gradebook</h2>
       {errorMessage && <p className="error-message">{errorMessage}</p>}
-      {Object.keys(groupedGrades).length === 0 ? (
+      {user.role === 'student' && currentStudentGrades.length === 0 ? (
         <p>No evaluations found</p>
       ) : (
-        <table className="gradebook-table">
-          <thead>
-            <tr>
-              <th className="student-column">Student</th>
-              <th className="score-column">Final Score</th>
-              <th>Breakdown</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.keys(groupedGrades).map((presenterUsername, index) => {
-              const evaluations = groupedGrades[presenterUsername];
-              const finalScore = calculateFinalScore(evaluations);
-
-              // If the user is a student, only show their grades
-              if (user.role === 'student' && evaluations[0].presenter.username !== user.username) {
-                return null;
-              }
-
-              return (
-                <tr key={index}>
-                  <td className="student-column">{presenterUsername}</td>
-                  <td className="score-column">{finalScore.toFixed(2)}%</td>
-                  <td>
-                    <button onClick={() => toggleDetails(presenterUsername)}>Toggle Details</button>
-                    {details[presenterUsername] && (
-                      <div className="evaluation-details">
-                        <h3>Evaluations</h3>
-                        <div className="evaluation-cards">
-                          {evaluations.map((evaluation, evalIndex) => (
-                            <div key={evalIndex} className="evaluation-card">
-                              <strong>Evaluator:</strong> {evaluation.evaluator.username} ({evaluation.evaluator.role})<br />
-                              <strong>Scores:</strong>
-                              <div className="scores">
-                                <div>Area 1: <StarDisplay value={evaluation.scores.area1} /></div>
-                                <div>Area 2: <StarDisplay value={evaluation.scores.area2} /></div>
-                                <div>Area 3: <StarDisplay value={evaluation.scores.area3} /></div>
-                                <div>Area 4: <StarDisplay value={evaluation.scores.area4} /></div>
-                                <div>Extra Credit: <StarDisplay value={evaluation.scores.extraCredit} /></div>
-                              </div>
-                              <strong>Comments:</strong> {evaluation.comments}
-                              {user.role === 'instructor' && (
-                                <button onClick={() => deleteEvaluation(evaluation._id)}>Delete</button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </td>
+        <>
+          {Object.keys(groupedGrades).length === 0 ? (
+            <p>No evaluations found</p>
+          ) : (
+            <table className="gradebook-table">
+              <thead>
+                <tr>
+                  <th className="student-column">Student</th>
+                  <th className="score-column">Final Score</th>
+                  <th>Breakdown</th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {Object.keys(groupedGrades).map((presenterUsername, index) => {
+                  const evaluations = groupedGrades[presenterUsername];
+                  if (!evaluations[0] || !evaluations[0].presenter) return null;
+                  const finalScore = calculateFinalScore(evaluations);
+
+                  // If the user is a student, only show their grades
+                  if (user.role === 'student' && evaluations[0].presenter.username !== user.username) {
+                    return null;
+                  }
+
+                  return (
+                    <tr key={index}>
+                      <td className="student-column">{presenterUsername}</td>
+                      <td className="score-column">{finalScore.toFixed(2)}%</td>
+                      <td>
+                        <button onClick={() => toggleDetails(presenterUsername)}>Toggle Details</button>
+                        {details[presenterUsername] && (
+                          <div className="evaluation-details">
+                            <h3>Evaluations</h3>
+                            <div className="evaluation-cards">
+                              {evaluations.map((evaluation, evalIndex) => (
+                                <div key={evalIndex} className="evaluation-card">
+                                  <strong>Evaluator:</strong> {evaluation.evaluator.username} ({evaluation.evaluator.role})<br />
+                                  <strong>Scores:</strong>
+                                  <div className="scores">
+                                    <div>Area 1: <StarDisplay value={evaluation.scores.area1} /></div>
+                                    <div>Area 2: <StarDisplay value={evaluation.scores.area2} /></div>
+                                    <div>Area 3: <StarDisplay value={evaluation.scores.area3} /></div>
+                                    <div>Area 4: <StarDisplay value={evaluation.scores.area4} /></div>
+                                    <div>Extra Credit: <StarDisplay value={evaluation.scores.extraCredit} /></div>
+                                  </div>
+                                  <strong>Comments:</strong> {evaluation.comments}
+                                  {user.role === 'instructor' && (
+                                    <button onClick={() => deleteEvaluation(evaluation._id)}>Delete</button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </>
       )}
     </div>
   );
