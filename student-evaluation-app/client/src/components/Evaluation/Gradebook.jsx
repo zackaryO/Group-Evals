@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './Gradebook.css'; // Assuming you have a CSS file for styling
 
-const baseURL = 'https://group-evals.onrender.com/api';
-
 const StarDisplay = ({ value }) => {
   return (
     <div className="star-rating">
@@ -20,6 +18,8 @@ const Gradebook = ({ user }) => {
   const [grades, setGrades] = useState([]);
   const [details, setDetails] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
+
+  const baseURL = 'https://group-evals.onrender.com/api';
 
   useEffect(() => {
     axios.get(`${baseURL}/evaluations`)
@@ -83,7 +83,7 @@ const Gradebook = ({ user }) => {
     const grouped = {};
     grades.forEach(grade => {
       if (grade.presenter) {
-        const presenterUsername = `${grade.presenter.firstName} ${grade.presenter.lastName}`;
+        const presenterUsername = grade.presenter.firstName + " " + grade.presenter.lastName;
         if (!grouped[presenterUsername]) {
           grouped[presenterUsername] = [];
         }
