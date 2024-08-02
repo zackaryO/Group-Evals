@@ -170,7 +170,7 @@ const Gradebook = ({ user }) => {
 
                     return (
                       <tr key={index}>
-                        <td className="student-column">{presenterUsername}</td>
+                        <td className="student-column">{presenterUsername.firstName}</td>
                         <td className="score-column">{finalScore.toFixed(2)}%</td>
                         <td>
                           <button onClick={() => toggleDetails(presenterUsername)}>Toggle Details</button>
