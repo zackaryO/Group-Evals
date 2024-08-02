@@ -93,11 +93,13 @@ const Gradebook = ({ user }) => {
 
   const groupedGrades = groupByPresenter(grades);
 
+  const currentStudentGrades = groupedGrades[user.firstName + " " + user.lastName] || [];
+
   return (
     <div className="gradebook">
       <h2>Gradebook</h2>
       {errorMessage && <p className="error-message">{errorMessage}</p>}
-      {user.role === 'student' && (!groupedGrades[user.username] || groupedGrades[user.username].length === 0) ? (
+      {user.role === 'student' && currentStudentGrades.length === 0 ? (
         <p>No evaluations found</p>
       ) : (
         <>
