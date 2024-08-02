@@ -95,13 +95,11 @@ const Gradebook = ({ user }) => {
 
   const groupedGrades = groupByPresenter(grades);
 
-  const currentStudentGrades = groupedGrades[`${user.firstName} ${user.lastName}`] || [];
-
   return (
     <div className="gradebook">
       <h2>Gradebook</h2>
       {errorMessage && <p className="error-message">{errorMessage}</p>}
-      {user.role === 'student' && currentStudentGrades.length === 0 ? (
+      {user.role === 'student' && !groupedGrades[`${user.firstName} ${user.lastName}`] ? (
         <p>No evaluations found</p>
       ) : (
         <>
@@ -123,7 +121,7 @@ const Gradebook = ({ user }) => {
                   const finalScore = calculateFinalScore(evaluations);
 
                   // If the user is a student, only show their grades
-                  if (user.role === 'student' && evaluations[0].presenter.username !== user.username) {
+                  if (user.role === 'student' && `${evaluations[0].presenter.firstName} ${evaluations[0].presenter.lastName}` !== `${user.firstName} ${user.lastName}`) {
                     return null;
                   }
 
