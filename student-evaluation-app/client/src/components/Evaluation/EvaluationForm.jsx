@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './EvaluationForm.css'; // Assuming you have a CSS file for styling
+import URL from '../../backEndURL';
 
 const StarRating = ({ name, value, onChange }) => {
   const [hoverValue, setHoverValue] = useState(undefined);
@@ -50,7 +51,7 @@ const EvaluationForm = ({ user }) => {
 
     const fetchAreas = async () => {
       try {
-        const response = await axios.get('https://group-evals.onrender.com/api/areas');
+        const response = await axios.get(`${URL}/api/areas`);
         //const response = await axios.get('http://localhost:5000/api/areas');
         console.log('Fetched areas:', response.data);
         const areasObject = response.data;
@@ -73,7 +74,7 @@ const EvaluationForm = ({ user }) => {
 
     const fetchPresenters = async () => {
       try {
-        const response = await axios.get('https://group-evals.onrender.com/api/users/students');
+        const response = await axios.get(`${URL}/api/users/students`);
        //const response = await axios.get('http://localhost:5000/api/users/students');        
         console.log('Fetched presenters:', response.data);
         setPresenters(response.data);
@@ -105,7 +106,7 @@ const EvaluationForm = ({ user }) => {
       type: user.role
     };
 
-    axios.post('https://group-evals.onrender.com/api/evaluations/submit', evaluation)
+    axios.post(`${URL}/api/evaluations/submit`, evaluation)
     //axios.post('http://localhost:5000/api/evaluations/submit', evaluation)      
       .then(response => {
         console.log('Evaluation submitted successfully');

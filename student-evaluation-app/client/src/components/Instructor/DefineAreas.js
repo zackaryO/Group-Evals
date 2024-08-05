@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './DefineAreas.css';
+import URL from '../../backEndURL';
 
 const DefineAreas = () => {
   const [areas, setAreas] = useState({
@@ -13,7 +14,7 @@ const DefineAreas = () => {
 
   useEffect(() => {
     // Fetch current areas
-    axios.get('https://group-evals.onrender.comapi/areas')
+    axios.get(`${URL}/api/areas`)
     // axios.get('http://localhost:5000/api/areas')      
       .then((response) => {
         setAreas(response.data);
@@ -35,12 +36,12 @@ const DefineAreas = () => {
     e.preventDefault();
 
     // Determine if we need to set or update the areas
-    axios.get('https://group-evals.onrender.com/api/areas')
+    axios.get(`${URL}/api/areas`)
     // axios.get('http://localhost:5000/api/areas')      
       .then((response) => {
         if (response.data) {
           // Areas already exist, update them
-          axios.put('https://group-evals.onrender.com/api/areas/update', areas)
+          axios.put(`${URL}/api/areas/update`, areas)
           // axios.put('http://localhost:5000/api/areas/update', areas)            
             .then((response) => {
               setMessage('Areas updated successfully!');
@@ -52,7 +53,7 @@ const DefineAreas = () => {
             });
         } else {
           // Areas do not exist, create them
-          axios.post('https://group-evals.onrender.com/api/areas/set', areas)
+          axios.post(`${URL}/api/areas/set`, areas)
           // axios.post('http://localhost:5000/api/areas/set', areas)
             .then((response) => {
               setMessage('Areas set successfully!');

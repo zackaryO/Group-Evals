@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import DOMPurify from 'dompurify'; // Import DOMPurify
 import './Gradebook.css'; // Assuming you have a CSS file for styling
+import URL from '../../backEndURL';
 
 const StarDisplay = ({ value }) => {
   return (
@@ -18,15 +20,21 @@ const Gradebook = ({ user }) => {
   const [grades, setGrades] = useState([]);
   const [details, setDetails] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
-
-  const baseURL = 'https://group-evals.onrender.com/api';
+  const [currentStudentName, setCurrentStudentName] = useState({ firstName: '', lastName: '' });
 
   useEffect(() => {
-    axios.get(`${baseURL}/evaluations`)
+    axios.get(`${URL}/api/evaluations`)
       .then(response => {
         console.log('Fetched grades:', response.data);
         if (response.data.length > 0) {
           setGrades(response.data);
+
+          // Extract the current student's first and last name based on user._id
+          const currentStudentEvaluations = response.data.filter(grade => grade.presenter._id === user._id);
+          if (currentStudentEvaluations.length > 0) {
+            const { firstName, lastName } = currentStudentEvaluations[0].presenter;
+            setCurrentStudentName({ firstName, lastName });
+          }
         } else {
           console.log('No evaluations found');
           setErrorMessage('No evaluations found');
@@ -36,7 +44,7 @@ const Gradebook = ({ user }) => {
         console.error('Error fetching evaluations:', error);
         setErrorMessage('Error fetching evaluations');
       });
-  }, []);
+  }, [user._id]);
 
   const toggleDetails = (username) => {
     setDetails((prevDetails) => ({
@@ -69,7 +77,7 @@ const Gradebook = ({ user }) => {
   };
 
   const deleteEvaluation = (evaluationId) => {
-    axios.delete(`${baseURL}/evaluations/${evaluationId}`)
+    axios.delete(`${URL}/api/evaluations/${evaluationId}`)
       .then(response => {
         console.log(response.data.message);
         setGrades(grades.filter(grade => grade._id !== evaluationId)); // Remove deleted evaluation from state
@@ -95,7 +103,7 @@ const Gradebook = ({ user }) => {
 
   const groupedGrades = groupByPresenter(grades);
 
-  const studentGrades = grades.filter(grade => grade.presenter.username === user.username);
+  const studentGrades = grades.filter(grade => grade.presenter._id === user._id);
 
   return (
     <div className="gradebook">
@@ -119,13 +127,13 @@ const Gradebook = ({ user }) => {
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="student-column">{`${user.firstName} ${user.lastName}`}</td>
+                    <td className="student-column">{`${currentStudentName.firstName} ${currentStudentName.lastName}`}</td>
                     <td className="score-column">
                       {calculateFinalScore(studentGrades).toFixed(2)}%
                     </td>
                     <td>
-                      <button onClick={() => toggleDetails(`${user.firstName} ${user.lastName}`)}>Toggle Details</button>
-                      {details[`${user.firstName} ${user.lastName}`] && (
+                      <button onClick={() => toggleDetails(`${currentStudentName.firstName} ${currentStudentName.lastName}`)}>Toggle Details</button>
+                      {details[`${currentStudentName.firstName} ${currentStudentName.lastName}`] && (
                         <div className="evaluation-details">
                           <h3>Evaluations</h3>
                           <div className="evaluation-cards">
@@ -140,7 +148,7 @@ const Gradebook = ({ user }) => {
                                   <div>Area 4: <StarDisplay value={evaluation.scores.area4} /></div>
                                   <div>Extra Credit: <StarDisplay value={evaluation.scores.extraCredit} /></div>
                                 </div>
-                                <strong>Comments:</strong> {evaluation.comments}
+                                <strong>Comments:</strong> <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(evaluation.comments.replace(/\n/g, '<br>')) }} />
                               </div>
                             ))}
                           </div>
@@ -170,7 +178,7 @@ const Gradebook = ({ user }) => {
 
                     return (
                       <tr key={index}>
-                        <td className="student-column">{presenterUsername.firstName}</td>
+                        <td className="student-column">{presenterUsername}</td>
                         <td className="score-column">{finalScore.toFixed(2)}%</td>
                         <td>
                           <button onClick={() => toggleDetails(presenterUsername)}>Toggle Details</button>
@@ -189,7 +197,7 @@ const Gradebook = ({ user }) => {
                                       <div>Area 4: <StarDisplay value={evaluation.scores.area4} /></div>
                                       <div>Extra Credit: <StarDisplay value={evaluation.scores.extraCredit} /></div>
                                     </div>
-                                    <strong>Comments:</strong> {evaluation.comments}
+                                    <strong>Comments:</strong> <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(evaluation.comments.replace(/\n/g, '<br>')) }} />
                                     {user.role === 'instructor' && (
                                       <button onClick={() => deleteEvaluation(evaluation._id)}>Delete</button>
                                     )}
@@ -213,4 +221,3 @@ const Gradebook = ({ user }) => {
 };
 
 export default Gradebook;
- 

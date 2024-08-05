@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './RegisterUser.css';  // Import the CSS file
+import URL from '../../backEndURL';
 
 const RegisterUser = () => {
   const [formData, setFormData] = useState({
@@ -22,7 +23,7 @@ const RegisterUser = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await axios.get('https://group-evals.onrender.com/api/users');
+      const response = await axios.get(`${URL}/api/users`);
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -40,7 +41,7 @@ const RegisterUser = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://group-evals.onrender.com/api/users/add', formData);
+      const response = await axios.post(`${URL}/api/users/add`, formData);
       setMessage(`User ${response.data.username} added successfully!`);
       fetchUsers(); // Refresh the user list
     } catch (error) {
@@ -50,7 +51,7 @@ const RegisterUser = () => {
 
   const handleDelete = async (userId) => {
     try {
-      await axios.delete(`https://group-evals.onrender.com/api/users/${userId}`);
+      await axios.delete(`${URL}/api/users/${userId}`);
       fetchUsers(); // Refresh the user list
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -73,7 +74,7 @@ const RegisterUser = () => {
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.put(`https://group-evals.onrender.com/api/users/${editUser._id}`, formData);
+      const response = await axios.put(`${URL}/api/users/${editUser._id}`, formData);
       setMessage(`User ${response.data.username} updated successfully!`);
       setEditUser(null);
       fetchUsers(); // Refresh the user list

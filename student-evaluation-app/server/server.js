@@ -15,7 +15,8 @@ const app = express();
 // CORS configuration
 const allowedOrigins = [
   'https://group-evals.vercel.app',
-  'https://group-evals-dbg0fumxc-zacks-projects-18c38742.vercel.app'
+  'https://group-evals-dbg0fumxc-zacks-projects-18c38742.vercel.app',
+  'http://localhost:3000'
 ];
 
 const corsOptions = {
