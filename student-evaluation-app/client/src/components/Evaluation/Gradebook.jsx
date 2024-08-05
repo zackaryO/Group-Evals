@@ -21,10 +21,12 @@ const Gradebook = ({ user }) => {
   const [details, setDetails] = useState({});
   const [errorMessage, setErrorMessage] = useState('');
   const [currentStudentName, setCurrentStudentName] = useState({ firstName: '', lastName: '' });
+  const [areas, setAreas] = useState([]);
 
   useEffect(() => {
-    axios.get(`${URL}/api/evaluations`)
-      .then(response => {
+    const fetchEvaluations = async () => {
+      try {
+        const response = await axios.get(`${URL}/api/evaluations`);
         console.log('Fetched grades:', response.data);
         if (response.data.length > 0) {
           setGrades(response.data);
@@ -39,11 +41,30 @@ const Gradebook = ({ user }) => {
           console.log('No evaluations found');
           setErrorMessage('No evaluations found');
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Error fetching evaluations:', error);
         setErrorMessage('Error fetching evaluations');
-      });
+      }
+    };
+
+    const fetchAreas = async () => {
+      try {
+        const response = await axios.get(`${URL}/api/areas`);
+        console.log('Fetched areas:', response.data);
+        const areasObject = response.data;
+        const areasArray = Object.keys(areasObject).filter(key => key.startsWith('area')).map(key => ({
+          key,
+          name: areasObject[key]
+        }));
+        setAreas(areasArray);
+      } catch (error) {
+        console.error('Error fetching areas:', error);
+        setErrorMessage('Error fetching areas');
+      }
+    };
+
+    fetchEvaluations();
+    fetchAreas();
   }, [user._id]);
 
   const toggleDetails = (username) => {
@@ -142,10 +163,11 @@ const Gradebook = ({ user }) => {
                                 <strong>Evaluator:</strong> {evaluation.evaluator.username} ({evaluation.evaluator.role})<br />
                                 <strong>Scores:</strong>
                                 <div className="scores">
-                                  <div>Area 1: <StarDisplay value={evaluation.scores.area1} /></div>
-                                  <div>Area 2: <StarDisplay value={evaluation.scores.area2} /></div>
-                                  <div>Area 3: <StarDisplay value={evaluation.scores.area3} /></div>
-                                  <div>Area 4: <StarDisplay value={evaluation.scores.area4} /></div>
+                                  {areas.map((area, index) => (
+                                    <div key={index}>
+                                      {area.name}: <StarDisplay value={evaluation.scores[area.key]} />
+                                    </div>
+                                  ))}
                                   <div>Extra Credit: <StarDisplay value={evaluation.scores.extraCredit} /></div>
                                 </div>
                                 <strong>Comments:</strong> <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(evaluation.comments.replace(/\n/g, '<br>')) }} />
@@ -191,10 +213,11 @@ const Gradebook = ({ user }) => {
                                     <strong>Evaluator:</strong> {evaluation.evaluator.username} ({evaluation.evaluator.role})<br />
                                     <strong>Scores:</strong>
                                     <div className="scores">
-                                      <div>Area 1: <StarDisplay value={evaluation.scores.area1} /></div>
-                                      <div>Area 2: <StarDisplay value={evaluation.scores.area2} /></div>
-                                      <div>Area 3: <StarDisplay value={evaluation.scores.area3} /></div>
-                                      <div>Area 4: <StarDisplay value={evaluation.scores.area4} /></div>
+                                      {areas.map((area, index) => (
+                                        <div key={index}>
+                                          {area.name}: <StarDisplay value={evaluation.scores[area.key]} />
+                                        </div>
+                                      ))}
                                       <div>Extra Credit: <StarDisplay value={evaluation.scores.extraCredit} /></div>
                                     </div>
                                     <strong>Comments:</strong> <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(evaluation.comments.replace(/\n/g, '<br>')) }} />
