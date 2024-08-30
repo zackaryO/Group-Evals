@@ -1,3 +1,4 @@
+// student-evaluation-app\client\src\components\Auth\PrivateRoute.js
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 

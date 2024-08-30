@@ -1,4 +1,4 @@
-//Login.js
+// student-evaluation-app\client\src\components\Auth\Login.js
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -29,7 +29,7 @@ const Login = ({ setUser }) => {
           role: res.data.user.role
         });
         setError('');
-        navigate('/evaluation');  // Redirect to evaluation page after login
+        navigate('/');  // Redirect to evaluation page after login
       } else {
         throw new Error('Invalid response data');
       }

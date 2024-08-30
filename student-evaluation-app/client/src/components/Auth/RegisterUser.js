@@ -1,3 +1,4 @@
+// student-evaluation-app\client\src\components\Auth\RegisterUser.js
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './RegisterUser.css';  // Import the CSS file

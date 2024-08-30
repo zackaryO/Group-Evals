@@ -1,8 +1,10 @@
+// student-evaluation-app/client/src/components/Navbar.js
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faSignInAlt, faSignOutAlt, faBook, faUserPlus, faList, faUserGraduate, faTasks } from '@fortawesome/free-solid-svg-icons';
-import './Navbar.css';  // Import the CSS file
+import { faHome, faSignInAlt, faSignOutAlt, faBook, faUserGraduate, faTasks, faChalkboardTeacher, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+import './Navbar.css';
 
 const handleLogout = () => {
   localStorage.removeItem('token');
@@ -13,7 +15,7 @@ const Navbar = ({ user }) => (
   <nav className="navbar">
     <ul className="navbar-list">
       <li className="navbar-item">
-        <Link to="/evaluation" className="navbar-link">
+        <Link to="/home" className="navbar-link">
           <FontAwesomeIcon icon={faHome} /> Home
         </Link>
       </li>
@@ -23,29 +25,41 @@ const Navbar = ({ user }) => (
         </Link>
       </li>
       {user && user.role === 'instructor' && (
+        <>
+          <li className="navbar-item">
+            <Link to="/register" className="navbar-link">
+              <FontAwesomeIcon icon={faUserGraduate} /> Manage Users
+            </Link>
+          </li>
+          <li className="navbar-item">
+            <Link to="/create-quiz" className="navbar-link">
+              <FontAwesomeIcon icon={faChalkboardTeacher} /> Create Quiz
+            </Link>
+          </li>
+          <li className="navbar-item">
+            <Link to="/manage-quizzes" className="navbar-link">
+              <FontAwesomeIcon icon={faTasks} /> Manage Quizzes
+            </Link>
+          </li>
+        </>
+      )}
+      {user && user.role === 'student' && (
         <li className="navbar-item">
-          <Link to="/register" className="navbar-link">
-            <FontAwesomeIcon icon={faUserGraduate} /> Manage Users
+          <Link to="/take-quiz" className="navbar-link">
+            <FontAwesomeIcon icon={faQuestionCircle} /> Take Quiz
           </Link>
         </li>
       )}
       <li className="navbar-item">
-        <Link to="/evaluation" className="navbar-link">
-          <FontAwesomeIcon icon={faTasks} /> Evaluation
+        <Link to="/eval-gradebook" className="navbar-link">
+          <FontAwesomeIcon icon={faBook} /> Eval Gradebook
         </Link>
       </li>
       <li className="navbar-item">
-        <Link to="/gradebook" className="navbar-link">
-          <FontAwesomeIcon icon={faBook} /> Gradebook
+        <Link to="/quiz-gradebook" className="navbar-link">
+          <FontAwesomeIcon icon={faBook} /> Quiz Gradebook
         </Link>
       </li>
-      {user && user.role === 'instructor' && (
-      <li className="navbar-item">
-        <Link to="/define-areas" className="navbar-link">
-          <FontAwesomeIcon icon={faList} /> Define Areas
-        </Link>
-      </li>
-      )}
       <li className="navbar-item">
         <Link to="/" onClick={handleLogout} className="navbar-link">
           <FontAwesomeIcon icon={faSignOutAlt} /> Logout

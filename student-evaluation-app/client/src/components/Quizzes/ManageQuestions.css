@@ -1,0 +1,102 @@
+.manage-questions-container {
+  max-width: 800px;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #f9f9f9;
+}
+
+.manage-questions-container h2 {
+  text-align: center;
+  color: #333;
+}
+
+.manage-questions-container label {
+  display: block;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.manage-questions-container textarea.question-text {
+  width: 100%;
+  padding: 10px;
+  margin-top: 4px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.option-item input[type="radio"] {
+  margin-right: 10px;
+}
+
+.option-item span {
+  font-weight: bold;
+  margin-right: 10px;
+}
+
+.option-item input[type="text"] {
+  flex-grow: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%; /* Make input take full available width */
+  resize: horizontal; /* Allow resizing for long answers */
+  min-width: 200px; /* Set a minimum width for the input */
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+
+.questions-list {
+  margin-top: 20px;
+}
+
+.question-card {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.question-text-display {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.options-display,
+.correct-answer-display {
+  margin-bottom: 10px;
+}
+
+.question-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.question-actions button {
+  margin-left: 10px;
+}

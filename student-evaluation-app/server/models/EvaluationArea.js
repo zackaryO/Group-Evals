@@ -1,3 +1,4 @@
+// student-evaluation-app\server\models\EvaluationArea.js
 const mongoose = require('mongoose');
 
 const AreaSchema = new mongoose.Schema({

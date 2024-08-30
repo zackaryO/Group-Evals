@@ -1,3 +1,4 @@
+// student-evaluation-app\server\server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -9,6 +10,9 @@ const authRoutes = require('./routes/auth');
 const evaluationRoutes = require('./routes/evaluations');
 const userRoutes = require('./routes/users');
 const areaRoutes = require('./routes/areas');
+const quizRoutes = require('./routes/quizzes');
+const gradeRoutes = require('./routes/grades');
+
 
 const app = express();
 
@@ -38,6 +42,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/areas', areaRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/grades', gradeRoutes);
 
 const mongoURI = process.env.MONGODB_URI;
 
