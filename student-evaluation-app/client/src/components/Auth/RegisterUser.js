@@ -108,7 +108,7 @@ const RegisterUser = () => {
               <tr>
                 <th>Username</th>
                 <th>Role</th>
-                <th>Team Name</th>
+                <th>Email</th>
                 <th>First Name</th>
                 <th>Last Name</th>
                 <th>Subject</th>
