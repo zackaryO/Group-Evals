@@ -5,7 +5,7 @@ import './Home.css'; // Ensure you have this CSS file for styling
 const Home = ({ user }) => {
   return (
     <div className="home-container">
-      <h1>Welcome to the Student Evaluation</h1>
+      <h1>Welcome to the Student Group Eval and Quiz site</h1>
       <div className="card-container">
         {/* Evaluation Card */}
         <div className="home-card">
@@ -58,6 +58,7 @@ const Home = ({ user }) => {
         )}
       </div>
     </div>
+    
   );
 };
 
