@@ -83,7 +83,7 @@ const QuizGradebook = ({ user }) => {
                   {groupedGrades[studentId].quizzes.map((quiz) => (
                     <div key={quiz._id} className="quiz-item">
                       <span onClick={() => handleQuizSelect(quiz._id)}>
-                        {quiz.quiz?.title || "Quiz Title Missing"}: {quiz.score?.toFixed(2)}%
+                        {quiz.quiz?.title || "Quiz Title Missing"}: {quiz.score?.toFixed(2)}%, Click to see missed questions.
                       </span>
                       {user.role === 'instructor' && (
                         <button onClick={() => handleDelete(quiz._id)}>Delete</button>
