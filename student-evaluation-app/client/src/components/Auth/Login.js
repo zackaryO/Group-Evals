@@ -42,6 +42,7 @@ const Login = ({ setUser }) => {
   return (
     <div className="login-container">
       <h2>Login</h2>
+      <p>Note: this site is using a free server, if server has been in active it could take 60+ seconds to login.</p>
       <form onSubmit={handleSubmit}>
         <label>Username:</label>
         <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required />
