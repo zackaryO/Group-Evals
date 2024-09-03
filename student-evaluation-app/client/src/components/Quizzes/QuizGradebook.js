@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import URL from '../../backEndURL';
 import './QuizGradebook.css'; // Import the CSS
@@ -71,6 +72,11 @@ const QuizGradebook = ({ user }) => {
     <div className="quiz-gradebook-container">
       <h2>Quiz Gradebook</h2>
       {message && <p>{message}</p>}
+      {user.role === 'instructor' && (
+        <Link to="/missed-questions" className="missed-questions-link">
+          View All Missed Questions
+        </Link>
+      )}
       {grades.length > 0 ? (
         <div className="student-grades">
           {Object.keys(groupedGrades).map((studentId) => {
@@ -83,7 +89,7 @@ const QuizGradebook = ({ user }) => {
                   {groupedGrades[studentId].quizzes.map((quiz) => (
                     <div key={quiz._id} className="quiz-item">
                       <span onClick={() => handleQuizSelect(quiz._id)}>
-                          {quiz.quiz?.title || "Quiz Title Missing"}: {quiz.score?.toFixed(2)}%, <strong>Click to see missed questions.</strong>
+                        {quiz.quiz?.title || "Quiz Title Missing"}: {quiz.score?.toFixed(2)}%, <strong>Click to see missed questions.</strong>
                       </span>
                       {user.role === 'instructor' && (
                         <button onClick={() => handleDelete(quiz._id)}>Delete</button>

@@ -1,0 +1,57 @@
+/* MissedQuestions.css */
+
+.missed-questions-container {
+  width: 100%;
+  margin: auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.missed-questions-container h2 {
+  text-align: center;
+  color: #333;
+}
+
+.missed-questions-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.question-item {
+  margin-bottom: 20px;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+}
+
+.question-item p {
+  margin: 10px 0;
+  color: #333;
+}
+
+.incorrect-answers-list {
+  list-style-type: disc;
+  padding-left: 20px;
+}
+
+.incorrect-answer-item {
+  margin: 5px 0;
+  color: #e74c3c;
+}
+
+.missed-questions-link {
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  color: #007bff;
+  text-decoration: none;
+  padding: 10px;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+}
+
+.missed-questions-link:hover {
+  background-color: #e0e0e0;
+}

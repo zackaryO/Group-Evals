@@ -1,5 +1,4 @@
 // student-evaluation-app/client/src/App.js
-
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
@@ -12,10 +11,11 @@ import DefineAreas from './components/Instructor/DefineAreas';
 import ManageStudents from './components/Instructor/ManageStudents';
 import CreateQuiz from './components/Quizzes/CreateQuiz';
 import ManageQuizzes from './components/Quizzes/ManageQuizzes';
-import ManageQuestions from './components/Quizzes/ManageQuestions'; 
+import ManageQuestions from './components/Quizzes/ManageQuestions';
 import TakeQuiz from './components/Quizzes/TakeQuiz';
-import QuizGradebook from './components/Quizzes/QuizGradebook'; 
-import EvalGradebook from './components/Evaluation/Gradebook'; // Import EvalGradebook component (same as original Gradebook)
+import QuizGradebook from './components/Quizzes/QuizGradebook';
+import EvalGradebook from './components/Evaluation/Gradebook';
+import MissedQuestions from './components/Quizzes/MissedQuestions'; // Import MissedQuestions component
 import PrivateRoute from './components/Auth/PrivateRoute';
 import InstructorRoute from './components/Auth/InstructorRoute';
 
@@ -50,7 +50,8 @@ const App = () => {
         <Route path="/manage-questions/:quizId" element={<InstructorRoute user={user}><ManageQuestions /></InstructorRoute>} />
         <Route path="/take-quiz" element={<PrivateRoute user={user} role="student"><TakeQuiz user={user} /></PrivateRoute>} />
         <Route path="/quiz-gradebook" element={<PrivateRoute user={user}><QuizGradebook user={user} /></PrivateRoute>} />
-        <Route path="/eval-gradebook" element={<PrivateRoute user={user}><EvalGradebook user={user} /></PrivateRoute>} /> {/* Retained Gradebook as EvalGradebook */}
+        <Route path="/eval-gradebook" element={<PrivateRoute user={user}><EvalGradebook user={user} /></PrivateRoute>} />
+        <Route path="/missed-questions" element={<InstructorRoute user={user}><MissedQuestions /></InstructorRoute>} /> {/* Route for MissedQuestions */}
       </Routes>
     </Router>
   );
