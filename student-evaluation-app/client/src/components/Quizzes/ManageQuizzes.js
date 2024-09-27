@@ -1,3 +1,4 @@
+// student-evaluation-app\client\src\components\Quizzes\ManageQuizzes.js
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';

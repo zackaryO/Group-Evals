@@ -1,3 +1,4 @@
+// student-evaluation-app\client\src\components\Home.js
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './Home.css'; // Ensure you have this CSS file for styling
@@ -17,6 +18,13 @@ const Home = ({ user }) => {
             <Link to="/eval-gradebook" className="home-button">
               Eval Gradebook
             </Link>
+            {user && user.role === 'instructor' && (
+              <>
+                <Link to="/define-areas" className="home-button">
+                  Edit Evaluation
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
