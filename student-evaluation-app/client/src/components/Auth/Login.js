@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom';
 import './Login.css';  // Import the CSS file
 import URL from '../../backEndURL';
 
-
 const Login = ({ setUser }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -23,10 +22,17 @@ const Login = ({ setUser }) => {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('userId', res.data.user._id);
         localStorage.setItem('role', res.data.user.role);
+        // Store firstName and lastName
+        localStorage.setItem('firstName', res.data.user.firstName);
+        localStorage.setItem('lastName', res.data.user.lastName);
+
         setUser({
           _id: res.data.user._id,
           username: res.data.user.username,
-          role: res.data.user.role
+          role: res.data.user.role,
+          // Set firstName and lastName in user state
+          firstName: res.data.user.firstName,
+          lastName: res.data.user.lastName,
         });
         setError('');
         navigate('/');  // Redirect to evaluation page after login
@@ -42,7 +48,7 @@ const Login = ({ setUser }) => {
   return (
     <div className="login-container">
       <h2>Login</h2>
-      <p>Note: this site is using a free server, if server has been in active it could take 60+ seconds to login.</p>
+      <p>Note: this site is using a free server, if server has been inactive it could take 60+ seconds to login.</p>
       <form onSubmit={handleSubmit}>
         <label>Username:</label>
         <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} required />

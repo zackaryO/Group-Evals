@@ -1,4 +1,4 @@
-// student-evaluation-app\server\controllers\areaController.js
+// student-evaluation-app/server/controllers/areaController.js
 const Area = require('../models/EvaluationArea');
 
 const getAreas = async (req, res) => {

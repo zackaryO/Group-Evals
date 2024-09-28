@@ -1,4 +1,4 @@
-// student-evaluation-app\server\server.js
+// student-evaluation-app/server/server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -12,7 +12,9 @@ const userRoutes = require('./routes/users');
 const areaRoutes = require('./routes/areas');
 const quizRoutes = require('./routes/quizzes');
 const gradeRoutes = require('./routes/grades');
-
+const cohortRoutes = require('./routes/cohorts'); // New
+const courseRoutes = require('./routes/courses'); // New
+const assignmentRoutes = require('./routes/assignments'); // New
 
 const app = express();
 
@@ -20,7 +22,7 @@ const app = express();
 const allowedOrigins = [
   'https://group-evals.vercel.app',
   'https://group-evals-dbg0fumxc-zacks-projects-18c38742.vercel.app',
-  'http://localhost:3000'
+  'http://localhost:3000',
 ];
 
 const corsOptions = {
@@ -44,6 +46,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/areas', areaRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/grades', gradeRoutes);
+app.use('/api/cohorts', cohortRoutes); // New
+app.use('/api/courses', courseRoutes); // New
+app.use('/api/assignments', assignmentRoutes); // New
 
 const mongoURI = process.env.MONGODB_URI;
 

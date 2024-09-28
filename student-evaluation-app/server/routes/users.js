@@ -1,4 +1,4 @@
-// student-evaluation-app\server\routes\users.js
+// student-evaluation-app/server/routes/users.js
 const express = require('express');
 const bcrypt = require('bcrypt');
 const router = express.Router();
@@ -7,7 +7,7 @@ const User = require('../models/User');
 // Route to get all users
 router.get('/', async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find().populate('cohort', 'name');
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 // Route to get only student users
 router.get('/students', async (req, res) => {
   try {
-    const students = await User.find({ role: 'student' });
+    const students = await User.find({ role: 'student' }).populate('cohort', 'name');
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -26,7 +26,7 @@ router.get('/students', async (req, res) => {
 
 // Route to add a new user
 router.post('/add', async (req, res) => {
-  const { username, password, role, teamName, firstName, lastName, subject } = req.body;
+  const { username, password, role, teamName, firstName, lastName, subject, cohortId } = req.body;
   try {
     const existingUser = await User.findOne({ username });
     if (existingUser) {
@@ -34,7 +34,16 @@ router.post('/add', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, password: hashedPassword, role, teamName, firstName, lastName, subject });
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+      role,
+      teamName,
+      firstName,
+      lastName,
+      subject,
+      cohort: cohortId,
+    });
     await newUser.save();
     res.status(201).json(newUser);
   } catch (err) {
@@ -56,6 +65,21 @@ router.delete('/:userId', async (req, res) => {
   } catch (err) {
     console.error('Error deleting user:', err);
     res.status(500).json({ message: err.message });
+  }
+});
+
+// Assign cohort to a user
+router.put('/:id/assign-cohort', async (req, res) => {
+  const { cohortId } = req.body;
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user || user.role !== 'student')
+      return res.status(404).json({ message: 'Student not found' });
+    user.cohort = cohortId;
+    await user.save();
+    res.json({ message: 'Cohort assigned to student successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

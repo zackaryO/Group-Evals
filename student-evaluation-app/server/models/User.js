@@ -1,4 +1,4 @@
-// student-evaluation-app\server\models\User.js
+// server/models/User.js
 const mongoose = require('mongoose');
 
 const UserSchema = new mongoose.Schema({
@@ -8,7 +8,9 @@ const UserSchema = new mongoose.Schema({
   teamName: { type: String },
   firstName: { type: String },
   lastName: { type: String },
-  subject: { type: String }
+  subject: { type: String },
+  cohort: { type: mongoose.Schema.Types.ObjectId, ref: 'Cohort', default: null },
+  courses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
 });
 
 module.exports = mongoose.model('User', UserSchema);

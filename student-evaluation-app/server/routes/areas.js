@@ -1,4 +1,4 @@
-// student-evaluation-app\server\routes\areas.js
+// student-evaluation-app/server/routes/areas.js
 const express = require('express');
 const router = express.Router();
 const { getAreas, setAreas, updateAreas } = require('../controllers/areaController');

@@ -1,4 +1,4 @@
-// student-evaluation-app\server\models\Evaluation.js
+// server/models/Evaluation.js
 const mongoose = require('mongoose');
 
 const EvaluationSchema = new mongoose.Schema({
@@ -9,10 +9,12 @@ const EvaluationSchema = new mongoose.Schema({
     area2: { type: Number, required: true },
     area3: { type: Number, required: true },
     area4: { type: Number, required: true },
-    extraCredit: { type: Number, required: true }
+    extraCredit: { type: Number, required: true },
   },
   comments: { type: String },
-  type: { type: String, required: true }
+  type: { type: String, required: true },
+  cohort: { type: mongoose.Schema.Types.ObjectId, ref: 'Cohort' },
+  course: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
 });
 
 module.exports = mongoose.model('Evaluation', EvaluationSchema);

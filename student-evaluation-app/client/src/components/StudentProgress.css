@@ -1,0 +1,29 @@
+/* client/src/components/StudentProgress.css */
+
+.progress-container {
+  padding: 20px;
+}
+
+.progress-bar {
+  position: relative;
+  height: 25px;
+  background-color: #e0e0df;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #76c7c0;
+  border-radius: 5px;
+  transition: width 0.5s ease-in-out;
+}
+
+.progress-bar-text {
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  top: 0;
+  color: #fff;
+  font-weight: bold;
+}

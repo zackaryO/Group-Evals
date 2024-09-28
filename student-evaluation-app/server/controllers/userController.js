@@ -1,18 +1,11 @@
-// student-evaluation-app\server\controllers\userController.js
+// student-evaluation-app/server/controllers/userController.js
 const bcrypt = require('bcrypt');
 const User = require('../models/User');
+const Cohort = require('../models/Cohort');
 
-const getUsers = async (req, res) => {
-  try {
-    const users = await User.find();
-    res.status(200).json(users);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
+// Add a new user
 const addUser = async (req, res) => {
-  const { username, password, role, teamName, firstName, lastName, subject } = req.body;
+  const { username, password, role, teamName, firstName, lastName, subject, cohortId } = req.body;
   try {
     const existingUser = await User.findOne({ username });
     if (existingUser) {
@@ -20,17 +13,39 @@ const addUser = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, password: hashedPassword, role, teamName, firstName, lastName, subject });
+    const newUserData = {
+      username,
+      password: hashedPassword,
+      role,
+      teamName,
+      firstName,
+      lastName,
+      subject,
+    };
+
+    // Assign cohort if cohortId is provided
+    if (cohortId) {
+      newUserData.cohort = cohortId;
+    }
+
+    const newUser = new User(newUserData);
     await newUser.save();
+
+    // Add user to cohort's student list if role is 'student' and cohortId is provided
+    if (role === 'student' && cohortId) {
+      await Cohort.findByIdAndUpdate(cohortId, { $push: { students: newUser._id } });
+    }
+
     res.status(201).json(newUser);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
+// Update a user
 const updateUser = async (req, res) => {
   const { userId } = req.params;
-  const { username, password, role, teamName, firstName, lastName, subject } = req.body;
+  const { username, password, role, teamName, firstName, lastName, subject, cohortId } = req.body;
   try {
     const user = await User.findById(userId);
     if (!user) {
@@ -47,21 +62,24 @@ const updateUser = async (req, res) => {
     user.lastName = lastName || user.lastName;
     user.subject = subject || user.subject;
 
+    // Update cohort association if provided
+    if (cohortId) {
+      // Remove user from previous cohort if applicable
+      if (user.cohort && user.cohort.toString() !== cohortId) {
+        await Cohort.findByIdAndUpdate(user.cohort, { $pull: { students: user._id } });
+      }
+      user.cohort = cohortId;
+      await Cohort.findByIdAndUpdate(cohortId, { $addToSet: { students: user._id } });
+    } else if (user.role === 'student') {
+      // If cohortId is not provided and user is a student, remove from existing cohort
+      if (user.cohort) {
+        await Cohort.findByIdAndUpdate(user.cohort, { $pull: { students: user._id } });
+        user.cohort = null;
+      }
+    }
+
     const updatedUser = await user.save();
     res.status(200).json(updatedUser);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const removeUser = async (req, res) => {
-  const { userId } = req.params;
-  try {
-    const user = await User.findByIdAndDelete(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.status(200).json({ message: 'User deleted successfully' });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }

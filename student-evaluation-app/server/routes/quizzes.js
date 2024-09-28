@@ -1,15 +1,33 @@
-// student-evaluation-app\server\routes\quizzes.js
+// student-evaluation-app/server/routes/quizzes.js
 const express = require('express');
 const router = express.Router();
 const Quiz = require('../models/Quiz');
 const QuizQuestion = require('../models/QuizQuestion');
-const QuizSubmission = require('../models/QuizSubmission'); // Import the QuizSubmission model
+const QuizSubmission = require('../models/QuizSubmission');
 
 // Create a new quiz
 router.post('/create', async (req, res) => {
-  const { title, instructorId, allowMultipleSubmissions } = req.body;
+  const {
+    title,
+    instructorId,
+    allowMultipleSubmissions,
+    cohortId,
+    courseId,
+    dueDate,
+    allowLateSubmissions,
+    latePenalty,
+  } = req.body;
   try {
-    const newQuiz = new Quiz({ title, instructor: instructorId, allowMultipleSubmissions });
+    const newQuiz = new Quiz({
+      title,
+      instructor: instructorId,
+      allowMultipleSubmissions,
+      cohort: cohortId,
+      course: courseId,
+      dueDate,
+      allowLateSubmissions,
+      latePenalty,
+    });
     await newQuiz.save();
     res.status(201).json(newQuiz);
   } catch (error) {
@@ -17,17 +35,27 @@ router.post('/create', async (req, res) => {
   }
 });
 
-router.get('/published', async (req, res) => {
+// Get all quizzes
+router.get('/', async (req, res) => {
   try {
-    const quizzes = await Quiz.find({ isPublished: true }).populate('questions');
-    console.log('Published quizzes:', quizzes); // Log here
+    const quizzes = await Quiz.find().populate('questions');
     res.json(quizzes);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
+// Get published quizzes
+router.get('/published', async (req, res) => {
+  try {
+    const quizzes = await Quiz.find({ isPublished: true }).populate('questions');
+    res.json(quizzes);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
 
+// Publish or unpublish a quiz
 router.put('/:quizId/publish', async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId);
@@ -44,11 +72,18 @@ router.put('/:quizId/publish', async (req, res) => {
 
 // Add a question to a quiz
 router.post('/:quizId/add-question', async (req, res) => {
-  const { questionText, options, correctAnswer } = req.body;
+  const { questionText, options, correctAnswer, image, questionType } = req.body;
   try {
-    const newQuestion = new QuizQuestion({ questionText, options, correctAnswer, quiz: req.params.quizId });
+    const newQuestion = new QuizQuestion({
+      questionText,
+      options,
+      correctAnswer,
+      image,
+      questionType,
+      quiz: req.params.quizId,
+    });
     await newQuestion.save();
-    
+
     const quiz = await Quiz.findById(req.params.quizId);
     quiz.questions.push(newQuestion._id);
     await quiz.save();
@@ -62,10 +97,10 @@ router.post('/:quizId/add-question', async (req, res) => {
 // Update a specific question in a quiz
 router.put('/:quizId/question/:questionId', async (req, res) => {
   try {
-    const { questionText, options, correctAnswer } = req.body;
+    const { questionText, options, correctAnswer, image, questionType } = req.body;
     const question = await QuizQuestion.findByIdAndUpdate(
       req.params.questionId,
-      { questionText, options, correctAnswer },
+      { questionText, options, correctAnswer, image, questionType },
       { new: true }
     );
     if (!question) {
@@ -101,21 +136,17 @@ router.delete('/:quizId', async (req, res) => {
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz not found' });
     }
-    // Optionally, you can delete related quiz submissions or questions here if needed
+    // Delete related quiz submissions and questions
     await QuizQuestion.deleteMany({ quiz: req.params.quizId });
     await QuizSubmission.deleteMany({ quiz: req.params.quizId });
-    
+
     res.json({ message: 'Quiz deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-
-
-// Get all published quizzes
-// Get a specific quiz by quizId
-// Get a quiz by ID and populate questions
+// Get a specific quiz by ID
 router.get('/:quizId', async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId).populate('questions');
@@ -128,24 +159,19 @@ router.get('/:quizId', async (req, res) => {
   }
 });
 
-
-// Get all quizzes (or handle specific logic if needed)
-router.get('/', async (req, res) => {
-  try {
-    const quizzes = await Quiz.find().populate('questions');
-    res.json(quizzes);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-
-
 // Submit quiz answers and calculate the score
 router.post('/:quizId/submit', async (req, res) => {
   const { answers, studentId } = req.body;
   try {
     const quiz = await Quiz.findById(req.params.quizId).populate('questions');
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+
+    // Check if the quiz is locked
+    const currentDate = new Date();
+    const dueDate = new Date(quiz.dueDate);
+    if (currentDate > dueDate && !quiz.allowLateSubmissions) {
+      return res.status(400).json({ message: 'This quiz is closed for submissions.' });
+    }
 
     if (!quiz.allowMultipleSubmissions) {
       const existingSubmission = await QuizSubmission.findOne({ student: studentId, quiz: quiz._id });
@@ -159,12 +185,15 @@ router.post('/:quizId/submit', async (req, res) => {
 
     quiz.questions.forEach((question) => {
       const selectedAnswer = answers[question._id];
-      const isCorrect = selectedAnswer === question.correctAnswer;
-      if (isCorrect) correctAnswers++;
+      let isCorrect = false;
+      if (question.questionType === 'multiple-choice') {
+        isCorrect = selectedAnswer === question.correctAnswer;
+        if (isCorrect) correctAnswers++;
+      }
       answerArray.push({
         question: question._id,
         selectedAnswer,
-        isCorrect
+        isCorrect,
       });
     });
 
@@ -174,7 +203,7 @@ router.post('/:quizId/submit', async (req, res) => {
       student: studentId,
       quiz: quiz._id,
       score: score,
-      answers: answerArray
+      answers: answerArray,
     });
 
     await quizSubmission.save();
@@ -186,12 +215,12 @@ router.post('/:quizId/submit', async (req, res) => {
   }
 });
 
-
+// Toggle multiple submissions
 router.put('/:quizId/toggle-multiple-submissions', async (req, res) => {
   try {
     const { quizId } = req.params;
     const { allowMultipleSubmissions } = req.body;
-    
+
     const quiz = await Quiz.findByIdAndUpdate(
       quizId,
       { allowMultipleSubmissions },
