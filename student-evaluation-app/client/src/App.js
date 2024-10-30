@@ -31,6 +31,7 @@ import StudentDashboard from './components/Student/StudentDashboard';
 import CreateCohort from './components/Cohorts/CreateCohort';
 import ManageCohorts from './components/Cohorts/ManageCohorts';
 import AssignStudents from './components/Cohorts/AssignStudents';
+import ManageUsers from './components/Instructor/ManageUsers';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -269,6 +270,14 @@ const App = () => {
             <PrivateRoute user={user}>
               <CourseGradebook user={user} />
             </PrivateRoute>
+          }
+        />
+        <Route
+          path="/manage-users"
+          element={
+            <InstructorRoute user={user}>
+              <ManageUsers user={user} />
+            </InstructorRoute>
           }
         />
       </Routes>

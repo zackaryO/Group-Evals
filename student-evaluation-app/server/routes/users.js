@@ -3,9 +3,10 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const router = express.Router();
 const User = require('../models/User');
+const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
-// Route to get all users
-router.get('/', async (req, res) => {
+// Route to get all users (accessible by admin or instructor)
+router.get('/', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
   try {
     const users = await User.find().populate('cohort', 'name');
     res.json(users);
@@ -14,8 +15,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Route to get only student users
-router.get('/students', async (req, res) => {
+// Route to get only student users (accessible by admin or instructor)
+router.get('/students', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
   try {
     const students = await User.find({ role: 'student' }).populate('cohort', 'name');
     res.json(students);
@@ -24,8 +25,8 @@ router.get('/students', async (req, res) => {
   }
 });
 
-// Route to add a new user
-router.post('/add', async (req, res) => {
+// Route to add a new user (accessible by admin or instructor)
+router.post('/add', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
   const { username, password, role, teamName, firstName, lastName, subject, cohortId } = req.body;
   try {
     const existingUser = await User.findOne({ username });
@@ -51,8 +52,8 @@ router.post('/add', async (req, res) => {
   }
 });
 
-// Route to remove a user
-router.delete('/:userId', async (req, res) => {
+// Route to remove a user (accessible by admin only)
+router.delete('/:userId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
   try {
     console.log(`Attempting to delete user with ID: ${req.params.userId}`);
     const user = await User.findById(req.params.userId);
@@ -68,13 +69,14 @@ router.delete('/:userId', async (req, res) => {
   }
 });
 
-// Assign cohort to a user
-router.put('/:id/assign-cohort', async (req, res) => {
+// Assign cohort to a user (accessible by admin or instructor)
+router.put('/:id/assign-cohort', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
   const { cohortId } = req.body;
   try {
     const user = await User.findById(req.params.id);
-    if (!user || user.role !== 'student')
+    if (!user || user.role !== 'student') {
       return res.status(404).json({ message: 'Student not found' });
+    }
     user.cohort = cohortId;
     await user.save();
     res.json({ message: 'Cohort assigned to student successfully' });
