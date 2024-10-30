@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // Hard-coded secret key for JWT puy in .env gitignore using a proper key
-const JWT_SECRET = 'my_super_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_key';
 
 const register = async (req, res) => {
   const { username, password, role, teamName, firstName, lastName, subject } = req.body;

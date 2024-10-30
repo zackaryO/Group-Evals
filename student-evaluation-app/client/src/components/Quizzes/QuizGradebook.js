@@ -12,22 +12,32 @@ const QuizGradebook = ({ user }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchGrades = async () => {
-      try {
-        let response;
-        if (user.role === 'instructor') {
-          response = await axios.get(`${URL}/api/grades/`);
-        } else {
-          response = await axios.get(`${URL}/api/grades/${user._id}`);
-        }
-        console.log('Grades fetched: ', response.data);
-        setGrades(response.data);
-      } catch (error) {
-        setMessage('Error fetching grades: ' + error.message);
-      } finally {
-        setLoading(false);
-      }
+const fetchGrades = async () => {
+  try {
+    const token = localStorage.getItem('token');
+    const config = {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
     };
+    let response;
+    if (user.role === 'instructor') {
+      response = await axios.get(`${URL}/api/grades/`, config);
+    } else {
+      response = await axios.get(`${URL}/api/grades/${user._id}`, config);
+    }
+
+    console.log('Grades fetched: ', response.data); // Log the data received from backend
+    setGrades(response.data);
+  } catch (error) {
+    setMessage('Error fetching grades: ' + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
     fetchGrades();
   }, [user]);
 

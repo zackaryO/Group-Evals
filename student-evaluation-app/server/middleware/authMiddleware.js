@@ -3,19 +3,33 @@
 const jwt = require('jsonwebtoken');
 
 const authenticateToken = (req, res, next) => {
-  const token = req.headers['authorization'];
-  if (!token) return res.sendStatus(401); // Unauthorized
+  const authHeader = req.headers['authorization'];
+  console.log('Authorization Header:', authHeader); // Log to see the authorization header
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403); // Forbidden
-    req.user = user;
+  // Extract the token from the "Bearer <token>" format
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    console.log('Token missing');
+    return res.sendStatus(401); // Unauthorized
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      console.log('JWT verification failed:', err.message); // Log to see why verification failed
+      return res.sendStatus(403); // Forbidden
+    }
+    console.log('Decoded User:', decoded); // Log decoded information from JWT
+    req.user = decoded;
     next();
   });
 };
 
 const authorizeRoles = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    console.log('User Role:', req.user.role); // Add a log to check the role
+    if (!req.user || !roles.includes(req.user.role)) {
+      console.log('User not authorized'); // Log to indicate unauthorized access
       return res.sendStatus(403); // Forbidden
     }
     next();

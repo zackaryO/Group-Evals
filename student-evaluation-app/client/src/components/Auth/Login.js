@@ -15,7 +15,7 @@ const Login = ({ setUser }) => {
     e.preventDefault();
     try {
       const res = await axios.post(`${URL}/api/auth/login`, { username, password });
-      // const res = await axios.post('http://localhost:5000/api/auth/login', { username, password });
+
       console.log('Login response:', res.data); // Logging the response data
 
       if (res.data && res.data.token && res.data.user) {
