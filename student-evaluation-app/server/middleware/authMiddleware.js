@@ -1,5 +1,3 @@
-// server/middleware/authMiddleware.js
-
 const jwt = require('jsonwebtoken');
 
 const authenticateToken = (req, res, next) => {
@@ -14,6 +12,8 @@ const authenticateToken = (req, res, next) => {
     return res.sendStatus(401); // Unauthorized
   }
 
+  console.log('JWT_SECRET:', process.env.JWT_SECRET); // Log the secret to make sure it's loaded
+  
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
       console.log('JWT verification failed:', err.message); // Log to see why verification failed
