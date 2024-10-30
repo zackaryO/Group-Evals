@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import URL from '../backEndURL';
 import './StudentProgress.css';
 
 const StudentProgress = ({ user }) => {
@@ -11,9 +12,9 @@ const StudentProgress = ({ user }) => {
     const fetchProgress = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await axios.get(`/api/grades/student/${user._id}/progress`, {
+        const response = await axios.get(`${URL}/api/grades/student/${user._id}/progress`, {
           headers: {
-            Authorization: token,
+            Authorization: `Bearer ${token}`,
           },
         });
         setProgressData(response.data);
@@ -27,6 +28,11 @@ const StudentProgress = ({ user }) => {
 
   if (!progressData) {
     return <div>Loading...</div>;
+  }
+
+  // Check if coursesProgress exists and is an array before mapping
+  if (!progressData.coursesProgress || !Array.isArray(progressData.coursesProgress)) {
+    return <div>No course progress data available.</div>;
   }
 
   return (
