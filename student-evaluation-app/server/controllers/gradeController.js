@@ -13,6 +13,11 @@ const getGrades = async (req, res) => {
     if (studentId) query.student = studentId;
     if (quizId) query.quiz = quizId;
 
+    // Ensure that if a student is requesting grades, they can only see their own
+    if (req.user.role === 'student') {
+      query.student = req.user.id;
+    }
+
     console.log('Grades Query:', query); // Log to see the query being used
     const grades = await QuizSubmission.find(query)
       .populate('student', 'username firstName lastName')
@@ -84,6 +89,10 @@ const getStudentProgress = async (req, res) => {
     // Fetch all quiz submissions for the student
     const grades = await QuizSubmission.find({ student: studentId })
       .populate('quiz', 'title');
+
+    if (!grades || grades.length === 0) {
+      return res.status(404).json({ message: 'No grades found for this student' });
+    }
 
     let totalScore = 0;
     let totalQuizzes = grades.length;
