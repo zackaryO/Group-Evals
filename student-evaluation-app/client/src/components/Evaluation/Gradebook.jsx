@@ -76,26 +76,24 @@ const Gradebook = ({ user }) => {
   };
 
   const calculateFinalScore = (evaluations) => {
-    const studentEvaluations = evaluations.filter(evaluation => evaluation.evaluator.role === 'student');
-    const instructorEvaluations = evaluations.filter(evaluation => evaluation.evaluator.role === 'instructor');
+    if (evaluations.length === 0) {
+      return 0;
+    }
+    let totalScore = 0;
 
-    const totalStudentScore = studentEvaluations.reduce((total, evaluation) => {
-      const score = evaluation.scores.area1 + evaluation.scores.area2 + evaluation.scores.area3 + evaluation.scores.area4 + evaluation.scores.extraCredit;
-      return total + score;
-    }, 0);
+    evaluations.forEach((evaluation) => {
+      const score =
+        evaluation.scores.area1 +
+        evaluation.scores.area2 +
+        evaluation.scores.area3 +
+        evaluation.scores.area4 +
+        evaluation.scores.extraCredit;
+      totalScore += score;
+    });
 
-    const totalInstructorScore = instructorEvaluations.reduce((total, evaluation) => {
-      const score = evaluation.scores.area1 + evaluation.scores.area2 + evaluation.scores.area3 + evaluation.scores.area4 + evaluation.scores.extraCredit;
-      return total + score;
-    }, 0);
-
-    const studentCount = studentEvaluations.length;
-    const instructorCount = instructorEvaluations.length;
-
-    const studentFinalScore = studentCount > 0 ? (totalStudentScore / (studentCount * 25)) * 80 : 0;
-    const instructorFinalScore = instructorCount > 0 ? (totalInstructorScore / (instructorCount * 25)) * 20 : 0;
-
-    return studentFinalScore + instructorFinalScore;
+    // Calculate the overall score as a percentage out of 25 points, with extra credit included
+    const possiblePoints = evaluations.length * 25;
+    return (totalScore / possiblePoints) * 100;
   };
 
   const deleteEvaluation = (evaluationId) => {
@@ -161,7 +159,10 @@ const Gradebook = ({ user }) => {
                           <div className="evaluation-cards">
                             {studentGrades.map((evaluation, evalIndex) => (
                               <div key={evalIndex} className="evaluation-card">
-                                <strong>Evaluator:</strong> {evaluation.evaluator.username} ({evaluation.evaluator.role})<br />
+                                <strong>Evaluator:</strong> {evaluation.evaluator.firstName} {evaluation.evaluator.lastName} ({evaluation.evaluator.role})<br />
+                                <strong>Score:</strong> {(
+                                  ((evaluation.scores.area1 + evaluation.scores.area2 + evaluation.scores.area3 + evaluation.scores.area4 + evaluation.scores.extraCredit) / 25) * 100
+                                ).toFixed(2)}%<br />
                                 <strong>Scores:</strong>
                                 <div className="scores">
                                   {areas.map((area, index) => (
@@ -169,7 +170,7 @@ const Gradebook = ({ user }) => {
                                       {area.name}: <StarDisplay value={evaluation.scores[area.key]} />
                                     </div>
                                   ))}
-                                  <div>Extra Credit: <StarDisplay value={evaluation.scores.extraCredit} /></div>
+                                  <div>Did you learn something new?: <StarDisplay value={evaluation.scores.extraCredit} /></div>
                                 </div>
                                 <strong>Comments:</strong> <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(evaluation.comments.replace(/\n/g, '<br>')) }} />
                               </div>
@@ -211,7 +212,10 @@ const Gradebook = ({ user }) => {
                               <div className="evaluation-cards">
                                 {evaluations.map((evaluation, evalIndex) => (
                                   <div key={evalIndex} className="evaluation-card">
-                                    <strong>Evaluator:</strong> {evaluation.evaluator.username} ({evaluation.evaluator.role})<br />
+                                    <strong>Evaluator:</strong> {evaluation.evaluator.firstName} {evaluation.evaluator.lastName} ({evaluation.evaluator.role})<br />
+                                    <strong>Score:</strong> {(
+                                      ((evaluation.scores.area1 + evaluation.scores.area2 + evaluation.scores.area3 + evaluation.scores.area4 + evaluation.scores.extraCredit) / 25) * 100
+                                    ).toFixed(2)}%<br />
                                     <strong>Scores:</strong>
                                     <div className="scores">
                                       {areas.map((area, index) => (
@@ -219,7 +223,7 @@ const Gradebook = ({ user }) => {
                                           {area.name}: <StarDisplay value={evaluation.scores[area.key]} />
                                         </div>
                                       ))}
-                                      <div>Extra Credit: <StarDisplay value={evaluation.scores.extraCredit} /></div>
+                                      <div>Did you learn something new?: <StarDisplay value={evaluation.scores.extraCredit} /></div>
                                     </div>
                                     <strong>Comments:</strong> <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(evaluation.comments.replace(/\n/g, '<br>')) }} />
                                     {user.role === 'instructor' && (
