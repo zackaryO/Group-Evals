@@ -21,12 +21,14 @@ const MissedQuestions = () => {
           grade.answers
             .filter(answer => !answer.isCorrect)
             .forEach((answer) => {
-              const questionText = answer.question?.questionText;
+              const questionText = answer.question?.questionText || "Question text missing";
+              const correctAnswer = answer.question?.correctAnswer || "Correct answer missing";
+
               if (questionText) {
                 if (!allMissedQuestions.has(questionText)) {
                   allMissedQuestions.set(questionText, {
-                    questionText: questionText,
-                    correctAnswer: answer.question?.correctAnswer || "Correct answer missing",
+                    questionText,
+                    correctAnswer,
                     incorrectAnswers: new Map(),
                     missedCount: 0,
                   });

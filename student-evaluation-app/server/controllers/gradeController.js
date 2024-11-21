@@ -19,9 +19,16 @@ const getGrades = async (req, res) => {
     }
 
     console.log('Grades Query:', query); // Log to see the query being used
+
+    // Updated: Populate the 'question' field in each answer with its details
     const grades = await QuizSubmission.find(query)
       .populate('student', 'username firstName lastName')
-      .populate('quiz', 'title');
+      .populate('quiz', 'title')
+      .populate({
+        path: 'answers.question',
+        model: 'QuizQuestion', // Ensure this matches the model name
+        select: 'questionText correctAnswer', // Include fields you need
+      });
 
     console.log('Grades Fetched:', grades); // Log the grades fetched from the database
     res.status(200).json(grades);

@@ -119,9 +119,9 @@ const QuizGradebook = ({ user }) => {
                             .filter(answer => !answer.isCorrect)
                             .map((answer, index) => (
                               <div key={index} className="answer-detail">
-                                <p><strong>Question:</strong> {answer?.question?.questionText || "Question text missing"}</p>
+                                <p><strong>Question:</strong> {answer.question?.questionText || "Question text missing"}</p>
                                 <p><strong>Your Answer:</strong> {answer.selectedAnswer}</p>
-                                <p><strong>Correct Answer:</strong> {answer?.question?.correctAnswer || "Correct answer missing"}</p>
+                                <p><strong>Correct Answer:</strong> {answer.question?.correctAnswer || "Correct answer missing"}</p>
                               </div>
                             ))}
                           {quiz.answers.filter(answer => !answer.isCorrect).length === 0 && (
