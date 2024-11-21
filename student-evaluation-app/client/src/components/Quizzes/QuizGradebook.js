@@ -10,9 +10,37 @@ const QuizGradebook = ({ user }) => {
   const [message, setMessage] = useState('');
   const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [deletedQuizId, setDeletedQuizId] = useState(null);
 
-useEffect(() => {
-  const fetchGrades = async () => {
+  useEffect(() => {
+    const fetchGrades = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const config = {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        };
+        let response;
+        if (user.role === 'instructor') {
+          response = await axios.get(`${URL}/api/grades/`, config);
+        } else {
+          response = await axios.get(`${URL}/api/grades/${user._id}`, config);
+        }
+
+        console.log('Grades fetched: ', response.data); // Log the data received from backend
+        setGrades(response.data);
+      } catch (error) {
+        setMessage('Error fetching grades: ' + error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGrades();
+  }, [user]);
+
+  const handleDelete = async (submissionId) => {
     try {
       const token = localStorage.getItem('token');
       const config = {
@@ -20,31 +48,11 @@ useEffect(() => {
           'Authorization': `Bearer ${token}`,
         },
       };
-      let response;
-      if (user.role === 'instructor') {
-        response = await axios.get(`${URL}/api/grades/`, config);
-      } else {
-        response = await axios.get(`${URL}/api/grades/${user._id}`, config);
-      }
-
-      console.log('Grades fetched: ', response.data); // Log the data received from backend
-      setGrades(response.data);
-    } catch (error) {
-      setMessage('Error fetching grades: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchGrades();
-}, [user]);
-
-
-  const handleDelete = async (submissionId) => {
-    try {
-      await axios.delete(`${URL}/api/grades/${submissionId}`);
+      await axios.delete(`${URL}/api/grades/${submissionId}`, config);
       setGrades((prevGrades) => prevGrades.filter((grade) => grade._id !== submissionId));
+      setDeletedQuizId(submissionId); // Set the deleted quiz ID to trigger feedback
       setMessage('Submission deleted successfully.');
+      setTimeout(() => setDeletedQuizId(null), 3000); // Clear feedback after 3 seconds
     } catch (error) {
       setMessage('Error deleting submission: ' + error.message);
     }
@@ -92,12 +100,12 @@ useEffect(() => {
           {Object.keys(groupedGrades).map((studentId) => {
             const studentData = groupedGrades[studentId].student;
             return (
-              <div key={studentId} className="student-grade">
+              <div key={studentId} className={`student-grade ${deletedQuizId === studentId ? 'fade-out' : ''}`}>
                 <h3>{studentData.firstName} {studentData.lastName}</h3>
                 <p>Username: {studentData.username}</p>
                 <div className="quiz-list">
                   {groupedGrades[studentId].quizzes.map((quiz) => (
-                    <div key={quiz._id} className="quiz-item">
+                    <div key={quiz._id} className={`quiz-item ${deletedQuizId === quiz._id ? 'deleted' : ''}`}>
                       <span onClick={() => handleQuizSelect(quiz._id)}>
                         {quiz.quiz?.title || "Quiz Title Missing"}: {quiz.score?.toFixed(2)}%, <strong>Click to see missed questions.</strong>
                       </span>

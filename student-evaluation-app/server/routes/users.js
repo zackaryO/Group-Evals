@@ -53,7 +53,7 @@ router.post('/add', authenticateToken, authorizeRoles('admin', 'instructor'), as
 });
 
 // Route to remove a user (accessible by admin only)
-router.delete('/:userId', authenticateToken, authorizeRoles('admin'), async (req, res) => {
+router.delete('/:userId', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
   try {
     console.log(`Attempting to delete user with ID: ${req.params.userId}`);
     const user = await User.findById(req.params.userId);
