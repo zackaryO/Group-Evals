@@ -64,31 +64,31 @@ const Navbar = ({ user }) => (
               <FontAwesomeIcon icon={faUserGraduate} /> Manage Users
             </Link>
           </li>
-          <li className="navbar-item">
+          {/* <li className="navbar-item">
             <Link to="/manage-cohorts" className="navbar-link">
               <FontAwesomeIcon icon={faUsers} /> Manage Cohorts
             </Link>
-          </li>
-          <li className="navbar-item">
+          </li> */}
+          {/* <li className="navbar-item">
             <Link to="/create-course" className="navbar-link">
               <FontAwesomeIcon icon={faChalkboardTeacher} /> Create Course
             </Link>
-          </li>
-          <li className="navbar-item">
+          </li> */}
+          {/* <li className="navbar-item">
             <Link to="/manage-courses" className="navbar-link">
               <FontAwesomeIcon icon={faTasks} /> Manage Courses
             </Link>
-          </li>
-          <li className="navbar-item">
+          </li> */}
+          {/* <li className="navbar-item">
             <Link to="/create-assignment" className="navbar-link">
               <FontAwesomeIcon icon={faClipboardList} /> Create Assignment
             </Link>
-          </li>
-          <li className="navbar-item">
+          </li> */}
+          {/* <li className="navbar-item">
             <Link to="/manage-assignments" className="navbar-link">
               <FontAwesomeIcon icon={faTasks} /> Manage Assignments
             </Link>
-          </li>
+          </li> */}
           <li className="navbar-item">
             <Link to="/create-quiz" className="navbar-link">
               <FontAwesomeIcon icon={faChalkboardTeacher} /> Create Quiz
