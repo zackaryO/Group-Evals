@@ -41,8 +41,8 @@ const Navbar = ({ user }) => (
       {user && user.role === 'student' && (
         <>
           <li className="navbar-item">
-            <Link to="/courses" className="navbar-link">
-              <FontAwesomeIcon icon={faFolderOpen} /> Courses
+            <Link to="/evaluation" className="navbar-link">
+              <FontAwesomeIcon icon={faFolderOpen} /> Evals
             </Link>
           </li>
           <li className="navbar-item">
