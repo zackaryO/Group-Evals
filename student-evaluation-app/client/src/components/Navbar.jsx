@@ -40,16 +40,11 @@ const Navbar = ({ user }) => (
       )}
       {user && user.role === 'student' && (
         <>
-          <li className="navbar-item">
-            <Link to="/evaluation" className="navbar-link">
-              <FontAwesomeIcon icon={faFolderOpen} /> Evals
-            </Link>
-          </li>
-          <li className="navbar-item">
+          {/* <li className="navbar-item">
             <Link to="/assignments" className="navbar-link">
               <FontAwesomeIcon icon={faClipboardList} /> Assignments
             </Link>
-          </li>
+          </li> */}
           <li className="navbar-item">
             <Link to="/take-quiz" className="navbar-link">
               <FontAwesomeIcon icon={faQuestionCircle} /> Take Quiz
@@ -104,13 +99,18 @@ const Navbar = ({ user }) => (
       {user && (
         <>
           <li className="navbar-item">
-            <Link to="/eval-gradebook" className="navbar-link">
-              <FontAwesomeIcon icon={faBook} /> Eval Gradebook
+            <Link to="/evaluation" className="navbar-link">
+              <FontAwesomeIcon icon={faFolderOpen} /> Evaluation
             </Link>
           </li>
           <li className="navbar-item">
             <Link to="/quiz-gradebook" className="navbar-link">
               <FontAwesomeIcon icon={faBook} /> Quiz Gradebook
+            </Link>
+          </li>
+          <li className="navbar-item">
+            <Link to="/eval-gradebook" className="navbar-link">
+              <FontAwesomeIcon icon={faBook} /> Eval Gradebook
             </Link>
           </li>
           <li className="navbar-item">
@@ -124,7 +124,7 @@ const Navbar = ({ user }) => (
     {user && (
       <div className="navbar-user-info">
         <span>
-          {user.username} ({user.role})
+          { user.username } ({user.role})
         </span>
       </div>
     )}

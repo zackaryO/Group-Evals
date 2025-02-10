@@ -34,7 +34,7 @@
 
 .gradebook-table th {
   background-color: #007bff;
-  color: white;
+  color: black;
 }
 
 .gradebook-table tr:nth-child(even) {
@@ -68,7 +68,7 @@ button:hover {
 .evaluation-details {
   margin-top: 10px;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid #000000;
   border-radius: 8px;
   background-color: #fff;
 }
@@ -120,7 +120,7 @@ button:hover {
 
 .star {
   font-size: 18px;
-  color: #ccc;
+  color: #8b8b8b;
 }
 
 .star.filled {

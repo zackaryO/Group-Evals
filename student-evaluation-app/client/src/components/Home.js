@@ -15,11 +15,11 @@ const Home = ({ user }) => {
         <div className="home-card">
           <h2>Evaluations</h2>
           <div className="button-list">
-            {user && user.role === 'student' && (
+            {/* {user && user.role === ('student' || 'instructor') && ( */}
               <Link to="/evaluation" className="home-button">
                 Evaluation Form
               </Link>
-            )}
+            {/* // )} */}
             {user && user.role === 'instructor' && (
               <Link to="/define-areas" className="home-button">
                 Edit Evaluation
@@ -50,7 +50,7 @@ const Home = ({ user }) => {
           </div>
         </div>
 
-        {/* Courses and Assignments Card */}
+        {/* Courses and Assignments Card
         <div className="home-card">
           <h2>Courses & Assignments</h2>
           <div className="button-list">
@@ -81,7 +81,7 @@ const Home = ({ user }) => {
               </>
             )}
           </div>
-        </div>
+        </div> */}
 
         {/* Gradebooks Card */}
         <div className="home-card">
@@ -95,14 +95,14 @@ const Home = ({ user }) => {
                 <Link to="/quiz-gradebook" className="home-button">
                   Quiz Gradebook
                 </Link>
-                <Link to="/course-gradebook" className="home-button">
+                {/* <Link to="/course-gradebook" className="home-button">
                   Course Gradebook
                 </Link>
                 {user.role === 'instructor' && (
                   <Link to="/master-gradebook" className="home-button">
                     Master Gradebook
                   </Link>
-                )}
+                )} */}
               </>
             )}
           </div>
