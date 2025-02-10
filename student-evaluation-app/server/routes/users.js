@@ -41,7 +41,7 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'instructor'), async 
  * Returns a list of all users who have the 'student' role.
  * Only accessible by 'admin' or 'instructor'.
  */
-router.get('/students', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
+router.get('/students', authenticateToken, authorizeRoles('admin', 'instructor', 'student'), async (req, res) => {
   try {
     const students = await User.find({ role: 'student' });
     res.json(students);
