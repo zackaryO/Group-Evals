@@ -1,20 +1,17 @@
 /**
  * EvaluationForm.jsx
- *
- * This component lets a user (student or instructor) submit an evaluation of a selected student (presenter).
- * It uses a table so that "Extra Credit" is in the same star-rating column as other areas.
- * It sends fields as "presenterId" and "evaluatorId" to match your server's schema.
  * 
- * On success, it shows a success message and refreshes the page after 2s.
- * If your server actually expects "presenter" and "evaluator", revert to those names.
+ * After submitting, we set a success message and then
+ * manually reset the form fields to allow the next submission.
+ * No full reload, so we don't lose 'user' data or risk being
+ * redirected to login.
  */
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './EvaluationForm.css';  // Custom CSS (optional)
-import URL from '../../backEndURL'; // Make sure it points to your backend base URL
+import './EvaluationForm.css';
+import URL from '../../backEndURL';
 
-// Simple star-rating subcomponent
 const StarRating = ({ name, value, onChange }) => {
   const [hoverValue, setHoverValue] = useState(undefined);
 
@@ -40,37 +37,32 @@ const StarRating = ({ name, value, onChange }) => {
 };
 
 const EvaluationForm = ({ user }) => {
-  // Data lists
-  const [areas, setAreas] = useState([]);         // [{ key: 'area1', name: 'Content' }, ...]
-  const [presenters, setPresenters] = useState([]); // array of student objects
-  const [presenterId, setPresenterId] = useState(''); // which presenter is selected?
+  // For area definitions and presenters
+  const [areas, setAreas] = useState([]);
+  const [presenters, setPresenters] = useState([]);
+  const [presenterId, setPresenterId] = useState('');
 
-  // Scores object -> { area1: number, area2: number, area3: number, area4: number, extraCredit: number }
+  // For scores and comments
   const [scores, setScores] = useState({});
-
-  // Comments & user feedback
   const [comments, setComments] = useState('');
+
+  // Feedback
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  /**
-   * Fetch evaluation areas & presenters on mount.
-   */
+  // Load data on mount
   useEffect(() => {
-    // Fetch area definitions
     const fetchAreas = async () => {
       try {
         const res = await axios.get(`${URL}/api/areas`);
-        // res.data might be { area1: "Content", area2: "Delivery", area3: "Slides", area4: "Q&A" }
         const areasObject = res.data || {};
-        // Convert object -> array
         const areasArray = Object.keys(areasObject)
-          .filter((key) => key.startsWith('area'))
-          .map((key) => ({ key, name: areasObject[key] }));
+          .filter(k => k.startsWith('area'))
+          .map(k => ({ key: k, name: areasObject[k] }));
 
         setAreas(areasArray);
 
-        // Initialize scores with 0, plus extraCredit
+        // Initialize scores
         const initialScores = { extraCredit: 0 };
         areasArray.forEach(area => {
           initialScores[area.key] = 0;
@@ -82,15 +74,10 @@ const EvaluationForm = ({ user }) => {
       }
     };
 
-    // Fetch student users for "presenters"
     const fetchPresenters = async () => {
       try {
         const token = localStorage.getItem('token');
-        const config = {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        };
+        const config = { headers: { Authorization: `Bearer ${token}` } };
         const res = await axios.get(`${URL}/api/users/students`, config);
         setPresenters(res.data);
       } catch (err) {
@@ -103,64 +90,56 @@ const EvaluationForm = ({ user }) => {
     fetchPresenters();
   }, [user]);
 
-  /**
-   * Handle star rating changes for a specific area or "extraCredit".
-   */
-  const handleScoreChange = (areaKey, rating) => {
-    setScores((prevScores) => ({
-      ...prevScores,
-      [areaKey]: rating,
-    }));
+  // Handle star rating changes
+  const handleScoreChange = (areaKey, value) => {
+    setScores((prev) => ({ ...prev, [areaKey]: value }));
   };
 
-  /**
-   * Submit the evaluation to the backend.
-   * We assume your server expects "presenterId" & "evaluatorId".
-   * If it wants "presenter" & "evaluator", rename below accordingly.
-   */
+  // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
-    // Check for valid user
     if (!user || !user._id) {
       setErrorMessage('User is not defined.');
       return;
     }
 
-    // Build request body. (Change to "presenter" if server wants that.)
+    // Adjust field names if your server expects "presenter" instead of "presenterId"
     const evaluationBody = {
-      presenterId,        // presenting student's _id
-      evaluatorId: user._id, // the current user making the evaluation
+      presenterId,
+      evaluatorId: user._id,
       scores,
       comments,
       type: user.role,
     };
 
     try {
-      // Must include token in request if your server requires auth
       const token = localStorage.getItem('token');
       const config = { headers: { Authorization: `Bearer ${token}` } };
 
       await axios.post(`${URL}/api/evaluations/submit`, evaluationBody, config);
-
       setSuccessMessage('Evaluation submitted successfully!');
-      // Reset form for next evaluation
+
+      // Manually reset form fields
       setPresenterId('');
       setComments('');
-      setScores((prevScores) => {
-        const resetScores = {};
-        for (let key in prevScores) {
-          resetScores[key] = 0;
+      setScores((prev) => {
+        const reset = {};
+        for (let key in prev) {
+          reset[key] = 0;
         }
-        return resetScores;
+        return reset;
       });
 
-      // Refresh after 2 seconds, so user sees success message
-      // setTimeout(() => {
-      //   window.location.reload();
-      // }, 2000);
+      // If you want the message to disappear after a short delay:
+      setTimeout(() => {
+        setSuccessMessage('');
+      }, 3000);
+      
+      // We do NOT call window.location.reload() or navigate
+      // to avoid losing 'user' state and forcing a login page load.
 
     } catch (err) {
       console.error('Error submitting evaluation:', err);
@@ -169,16 +148,12 @@ const EvaluationForm = ({ user }) => {
   };
 
   return (
-    <div className="evaluation-form-container" style={{ maxWidth: '800px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
       <h2>Evaluation Form</h2>
-
-      {/* Error or success messages */}
       {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
       {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
 
       <form onSubmit={handleSubmit}>
-
-        {/* Presenter selection */}
         <div style={{ marginBottom: '15px' }}>
           <label><strong>Presenter:</strong></label>
           <select
@@ -196,7 +171,6 @@ const EvaluationForm = ({ user }) => {
           </select>
         </div>
 
-        {/* Table for area alignment */}
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -205,13 +179,10 @@ const EvaluationForm = ({ user }) => {
             </tr>
           </thead>
           <tbody>
-            {/* Render each "area" row */}
             {areas.map((areaObj) => (
               <tr key={areaObj.key}>
-                <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                  {areaObj.name}
-                </td>
-                <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                <td style={{ padding: '8px' }}>{areaObj.name}</td>
+                <td style={{ padding: '8px' }}>
                   <StarRating
                     name={areaObj.key}
                     value={scores[areaObj.key] || 0}
@@ -220,13 +191,9 @@ const EvaluationForm = ({ user }) => {
                 </td>
               </tr>
             ))}
-
-            {/* Extra credit row */}
             <tr>
-              <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                Did you learn something new?
-              </td>
-              <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+              <td style={{ padding: '8px' }}>Extra Credit</td>
+              <td style={{ padding: '8px' }}>
                 <StarRating
                   name="extraCredit"
                   value={scores.extraCredit || 0}
@@ -237,7 +204,6 @@ const EvaluationForm = ({ user }) => {
           </tbody>
         </table>
 
-        {/* Comments */}
         <div style={{ marginTop: '15px' }}>
           <label><strong>Comments:</strong></label><br />
           <textarea
@@ -248,7 +214,6 @@ const EvaluationForm = ({ user }) => {
           />
         </div>
 
-        {/* Submit Button */}
         <button
           type="submit"
           style={{
@@ -257,8 +222,7 @@ const EvaluationForm = ({ user }) => {
             backgroundColor: '#007bff',
             color: '#fff',
             border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
+            borderRadius: '4px'
           }}
         >
           Submit Evaluation
