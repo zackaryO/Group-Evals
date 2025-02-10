@@ -192,7 +192,7 @@ const EvaluationForm = ({ user }) => {
               </tr>
             ))}
             <tr>
-              <td style={{ padding: '8px' }}>Extra Credit</td>
+              <td style={{ padding: '8px' }}>Did you learn something new?</td>
               <td style={{ padding: '8px' }}>
                 <StarRating
                   name="extraCredit"
