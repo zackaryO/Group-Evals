@@ -28,7 +28,7 @@ const Login = ({ setUser }) => {
 
         setUser({
           _id: res.data.user._id,
-          username: res.data.user.username,
+          username: res.data.user.username.toLowerCase(),
           role: res.data.user.role,
           // Set firstName and lastName in user state
           firstName: res.data.user.firstName,
