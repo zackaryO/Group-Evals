@@ -89,9 +89,9 @@ const Home = ({ user }) => {
           <div className="button-list">
             {user && (
               <>
-                <Link to="/eval-gradebook" className="home-button">
+                {/* <Link to="/eval-gradebook" className="home-button">
                   Eval Gradebook
-                </Link>
+                </Link> */}
                 <Link to="/quiz-gradebook" className="home-button">
                   Quiz Gradebook
                 </Link>
@@ -116,8 +116,11 @@ const Home = ({ user }) => {
               <Link to="/manage-users" className="home-button">
                 Manage Users
               </Link>
-              <Link to="/manage-cohorts" className="home-button">
+              {/* <Link to="/manage-cohorts" className="home-button">
                 Manage Cohorts
+              </Link> */}
+              <Link to="/eval-gradebook" className="home-button">
+                Eval Gradebook
               </Link>
             </div>
           </div>
