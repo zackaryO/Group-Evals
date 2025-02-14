@@ -108,11 +108,11 @@ const Navbar = ({ user }) => (
               <FontAwesomeIcon icon={faBook} /> Quiz Gradebook
             </Link>
           </li>
-          <li className="navbar-item">
+          {/* <li className="navbar-item">
             <Link to="/eval-gradebook" className="navbar-link">
               <FontAwesomeIcon icon={faBook} /> Eval Gradebook
             </Link>
-          </li>
+          </li> */}
           <li className="navbar-item">
             <Link to="/" onClick={handleLogout} className="navbar-link">
               <FontAwesomeIcon icon={faSignOutAlt} /> Logout
