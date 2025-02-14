@@ -59,6 +59,11 @@ const Navbar = ({ user }) => (
               <FontAwesomeIcon icon={faUserGraduate} /> Manage Users
             </Link>
           </li>
+          <li className="navbar-item">
+            <Link to="/eval-gradebook" className="navbar-link">
+              <FontAwesomeIcon icon={faBook} /> Eval Gradebook
+            </Link>
+          </li>
           {/* <li className="navbar-item">
             <Link to="/manage-cohorts" className="navbar-link">
               <FontAwesomeIcon icon={faUsers} /> Manage Cohorts
