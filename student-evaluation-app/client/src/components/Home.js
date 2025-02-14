@@ -89,9 +89,9 @@ const Home = ({ user }) => {
           <div className="button-list">
             {user && (
               <>
-                {/* <Link to="/eval-gradebook" className="home-button">
+                <Link to="/eval-gradebook" className="home-button">
                   Eval Gradebook
-                </Link> */}
+                </Link>
                 {/* <Link to="/quiz-gradebook" className="home-button">
                   Quiz Gradebook
                 </Link> */}
