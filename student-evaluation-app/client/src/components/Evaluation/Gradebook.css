@@ -1,4 +1,5 @@
 /* student-evaluation-app\client\src\components\Evaluation\Gradebook.css */
+
 .gradebook {
   max-width: 100%;
   margin: auto;
@@ -34,7 +35,7 @@
 
 .gradebook-table th {
   background-color: #007bff;
-  color: black;
+  color: black; /* Or change to white (#fff) if you prefer better contrast */
 }
 
 .gradebook-table tr:nth-child(even) {
@@ -108,11 +109,27 @@ button:hover {
   margin-bottom: 10px;
 }
 
+/* Container for each score area */
 .scores {
   display: flex;
   flex-direction: column;
+  margin-top: 8px;
 }
 
+/* Each individual score line with area name on the left and stars on the right */
+.score-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.score-item .area-name {
+  font-weight: 500;
+  margin-right: 10px;
+}
+
+/* Star rating styles */
 .star-rating {
   display: flex;
   gap: 5px;

@@ -32,19 +32,19 @@ const Home = ({ user }) => {
         <div className="home-card">
           <h2>Quizzes</h2>
           <div className="button-list">
-            {user && user.role === 'student' && (
+            {/* {user && user.role === 'student' && (
               <Link to="/take-quiz" className="home-button">
                 Take Quiz
               </Link>
-            )}
+            )} */}
             {user && user.role === 'instructor' && (
               <>
-                <Link to="/create-quiz" className="home-button">
+                {/* <Link to="/create-quiz" className="home-button">
                   Create Quiz
                 </Link>
                 <Link to="/manage-quizzes" className="home-button">
                   Manage Quizzes
-                </Link>
+                </Link> */}
               </>
             )}
           </div>
@@ -92,9 +92,9 @@ const Home = ({ user }) => {
                 {/* <Link to="/eval-gradebook" className="home-button">
                   Eval Gradebook
                 </Link> */}
-                <Link to="/quiz-gradebook" className="home-button">
+                {/* <Link to="/quiz-gradebook" className="home-button">
                   Quiz Gradebook
-                </Link>
+                </Link> */}
                 {/* <Link to="/course-gradebook" className="home-button">
                   Course Gradebook
                 </Link>
