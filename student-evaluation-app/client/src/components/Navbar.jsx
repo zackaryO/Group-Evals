@@ -89,7 +89,7 @@ const Navbar = ({ user }) => (
               <FontAwesomeIcon icon={faTasks} /> Manage Assignments
             </Link>
           </li> */}
-          {/* <li className="navbar-item">
+          <li className="navbar-item">
             <Link to="/create-quiz" className="navbar-link">
               <FontAwesomeIcon icon={faChalkboardTeacher} /> Create Quiz
             </Link>
@@ -98,7 +98,7 @@ const Navbar = ({ user }) => (
             <Link to="/manage-quizzes" className="navbar-link">
               <FontAwesomeIcon icon={faTasks} /> Manage Quizzes
             </Link>
-          </li> */}
+          </li>
         </>
       )}
       {user && (
@@ -108,11 +108,11 @@ const Navbar = ({ user }) => (
               <FontAwesomeIcon icon={faFolderOpen} /> Evaluation
             </Link>
           </li>
-          {/* <li className="navbar-item">
+          <li className="navbar-item">
             <Link to="/quiz-gradebook" className="navbar-link">
               <FontAwesomeIcon icon={faBook} /> Quiz Gradebook
             </Link>
-          </li> */}
+          </li>
           <li className="navbar-item">
             <Link to="/eval-gradebook" className="navbar-link">
               <FontAwesomeIcon icon={faBook} /> Eval Gradebook
