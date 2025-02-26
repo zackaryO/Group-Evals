@@ -1,4 +1,9 @@
 /* student-evaluation-app\client\src\components\Quizzes\ManageQuestions.css */
+
+/**
+ * Styles for managing quiz questions.
+ * Improved layout, spacing, and visual appearance.
+ */
 .manage-questions-container {
   max-width: 800px;
   margin: auto;
@@ -12,12 +17,14 @@
 .manage-questions-container h2 {
   text-align: center;
   color: #333;
+  margin-bottom: 20px;
 }
 
 .manage-questions-container label {
   display: block;
   margin-bottom: 10px;
   color: #555;
+  font-weight: 600;
 }
 
 .manage-questions-container textarea.question-text {
@@ -28,31 +35,34 @@
   border: 1px solid #ccc;
   border-radius: 4px;
   resize: vertical;
+  font-size: 14px;
+  font-family: 'Arial', sans-serif;
 }
 
 .option-item {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
+  gap: 8px; /* Space between radio, letter, and text field */
 }
 
-.option-item input[type="radio"] {
-  margin-right: 10px;
+.option-item input[type='radio'] {
+  flex: 0 0 auto; /* Do not let the radio button grow */
+  margin-right: 4px;
+  cursor: pointer;
 }
 
 .option-item span {
   font-weight: bold;
-  margin-right: 10px;
+  margin-right: 4px;
 }
 
-.option-item input[type="text"] {
-  flex-grow: 1;
+.option-item input[type='text'] {
+  flex-grow: 1; /* Let the text input take remaining space */
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  width: 100%; /* Make input take full available width */
-  resize: horizontal; /* Allow resizing for long answers */
-  min-width: 200px; /* Set a minimum width for the input */
+  min-width: 100px; /* Reasonable minimum width */
 }
 
 button {
@@ -86,6 +96,13 @@ button:hover {
 .question-text-display {
   font-weight: bold;
   margin-bottom: 10px;
+}
+
+.question-image-display {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 10px;
+  border-radius: 4px;
 }
 
 .options-display,

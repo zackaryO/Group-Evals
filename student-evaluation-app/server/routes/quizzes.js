@@ -1,11 +1,41 @@
 // student-evaluation-app/server/routes/quizzes.js
+
 const express = require('express');
 const router = express.Router();
 const Quiz = require('../models/Quiz');
 const QuizQuestion = require('../models/QuizQuestion');
 const QuizSubmission = require('../models/QuizSubmission');
+const multer = require('multer');
+const path = require('path');
 
-// Create a new quiz
+/**
+ * Configure Multer for local image uploads.
+ * The "uploads" folder should exist at the root of your server.
+ */
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    // Prepend a timestamp to avoid file name collisions
+    cb(null, Date.now() + '-' + file.originalname);
+  },
+});
+
+// Only allow image files
+const fileFilter = (req, file, cb) => {
+  if (!file.mimetype.startsWith('image/')) {
+    return cb(new Error('Only image files are allowed!'), false);
+  }
+  cb(null, true);
+};
+
+const upload = multer({ storage, fileFilter });
+
+/**
+ * @route POST /api/quizzes/create
+ * @desc Create a new quiz
+ */
 router.post('/create', async (req, res) => {
   const {
     title,
@@ -35,7 +65,10 @@ router.post('/create', async (req, res) => {
   }
 });
 
-// Get all quizzes
+/**
+ * @route GET /api/quizzes
+ * @desc Get all quizzes
+ */
 router.get('/', async (req, res) => {
   try {
     const quizzes = await Quiz.find().populate('questions');
@@ -45,7 +78,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get published quizzes
+/**
+ * @route GET /api/quizzes/published
+ * @desc Get published quizzes
+ */
 router.get('/published', async (req, res) => {
   try {
     const quizzes = await Quiz.find({ isPublished: true }).populate('questions');
@@ -55,7 +91,10 @@ router.get('/published', async (req, res) => {
   }
 });
 
-// Publish or unpublish a quiz
+/**
+ * @route PUT /api/quizzes/:quizId/publish
+ * @desc Toggle quiz published state
+ */
 router.put('/:quizId/publish', async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId);
@@ -70,16 +109,32 @@ router.put('/:quizId/publish', async (req, res) => {
   }
 });
 
-// Add a question to a quiz
-router.post('/:quizId/add-question', async (req, res) => {
-  const { questionText, options, correctAnswer, image, questionType } = req.body;
+/**
+ * @route POST /api/quizzes/:quizId/add-question
+ * @desc Add a question (with optional image) to a quiz
+ */
+router.post('/:quizId/add-question', upload.single('questionImage'), async (req, res) => {
   try {
+    const { questionText, correctAnswer, questionType } = req.body;
+
+    // Parse options array from JSON
+    let options = [];
+    if (req.body.options) {
+      options = JSON.parse(req.body.options);
+    }
+
+    // If file was uploaded, store the filename; otherwise, use empty string
+    let imagePath = '';
+    if (req.file) {
+      imagePath = req.file.filename;
+    }
+
     const newQuestion = new QuizQuestion({
       questionText,
       options,
       correctAnswer,
-      image,
-      questionType,
+      image: imagePath,
+      questionType: questionType || 'multiple-choice',
       quiz: req.params.quizId,
     });
     await newQuestion.save();
@@ -94,15 +149,44 @@ router.post('/:quizId/add-question', async (req, res) => {
   }
 });
 
-// Update a specific question in a quiz
-router.put('/:quizId/question/:questionId', async (req, res) => {
+/**
+ * @route PUT /api/quizzes/:quizId/question/:questionId
+ * @desc Update a specific question (with optional new image)
+ */
+router.put('/:quizId/question/:questionId', upload.single('questionImage'), async (req, res) => {
   try {
-    const { questionText, options, correctAnswer, image, questionType } = req.body;
+    const { questionText, correctAnswer, questionType } = req.body;
+
+    // Parse options array from JSON
+    let options = [];
+    if (req.body.options) {
+      options = JSON.parse(req.body.options);
+    }
+
+    // If file was uploaded, store the new filename
+    let imagePath;
+    if (req.file) {
+      imagePath = req.file.filename;
+    }
+
+    // Build update object
+    const updateData = {
+      questionText,
+      options,
+      correctAnswer,
+      questionType,
+    };
+    // Only set image field if a new image was provided
+    if (typeof imagePath !== 'undefined') {
+      updateData.image = imagePath;
+    }
+
     const question = await QuizQuestion.findByIdAndUpdate(
       req.params.questionId,
-      { questionText, options, correctAnswer, image, questionType },
+      updateData,
       { new: true }
     );
+
     if (!question) {
       return res.status(404).json({ message: 'Question not found' });
     }
@@ -112,7 +196,10 @@ router.put('/:quizId/question/:questionId', async (req, res) => {
   }
 });
 
-// Delete a specific question in a quiz
+/**
+ * @route DELETE /api/quizzes/:quizId/question/:questionId
+ * @desc Delete a specific question from a quiz
+ */
 router.delete('/:quizId/question/:questionId', async (req, res) => {
   try {
     const question = await QuizQuestion.findByIdAndDelete(req.params.questionId);
@@ -129,7 +216,10 @@ router.delete('/:quizId/question/:questionId', async (req, res) => {
   }
 });
 
-// Delete a quiz by ID
+/**
+ * @route DELETE /api/quizzes/:quizId
+ * @desc Delete a quiz by ID (removes related questions and submissions)
+ */
 router.delete('/:quizId', async (req, res) => {
   try {
     const quiz = await Quiz.findByIdAndDelete(req.params.quizId);
@@ -146,7 +236,10 @@ router.delete('/:quizId', async (req, res) => {
   }
 });
 
-// Get a specific quiz by ID
+/**
+ * @route GET /api/quizzes/:quizId
+ * @desc Get a specific quiz by ID
+ */
 router.get('/:quizId', async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId).populate('questions');
@@ -159,24 +252,34 @@ router.get('/:quizId', async (req, res) => {
   }
 });
 
-// Submit quiz answers and calculate the score
+/**
+ * @route POST /api/quizzes/:quizId/submit
+ * @desc Submit quiz answers and calculate the score
+ */
 router.post('/:quizId/submit', async (req, res) => {
   const { answers, studentId } = req.body;
   try {
     const quiz = await Quiz.findById(req.params.quizId).populate('questions');
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
 
-    // Check if the quiz is locked
+    // Check if the quiz is locked due to due date
     const currentDate = new Date();
     const dueDate = new Date(quiz.dueDate);
     if (currentDate > dueDate && !quiz.allowLateSubmissions) {
-      return res.status(400).json({ message: 'This quiz is closed for submissions.' });
+      return res
+        .status(400)
+        .json({ message: 'This quiz is closed for submissions.' });
     }
 
     if (!quiz.allowMultipleSubmissions) {
-      const existingSubmission = await QuizSubmission.findOne({ student: studentId, quiz: quiz._id });
+      const existingSubmission = await QuizSubmission.findOne({
+        student: studentId,
+        quiz: quiz._id,
+      });
       if (existingSubmission) {
-        return res.status(400).json({ message: 'You have already submitted this quiz.' });
+        return res
+          .status(400)
+          .json({ message: 'You have already submitted this quiz.' });
       }
     }
 
@@ -186,6 +289,8 @@ router.post('/:quizId/submit', async (req, res) => {
     quiz.questions.forEach((question) => {
       const selectedAnswer = answers[question._id];
       let isCorrect = false;
+
+      // For multiple-choice questions, check if selected answer is correct
       if (question.questionType === 'multiple-choice') {
         isCorrect = selectedAnswer === question.correctAnswer;
         if (isCorrect) correctAnswers++;
@@ -215,7 +320,10 @@ router.post('/:quizId/submit', async (req, res) => {
   }
 });
 
-// Toggle multiple submissions
+/**
+ * @route PUT /api/quizzes/:quizId/toggle-multiple-submissions
+ * @desc Toggle multiple submissions for a quiz
+ */
 router.put('/:quizId/toggle-multiple-submissions', async (req, res) => {
   try {
     const { quizId } = req.params;
