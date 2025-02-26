@@ -46,10 +46,13 @@
   gap: 8px; /* Space between radio, letter, and text field */
 }
 
+/* Approach #1: fixed width/height for the radio, so it won't grow */
 .option-item input[type='radio'] {
-  flex: 0 0 auto; /* Do not let the radio button grow */
-  margin-right: 4px;
+  width: 16px;            /* Fixed size (e.g., 16px) */
+  height: 16px;
+  flex-shrink: 0;         /* Prevent it from flex-growing */
   cursor: pointer;
+  margin-right: 4px;
 }
 
 .option-item span {
@@ -58,7 +61,7 @@
 }
 
 .option-item input[type='text'] {
-  flex-grow: 1; /* Let the text input take remaining space */
+  flex-grow: 1;  /* Let the text input take remaining horizontal space */
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;

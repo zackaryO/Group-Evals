@@ -70,6 +70,7 @@ app.use('/api/grades', gradeRoutes);
 app.use('/api/cohorts', cohortRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/assignments', assignmentRoutes);
+app.use('/uploads', express.static('uploads'));
 
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
