@@ -1,4 +1,5 @@
 /* student-evaluation-app\client\src\components\Quizzes\ManageQuizzes.css */
+
 .manage-quizzes-container {
   max-width: 1200px;
   margin: auto;
@@ -14,7 +15,8 @@
 
 .quizzes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Responsive grid with min width of 250px */
+  /* Responsive 3-column grid, but can shrink to 2 or 1 column as space requires */
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 20px;
 }
 
@@ -23,6 +25,7 @@
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  /* Use flex column to stack content nicely */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -39,26 +42,27 @@
   margin-bottom: 15px;
 }
 
+/* 
+  Allow the action buttons to wrap to a new line if needed.
+  Also add a small gap between them rather than forcing them side-by-side.
+*/
 .quiz-card .quiz-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 12px; /* space below the button row */
 }
 
+/* Remove flex:1 so each button keeps its natural width */
 .quiz-card .quiz-actions button {
-  padding: 10px 20px;
+  padding: 8px 12px;
   background-color: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  flex: 1; /* Make buttons the same size */
   text-align: center;
-}
-
-.quiz-card .quiz-actions button + button {
-  margin-left: 10px; /* Space between buttons */
 }
 
 .quiz-card .quiz-actions button:hover {
@@ -79,4 +83,11 @@
 
 .quiz-card a button:hover {
   background-color: #218838;
+}
+
+.multiple-submissions-toggle {
+  display: flex;
+  align-items: center;
+  margin-top: auto; /* push to bottom if needed */
+  gap: 6px; /* small spacing between checkbox and text */
 }
