@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import URL from '../../backEndURL';
 
 const ConsumablesPage = () => {
   // --- Inline style objects (same snippet as above) ---
@@ -122,7 +123,7 @@ const ConsumablesPage = () => {
   const fetchConsumables = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/consumables', {
+      const res = await axios.get(`${URL}/api/consumables`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       // Ensure the result is an array:
@@ -148,11 +149,11 @@ const ConsumablesPage = () => {
       }
 
       if (selectedConsumable) {
-        await axios.put(`/api/consumables/${selectedConsumable._id}`, formData, {
+        await axios.put(`${URL}/api/consumables/${selectedConsumable._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post('/api/consumables', formData, {
+        await axios.post(`${URL}/api/consumables`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -176,7 +177,7 @@ const ConsumablesPage = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/consumables/${id}`, {
+      await axios.delete(`${URL}/api/consumables/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setConsumables((prev) => prev.filter((con) => con._id !== id));
