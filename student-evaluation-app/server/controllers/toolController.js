@@ -1,13 +1,12 @@
 /**
  * toolController.js
  * Contains all CRUD operations for Tools (Tool model).
+ * Demonstrates single-file S3 upload usage with Multer.
  */
-
 const Tool = require('../models/Tool');
 
 /**
  * Get all tools.
- * Only instructors can access this route.
  */
 exports.getAllTools = async (req, res) => {
   try {
@@ -35,16 +34,16 @@ exports.getToolById = async (req, res) => {
 
 /**
  * Create a new tool.
- * If an image was uploaded, its S3 URL is stored in tool.imageUrl.
+ * If an image was uploaded, multer-s3 places the file info in req.file.location.
  */
 exports.createTool = async (req, res) => {
   try {
     const { name, description, quantityOnHand, room, shelf, repairStatus, purchasePriority } = req.body;
     
-    // If an image was uploaded, multer-s3 places the file info in req.file
+    // For single-file upload, the S3 location is in req.file
     let imageUrl = '';
     if (req.file && req.file.location) {
-      imageUrl = req.file.location;
+      imageUrl = req.file.location; // e.g. https://your-bucket.s3.amazonaws.com/inventory/filename.jpg
     }
 
     const newTool = new Tool({
@@ -66,7 +65,7 @@ exports.createTool = async (req, res) => {
 
 /**
  * Update an existing tool.
- * If an image is uploaded, replace the existing imageUrl.
+ * If a new image is uploaded, replace the existing imageUrl.
  */
 exports.updateTool = async (req, res) => {
   try {
@@ -78,11 +77,12 @@ exports.updateTool = async (req, res) => {
       return res.status(404).json({ message: 'Tool not found' });
     }
 
+    // For single-file upload
     if (req.file && req.file.location) {
       tool.imageUrl = req.file.location;
     }
 
-    // Update fields if provided
+    // Update other fields if provided
     tool.name = name ?? tool.name;
     tool.description = description ?? tool.description;
     tool.quantityOnHand = quantityOnHand ?? tool.quantityOnHand;
