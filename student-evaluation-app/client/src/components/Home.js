@@ -54,7 +54,7 @@ const Home = ({ user }) => {
           </div>
         </div>
 
-        {/* Gradebooks Card */}
+        {/* GRADEBOOKS CARD */}
         <div className="home-card">
           <h2>Gradebooks</h2>
           <div className="button-list">
