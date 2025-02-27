@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import URL from '../../backEndURL';
 
 const styles = {
   pageContainer: {
@@ -117,7 +118,7 @@ const FacilityNeedsPage = () => {
   const fetchFacilityNeeds = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/facility-needs', {
+      const res = await axios.get(`${URL}/api/facility-needs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = Array.isArray(res.data) ? res.data : [];
@@ -145,11 +146,11 @@ const FacilityNeedsPage = () => {
       }
 
       if (selectedNeed) {
-        await axios.put(`/api/facility-needs/${selectedNeed._id}`, formData, {
+        await axios.put(`${URL}/api/facility-needs/${selectedNeed._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post('/api/facility-needs', formData, {
+        await axios.post(`${URL}/api/facility-needs`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -172,7 +173,7 @@ const FacilityNeedsPage = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/facility-needs/${id}`, {
+      await axios.delete(`${URL}/api/facility-needs/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNeeds((prev) => prev.filter((n) => n._id !== id));
