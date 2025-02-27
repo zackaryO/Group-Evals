@@ -21,10 +21,10 @@ const {
  * (Optional) Debug logs for verifying environment variables.
  * You may remove this in production if you prefer.
  */
-console.log('> AWS_ACCESS_KEY_ID:', AWS_ACCESS_KEY_ID ? 'AVAILABLE' : 'MISSING');
-console.log('> AWS_SECRET_ACCESS_KEY:', AWS_SECRET_ACCESS_KEY ? 'AVAILABLE' : 'MISSING');
-console.log('> AWS_STORAGE_BUCKET_NAME:', AWS_STORAGE_BUCKET_NAME || 'MISSING');
-console.log('> AWS_REGION:', AWS_REGION || 'MISSING');
+// console.log('> AWS_ACCESS_KEY_ID:', AWS_ACCESS_KEY_ID ? 'AVAILABLE' : 'MISSING');
+// console.log('> AWS_SECRET_ACCESS_KEY:', AWS_SECRET_ACCESS_KEY ? 'AVAILABLE' : 'MISSING');
+// console.log('> AWS_STORAGE_BUCKET_NAME:', AWS_STORAGE_BUCKET_NAME || 'MISSING');
+// console.log('> AWS_REGION:', AWS_REGION || 'MISSING');
 
 // Explicit checks to avoid undefined variables
 if (!AWS_ACCESS_KEY_ID) {
