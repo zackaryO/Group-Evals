@@ -2,25 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import './Inventory.css';
 
-// const FacilityNeedsPage = () => {
-//   const styles = {
-//     pageContainer: { ... },
-//     heading: { ... },
-//     contentWrapper: { ... },
-//     listContainer: { ... },
-//     itemCard: { ... },
-//     itemTitle: { ... },
-//     formContainer: { ... },
-//     formGroup: { ... },
-//     label: { ... },
-//     input: { ... },
-//     textarea: { ... },
-//     select: { ... },
-//     buttonRow: { ... },
-//     button: { ... },
-//     buttonSecondary: { ... },
-//     imageThumb: { ... },
-//   };
+const FacilityNeedsPage = () => {
+ 
 
   const [needs, setNeeds] = useState([]);
   const [selectedNeed, setSelectedNeed] = useState(null);
