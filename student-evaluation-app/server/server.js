@@ -1,7 +1,5 @@
-// student-evaluation-app/server/server.js
-
 /**
- * Main server entry point for Student Evaluation App.
+ * Main server entry point for Student Evaluation App + Inventory Management.
  * Sets up Express, connects to MongoDB, and configures routes & middlewares.
  */
 
@@ -11,7 +9,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 
-// Import route handlers
+// Import route handlers (existing)
 const authRoutes = require('./routes/auth');
 const evaluationRoutes = require('./routes/evaluations');
 const userRoutes = require('./routes/users');
@@ -21,6 +19,16 @@ const gradeRoutes = require('./routes/grades');
 const cohortRoutes = require('./routes/cohorts');
 const courseRoutes = require('./routes/courses');
 const assignmentRoutes = require('./routes/assignments');
+
+// NEW: Inventory route imports
+const toolRoutes = require('./routes/toolRoutes');
+const loanerToolboxRoutes = require('./routes/loanerToolboxRoutes');
+const sparePartRoutes = require('./routes/sparePartRoutes');
+const instructorToolRoutes = require('./routes/instructorToolRoutes');
+const consumableRoutes = require('./routes/consumableRoutes');
+const facilityNeedRoutes = require('./routes/facilityNeedRoutes');
+const trainingVehicleRoutes = require('./routes/trainingVehicleRoutes');
+const reportRoutes = require('./routes/reportRoutes'); // if you have a separate route for PDF reports
 
 dotenv.config();
 
@@ -39,6 +47,7 @@ const allowedOrigins = [
   'https://group-evals.vercel.app',
   'https://group-evals-dbg0fumxc-zacks-projects-18c38742.vercel.app',
   'http://localhost:3000',
+  // Add any other allowed origins here
 ];
 
 const corsOptions = {
@@ -49,18 +58,18 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Add OPTIONS to allowed methods
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Handle preflight requests
+app.options('*', cors(corsOptions));
 app.use(express.json());
 
-// Serve images from the local "uploads" folder
+// Serve images from the local "uploads" folder, if applicable
 app.use('/uploads', express.static('uploads'));
 
-// Register routes
+// Register existing routes
 app.use('/api/auth', authRoutes);
 app.use('/api/evaluations', evaluationRoutes);
 app.use('/api/users', userRoutes);
@@ -70,7 +79,18 @@ app.use('/api/grades', gradeRoutes);
 app.use('/api/cohorts', cohortRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/assignments', assignmentRoutes);
-app.use('/uploads', express.static('uploads'));
+
+// NEW: Register inventory-related routes
+app.use('/api/tools', toolRoutes);
+app.use('/api/loaner-toolboxes', loanerToolboxRoutes);
+app.use('/api/spare-parts', sparePartRoutes);
+app.use('/api/instructor-tools', instructorToolRoutes);
+app.use('/api/consumables', consumableRoutes);
+app.use('/api/facility-needs', facilityNeedRoutes);
+app.use('/api/training-vehicles', trainingVehicleRoutes);
+
+// If you have a separate route for PDF reports:
+app.use('/api/reports', reportRoutes);
 
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
@@ -80,7 +100,7 @@ mongoose
   .then(() => console.log('MongoDB connected'))
   .catch((error) => {
     console.error('MongoDB connection error:', error);
-    process.exit(1); // Exit process if unable to connect
+    process.exit(1);
   });
 
 // Start server

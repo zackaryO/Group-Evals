@@ -15,6 +15,7 @@ import {
   faClipboardList,
   faFolderOpen,
   faUsers,
+  faTools,  // added for Tools icon
 } from '@fortawesome/free-solid-svg-icons';
 import './Navbar.css';
 
@@ -40,11 +41,6 @@ const Navbar = ({ user }) => (
       )}
       {user && user.role === 'student' && (
         <>
-          {/* <li className="navbar-item">
-            <Link to="/assignments" className="navbar-link">
-              <FontAwesomeIcon icon={faClipboardList} /> Assignments
-            </Link>
-          </li> */}
           <li className="navbar-item">
             <Link to="/take-quiz" className="navbar-link">
               <FontAwesomeIcon icon={faQuestionCircle} /> Take Quiz
@@ -59,36 +55,6 @@ const Navbar = ({ user }) => (
               <FontAwesomeIcon icon={faUserGraduate} /> Manage Users
             </Link>
           </li>
-          {/* <li className="navbar-item">
-            <Link to="/eval-gradebook" className="navbar-link">
-              <FontAwesomeIcon icon={faBook} /> Eval Gradebook
-            </Link>
-          </li> */}
-          {/* <li className="navbar-item">
-            <Link to="/manage-cohorts" className="navbar-link">
-              <FontAwesomeIcon icon={faUsers} /> Manage Cohorts
-            </Link>
-          </li> */}
-          {/* <li className="navbar-item">
-            <Link to="/create-course" className="navbar-link">
-              <FontAwesomeIcon icon={faChalkboardTeacher} /> Create Course
-            </Link>
-          </li> */}
-          {/* <li className="navbar-item">
-            <Link to="/manage-courses" className="navbar-link">
-              <FontAwesomeIcon icon={faTasks} /> Manage Courses
-            </Link>
-          </li> */}
-          {/* <li className="navbar-item">
-            <Link to="/create-assignment" className="navbar-link">
-              <FontAwesomeIcon icon={faClipboardList} /> Create Assignment
-            </Link>
-          </li> */}
-          {/* <li className="navbar-item">
-            <Link to="/manage-assignments" className="navbar-link">
-              <FontAwesomeIcon icon={faTasks} /> Manage Assignments
-            </Link>
-          </li> */}
           <li className="navbar-item">
             <Link to="/create-quiz" className="navbar-link">
               <FontAwesomeIcon icon={faChalkboardTeacher} /> Create Quiz
@@ -99,6 +65,14 @@ const Navbar = ({ user }) => (
               <FontAwesomeIcon icon={faTasks} /> Manage Quizzes
             </Link>
           </li>
+
+          {/* New Inventory Menu for Instructors */}
+          <li className="navbar-item">
+            <Link to="/tools" className="navbar-link">
+              <FontAwesomeIcon icon={faTools} /> Tools
+            </Link>
+          </li>
+          {/* Add more if desired, e.g. Spare Parts, etc. */}
         </>
       )}
       {user && (
