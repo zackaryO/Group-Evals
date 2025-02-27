@@ -1,36 +1,44 @@
-/**
- * InventoryReportsPage.js
- * Provides buttons to download various PDF reports from the server.
- * Only instructors can access this page (enforced by route in App.js).
- */
-
 import React from 'react';
 import axios from 'axios';
 
 const InventoryReportsPage = () => {
-  // Retrieve the token from localStorage or context
+  const styles = {
+    pageContainer: {
+      maxWidth: '600px',
+      margin: '2rem auto',
+      background: '#fafafa',
+      borderRadius: '8px',
+      padding: '20px',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+      textAlign: 'center',
+    },
+    heading: {
+      marginBottom: '1.5rem',
+      color: '#333',
+    },
+    button: {
+      background: '#007bff',
+      color: '#fff',
+      border: 'none',
+      padding: '0.5rem 1rem',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      margin: '1rem',
+    },
+  };
+
   const token = localStorage.getItem('token');
 
-  /**
-   * downloadPDF
-   * Makes a GET request to the specified endpoint with 'blob' responseType,
-   * then triggers a download of the returned PDF.
-   * @param {string} endpoint - The API endpoint (e.g. '/api/reports/tools')
-   */
   const downloadPDF = async (endpoint) => {
     try {
       const response = await axios.get(endpoint, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        responseType: 'blob', // important for file download
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob',
       });
-
-      // Create a URL for the blob
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'report.pdf'); // default name
+      link.setAttribute('download', 'report.pdf');
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -41,25 +49,20 @@ const InventoryReportsPage = () => {
   };
 
   return (
-    <div style={{ padding: '1rem' }}>
-      <h2>Inventory Reports</h2>
-      <p>Click the buttons below to download PDF reports for different inventory categories.</p>
-      <div style={{ margin: '1rem 0' }}>
-        <button onClick={() => downloadPDF('/api/reports/tools')}>
+    <div style={styles.pageContainer}>
+      <h2 style={styles.heading}>Inventory Reports</h2>
+      <p>Select a report below to download a PDF.</p>
+      <div>
+        <button style={styles.button} onClick={() => downloadPDF('/api/reports/tools')}>
           Tools Report
         </button>
-      </div>
-      <div style={{ margin: '1rem 0' }}>
-        <button onClick={() => downloadPDF('/api/reports/consumables')}>
+        <button style={styles.button} onClick={() => downloadPDF('/api/reports/consumables')}>
           Consumables Report
         </button>
-      </div>
-      <div style={{ margin: '1rem 0' }}>
-        <button onClick={() => downloadPDF('/api/reports/vehicles')}>
+        <button style={styles.button} onClick={() => downloadPDF('/api/reports/vehicles')}>
           Training Vehicles Report
         </button>
       </div>
-      {/* Add more if you have more endpoints, e.g. Spare Parts, etc. */}
     </div>
   );
 };
