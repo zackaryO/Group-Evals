@@ -33,6 +33,16 @@ import ManageCohorts from './components/Cohorts/ManageCohorts';
 import AssignStudents from './components/Cohorts/AssignStudents';
 import ManageUsers from './components/Instructor/ManageUsers';
 
+// NEW: Import Inventory Pages
+import ToolsPage from './components/Inventory/ToolsPage';
+import LoanerToolboxesPage from './components/Inventory/LoanerToolboxesPage';
+import SparePartsPage from './components/Inventory/SparePartsPage';
+import InstructorToolsPage from './components/Inventory/InstructorToolsPage';
+import ConsumablesPage from './components/Inventory/ConsumablesPage';
+import FacilityNeedsPage from './components/Inventory/FacilityNeedsPage';
+import TrainingVehiclesPage from './components/Inventory/TrainingVehiclesPage';
+import InventoryReportsPage from './components/Inventory/InventoryReportsPage';
+
 const App = () => {
   const [user, setUser] = useState(null);
 
@@ -277,6 +287,72 @@ const App = () => {
           element={
             <InstructorRoute user={user}>
               <ManageUsers user={user} />
+            </InstructorRoute>
+          }
+        />
+
+        {/* NEW: Inventory pages, Instructor-only */}
+        <Route
+          path="/tools"
+          element={
+            <InstructorRoute user={user}>
+              <ToolsPage />
+            </InstructorRoute>
+          }
+        />
+        <Route
+          path="/loaner-toolboxes"
+          element={
+            <InstructorRoute user={user}>
+              <LoanerToolboxesPage />
+            </InstructorRoute>
+          }
+        />
+        <Route
+          path="/spare-parts"
+          element={
+            <InstructorRoute user={user}>
+              <SparePartsPage />
+            </InstructorRoute>
+          }
+        />
+        <Route
+          path="/instructor-tools"
+          element={
+            <InstructorRoute user={user}>
+              <InstructorToolsPage />
+            </InstructorRoute>
+          }
+        />
+        <Route
+          path="/consumables"
+          element={
+            <InstructorRoute user={user}>
+              <ConsumablesPage />
+            </InstructorRoute>
+          }
+        />
+        <Route
+          path="/facility-needs"
+          element={
+            <InstructorRoute user={user}>
+              <FacilityNeedsPage />
+            </InstructorRoute>
+          }
+        />
+        <Route
+          path="/training-vehicles"
+          element={
+            <InstructorRoute user={user}>
+              <TrainingVehiclesPage />
+            </InstructorRoute>
+          }
+        />
+        <Route
+          path="/inventory-reports"
+          element={
+            <InstructorRoute user={user}>
+              <InventoryReportsPage />
             </InstructorRoute>
           }
         />

@@ -1,11 +1,14 @@
 /* student-evaluation-app\client\src\components\Home.css */
+
+/* Container for the entire homepage */
 .home-container {
-  max-width: 800px;
+  max-width: 900px;
   margin: auto;
   padding: 20px;
   text-align: center;
 }
 
+/* The container that holds all cards */
 .card-container {
   display: flex;
   flex-wrap: wrap;
@@ -14,6 +17,7 @@
   margin-top: 20px;
 }
 
+/* Each card on the home page */
 .home-card {
   background-color: #f8f9fa;
   border: 1px solid #ddd;
@@ -30,12 +34,14 @@
   color: #333;
 }
 
+/* List of buttons within a card */
 .button-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
+/* The standard button styling for links */
 .home-button {
   display: inline-block;
   padding: 10px 20px;
@@ -49,4 +55,34 @@
 
 .home-button:hover {
   background-color: #0056b3;
+}
+
+/* Special card styling for inventory section */
+.inventory-card {
+  /* You can add custom styling if desired, or keep it as is */
+}
+
+/* Grid layout for the inventory links */
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+/* Individual inventory links in the grid */
+.inventory-link {
+  display: inline-block;
+  padding: 10px 15px;
+  background-color: #28a745; /* a greenish color */
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+  transition: background-color 0.3s;
+  font-weight: 500;
+}
+
+.inventory-link:hover {
+  background-color: #1f7e33;
 }

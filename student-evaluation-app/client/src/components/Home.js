@@ -9,17 +9,21 @@ const Home = ({ user }) => {
   return (
     <div className="home-container">
       <h1>Welcome to the Student Group Eval and Quiz Site</h1>
+
+      {/**
+       * This component shows progress if the user is a student.
+       * We do not change or remove this existing functionality.
+       */}
       {user && user.role === 'student' && <StudentProgress user={user} />}
+
       <div className="card-container">
-        {/* Evaluation Card */}
+        {/* EVALUATIONS CARD */}
         <div className="home-card">
           <h2>Evaluations</h2>
           <div className="button-list">
-            {/* {user && user.role === ('student' || 'instructor') && ( */}
-              <Link to="/evaluation" className="home-button">
-                Evaluation Form
-              </Link>
-            {/* // )} */}
+            <Link to="/evaluation" className="home-button">
+              Evaluation Form
+            </Link>
             {user && user.role === 'instructor' && (
               <Link to="/define-areas" className="home-button">
                 Edit Evaluation
@@ -28,7 +32,7 @@ const Home = ({ user }) => {
           </div>
         </div>
 
-        {/* Quiz Card */}
+        {/* QUIZZES CARD */}
         <div className="home-card">
           <h2>Quizzes</h2>
           <div className="button-list">
@@ -50,40 +54,7 @@ const Home = ({ user }) => {
           </div>
         </div>
 
-        {/* Courses and Assignments Card
-        <div className="home-card">
-          <h2>Courses & Assignments</h2>
-          <div className="button-list">
-            {user && user.role === 'student' && (
-              <>
-                <Link to="/courses" className="home-button">
-                  View Courses
-                </Link>
-                <Link to="/assignments" className="home-button">
-                  View Assignments
-                </Link>
-              </>
-            )}
-            {user && user.role === 'instructor' && (
-              <>
-                <Link to="/create-course" className="home-button">
-                  Create Course
-                </Link>
-                <Link to="/manage-courses" className="home-button">
-                  Manage Courses
-                </Link>
-                <Link to="/post-assignment" className="home-button">
-                  Create Assignment
-                </Link>
-                <Link to="/manage-assignments" className="home-button">
-                  Manage Assignments
-                </Link>
-              </>
-            )}
-          </div>
-        </div> */}
-
-        {/* Gradebooks Card */}
+        {/* GRADEBOOKS CARD */}
         <div className="home-card">
           <h2>Gradebooks</h2>
           <div className="button-list">
@@ -95,20 +66,12 @@ const Home = ({ user }) => {
                 <Link to="/quiz-gradebook" className="home-button">
                   Quiz Gradebook
                 </Link>
-                {/* <Link to="/course-gradebook" className="home-button">
-                  Course Gradebook
-                </Link>
-                {user.role === 'instructor' && (
-                  <Link to="/master-gradebook" className="home-button">
-                    Master Gradebook
-                  </Link>
-                )} */}
               </>
             )}
           </div>
         </div>
 
-        {/* Admin Card (Instructor Only) */}
+        {/* ADMIN CARD (Instructor Only) */}
         {user && user.role === 'instructor' && (
           <div className="home-card">
             <h2>Admin</h2>
@@ -116,11 +79,45 @@ const Home = ({ user }) => {
               <Link to="/manage-users" className="home-button">
                 Manage Users
               </Link>
-              {/* <Link to="/manage-cohorts" className="home-button">
-                Manage Cohorts
-              </Link> */}
               <Link to="/eval-gradebook" className="home-button">
                 Eval Gradebook
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* FACILITY TOOLS & INVENTORY (Instructor Only) */}
+        {user && user.role === 'instructor' && (
+          <div className="home-card inventory-card">
+            <h2>Facility Tools & Inventory</h2>
+
+            {/**
+             * We use a grid layout for these links to make them more visually appealing.
+             */}
+            <div className="inventory-grid">
+              <Link to="/tools" className="inventory-link">
+                Tools
+              </Link>
+              <Link to="/loaner-toolboxes" className="inventory-link">
+                Loaner Toolboxes
+              </Link>
+              <Link to="/spare-parts" className="inventory-link">
+                Spare Parts
+              </Link>
+              <Link to="/instructor-tools" className="inventory-link">
+                Instructor Tools
+              </Link>
+              <Link to="/consumables" className="inventory-link">
+                Consumables
+              </Link>
+              <Link to="/facility-needs" className="inventory-link">
+                Facility Needs
+              </Link>
+              <Link to="/training-vehicles" className="inventory-link">
+                Training Vehicles
+              </Link>
+              <Link to="/inventory-reports" className="inventory-link">
+                Reports
               </Link>
             </div>
           </div>
