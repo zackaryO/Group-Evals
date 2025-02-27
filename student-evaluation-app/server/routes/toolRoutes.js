@@ -7,7 +7,7 @@ const router = express.Router();
 const toolController = require('../controllers/toolController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 // Updated import path for upload middleware
-const { uploadSingle } = require('../middleware/uploadMiddleware');
+const { uploadSingle } = require('../controllers/uploadMiddleware');
 
 /**
  * GET /api/tools
