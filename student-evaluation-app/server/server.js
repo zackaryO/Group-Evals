@@ -3,11 +3,17 @@
  * Sets up Express, connects to MongoDB, and configures routes & middlewares.
  */
 
+const path = require('path');
+const dotenv = require('dotenv');  // Import dotenv at the very top
+// If your .env is in this same "server" folder, just do dotenv.config() with no options:
+dotenv.config();  
+
+// OR if your .env is in a parent folder, use:
+// dotenv.config({ path: path.join(__dirname, '../.env') });
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
 
 // Import route handlers (existing)
 const authRoutes = require('./routes/auth');
@@ -30,7 +36,11 @@ const facilityNeedRoutes = require('./routes/facilityNeedRoutes');
 const trainingVehicleRoutes = require('./routes/trainingVehicleRoutes');
 const reportRoutes = require('./routes/reportRoutes'); // if you have a separate route for PDF reports
 
-dotenv.config();
+// Debug logs to verify environment variables are loaded
+console.log('> MONGODB_URI:', process.env.MONGODB_URI || 'MISSING');
+console.log('> JWT_SECRET:', process.env.JWT_SECRET ? 'AVAILABLE' : 'MISSING');
+// If needed for AWS: console.log('> AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID || 'MISSING');
+// etc.
 
 const app = express();
 
@@ -94,6 +104,10 @@ app.use('/api/reports', reportRoutes);
 
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;
+if (!mongoURI) {
+  console.error('No MONGODB_URI found in environment. Exiting.');
+  process.exit(1);
+}
 
 mongoose
   .connect(mongoURI)
