@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import URL from '../../backEndURL';
 
 const TrainingVehiclesPage = () => {
   const styles = {
@@ -128,7 +129,7 @@ const TrainingVehiclesPage = () => {
   const fetchVehicles = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('/api/training-vehicles', {
+      const res = await axios.get(`${URL}/api/training-vehicles`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = Array.isArray(res.data) ? res.data : [];
@@ -157,11 +158,11 @@ const TrainingVehiclesPage = () => {
       };
 
       if (selectedVehicle) {
-        await axios.put(`/api/training-vehicles/${selectedVehicle._id}`, data, {
+        await axios.put(`${URL}/api/training-vehicles/${selectedVehicle._id}`, data, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post('/api/training-vehicles', data, {
+        await axios.post(`${URL}/api/training-vehicles`, data, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -190,7 +191,7 @@ const TrainingVehiclesPage = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/training-vehicles/${id}`, {
+      await axios.delete(`${URL}/api/training-vehicles/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setVehicles((prev) => prev.filter((v) => v._id !== id));

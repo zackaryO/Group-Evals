@@ -7,6 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import URL from '../../backEndURL';
 
 const SparePartsPage = () => {
   const styles = {
@@ -134,7 +135,7 @@ const SparePartsPage = () => {
   const fetchSpareParts = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/spare-parts', {
+      const response = await axios.get(`${URL}/api/spare-parts`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = Array.isArray(response.data) ? response.data : [];
@@ -162,11 +163,11 @@ const SparePartsPage = () => {
       }
 
       if (selectedPart) {
-        await axios.put(`/api/spare-parts/${selectedPart._id}`, formData, {
+        await axios.put(`${URL}/api/spare-parts/${selectedPart._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post('/api/spare-parts', formData, {
+        await axios.post(`${URL}/api/spare-parts`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -193,7 +194,7 @@ const SparePartsPage = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/spare-parts/${id}`, {
+      await axios.delete(`${URL}/api/spare-parts/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSpareParts((prev) => prev.filter((p) => p._id !== id));

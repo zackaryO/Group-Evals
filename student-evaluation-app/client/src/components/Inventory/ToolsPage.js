@@ -7,6 +7,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import URL from '../../backEndURL';
 
 const ToolsPage = () => {
   const styles = {
@@ -131,7 +132,7 @@ const ToolsPage = () => {
     const fetchTools = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('/api/tools', {
+        const res = await axios.get(`${URL}/api/tools`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = Array.isArray(res.data) ? res.data : [];
@@ -163,17 +164,17 @@ const ToolsPage = () => {
       }
 
       if (selectedTool) {
-        await axios.put(`/api/tools/${selectedTool._id}`, formData, {
+        await axios.put(`${URL}/api/tools/${selectedTool._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post('/api/tools', formData, {
+        await axios.post(`${URL}/api/tools`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
 
       resetForm();
-      const refreshed = await axios.get('/api/tools', {
+      const refreshed = await axios.get(`${URL}/api/tools`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTools(Array.isArray(refreshed.data) ? refreshed.data : []);
@@ -197,7 +198,7 @@ const ToolsPage = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/tools/${id}`, {
+      await axios.delete(`${URL}/api/tools/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTools((prev) => prev.filter((t) => t._id !== id));

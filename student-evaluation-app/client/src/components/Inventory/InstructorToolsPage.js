@@ -9,6 +9,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import URL from '../../backEndURL';
 
 const InstructorToolsPage = () => {
   const [tools, setTools] = useState([]);
@@ -30,7 +31,7 @@ const InstructorToolsPage = () => {
   const fetchInstructorTools = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/instructor-tools', {
+      const response = await axios.get(`${URL}/api/instructor-tools`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTools(response.data);
@@ -58,12 +59,12 @@ const InstructorToolsPage = () => {
 
       if (selectedTool) {
         // Update existing
-        await axios.put(`/api/instructor-tools/${selectedTool._id}`, formData, {
+        await axios.put(`${URL}/api/instructor-tools/${selectedTool._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
         // Create new
-        await axios.post('/api/instructor-tools', formData, {
+        await axios.post(`${URL}/api/instructor-tools`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -91,7 +92,7 @@ const InstructorToolsPage = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/instructor-tools/${id}`, {
+      await axios.delete(`${URL}/api/instructor-tools/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTools(tools.filter((t) => t._id !== id));

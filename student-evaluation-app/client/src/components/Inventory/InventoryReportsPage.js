@@ -1,5 +1,6 @@
 import React from 'react';
 import axios from 'axios';
+import URL from '../../backEndURL';
 
 const InventoryReportsPage = () => {
   const styles = {
@@ -53,13 +54,13 @@ const InventoryReportsPage = () => {
       <h2 style={styles.heading}>Inventory Reports</h2>
       <p>Select a report below to download a PDF.</p>
       <div>
-        <button style={styles.button} onClick={() => downloadPDF('/api/reports/tools')}>
+        <button style={styles.button} onClick={() => downloadPDF(`${URL}/api/reports/tools`)}>
           Tools Report
         </button>
-        <button style={styles.button} onClick={() => downloadPDF('/api/reports/consumables')}>
+        <button style={styles.button} onClick={() => downloadPDF(`${URL}/api/reports/consumables`)}>
           Consumables Report
         </button>
-        <button style={styles.button} onClick={() => downloadPDF('/api/reports/vehicles')}>
+        <button style={styles.button} onClick={() => downloadPDF(`${URL}/api/reports/vehicles`)}>
           Training Vehicles Report
         </button>
       </div>

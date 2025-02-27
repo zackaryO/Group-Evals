@@ -9,6 +9,7 @@
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import URL from '../../backEndURL';
 
 const LoanerToolboxesPage = () => {
   // Inline style objects
@@ -147,7 +148,7 @@ const LoanerToolboxesPage = () => {
   const fetchLoanerToolboxes = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('/api/loaner-toolboxes', {
+      const response = await axios.get(`${URL}/api/loaner-toolboxes`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = Array.isArray(response.data) ? response.data : [];
@@ -173,12 +174,12 @@ const LoanerToolboxesPage = () => {
 
       if (selectedToolbox) {
         // Update existing
-        await axios.put(`/api/loaner-toolboxes/${selectedToolbox._id}`, formData, {
+        await axios.put(`${URL}/api/loaner-toolboxes/${selectedToolbox._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
         // Create new
-        await axios.post('/api/loaner-toolboxes', formData, {
+        await axios.post(`${URL}/api/loaner-toolboxes`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
@@ -205,7 +206,7 @@ const LoanerToolboxesPage = () => {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`/api/loaner-toolboxes/${id}`, {
+      await axios.delete(`${URL}/api/loaner-toolboxes/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setToolboxes((prev) => prev.filter((tb) => tb._id !== id));
