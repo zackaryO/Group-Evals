@@ -1,15 +1,13 @@
 /**
- * Main server entry point for Student Evaluation App + Inventory Management.
- * Sets up Express, connects to MongoDB, and configures routes & middlewares.
+ * @file server.js
+ * @description Main entry point for the Student Evaluation + Inventory Management server.
+ *              Configures Express, connects to MongoDB, and registers all routes/middlewares.
  */
 
 const path = require('path');
-const dotenv = require('dotenv');  // Import dotenv at the very top
-// If your .env is in this same "server" folder, just do dotenv.config() with no options:
-dotenv.config();  
-
-// OR if your .env is in a parent folder, use:
-// dotenv.config({ path: path.join(__dirname, '../.env') });
+const dotenv = require('dotenv');
+dotenv.config(); // If your .env is in this same folder, no path needed
+// Or if your .env is in a parent folder, use: dotenv.config({ path: path.join(__dirname, '../.env') });
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -34,13 +32,12 @@ const instructorToolRoutes = require('./routes/instructorToolRoutes');
 const consumableRoutes = require('./routes/consumableRoutes');
 const facilityNeedRoutes = require('./routes/facilityNeedRoutes');
 const trainingVehicleRoutes = require('./routes/trainingVehicleRoutes');
-const reportRoutes = require('./routes/reportRoutes'); // if you have a separate route for PDF reports
+const reportRoutes = require('./routes/reportRoutes'); // If you have a separate route for PDF reports
 
-// Debug logs to verify environment variables are loaded
-console.log('> MONGODB_URI:', process.env.MONGODB_URI || 'MISSING');
-console.log('> JWT_SECRET:', process.env.JWT_SECRET ? 'AVAILABLE' : 'MISSING');
-// If needed for AWS: console.log('> AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID || 'MISSING');
-// etc.
+// Verify environment variables
+// console.log('> MONGODB_URI:', process.env.MONGODB_URI || 'MISSING');
+// console.log('> JWT_SECRET:', process.env.JWT_SECRET ? 'AVAILABLE' : 'MISSING');
+// Optionally log AWS keys or other env vars if debugging
 
 const app = express();
 
@@ -57,7 +54,7 @@ const allowedOrigins = [
   'https://group-evals.vercel.app',
   'https://group-evals-dbg0fumxc-zacks-projects-18c38742.vercel.app',
   'http://localhost:3000',
-  // Add any other allowed origins here
+  // Add other allowed client origins here
 ];
 
 const corsOptions = {
@@ -74,9 +71,11 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+// For parsing JSON bodies
 app.use(express.json());
 
-// Serve images from the local "uploads" folder, if applicable
+// Serve images from local "uploads" folder if needed
 app.use('/uploads', express.static('uploads'));
 
 // Register existing routes
@@ -91,7 +90,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/assignments', assignmentRoutes);
 
 // NEW: Register inventory-related routes
-app.use('/api/tools', toolRoutes);
+app.use('api/tools', toolRoutes);
 app.use('/api/loaner-toolboxes', loanerToolboxRoutes);
 app.use('/api/spare-parts', sparePartRoutes);
 app.use('/api/instructor-tools', instructorToolRoutes);

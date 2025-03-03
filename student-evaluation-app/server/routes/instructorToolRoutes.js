@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const instructorToolController = require('../controllers/instructorToolController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
-const { uploadSingle } = require('../controllers/uploadMiddleware');
+const { uploadSingle } = require('../middleware/uploadMiddleware');
 
 // GET all instructor tools
 router.get(

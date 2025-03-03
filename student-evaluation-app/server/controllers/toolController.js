@@ -1,12 +1,15 @@
 /**
- * toolController.js
- * Contains all CRUD operations for Tools (Tool model).
- * Demonstrates single-file S3 upload usage with Multer.
+ * @file toolController.js
+ * @description Controller methods for handling Tool CRUD operations.
+ *              Integrates with "multer-s3" for image uploads.
  */
+
 const Tool = require('../models/Tool');
 
 /**
- * Get all tools.
+ * @function getAllTools
+ * @description Fetches and returns all tools, sorted by creation date (descending).
+ * @route GET /api/tools
  */
 exports.getAllTools = async (req, res) => {
   try {
@@ -18,7 +21,9 @@ exports.getAllTools = async (req, res) => {
 };
 
 /**
- * Get a single tool by ID.
+ * @function getToolById
+ * @description Fetches a single Tool by its MongoDB _id.
+ * @route GET /api/tools/:id
  */
 exports.getToolById = async (req, res) => {
   try {
@@ -33,17 +38,27 @@ exports.getToolById = async (req, res) => {
 };
 
 /**
- * Create a new tool.
- * If an image was uploaded, multer-s3 places the file info in req.file.location.
+ * @function createTool
+ * @description Creates a new Tool document in MongoDB.
+ *              If an image was uploaded, stores the S3 URL in tool.imageUrl.
+ * @route POST /api/tools
  */
 exports.createTool = async (req, res) => {
   try {
-    const { name, description, quantityOnHand, room, shelf, repairStatus, purchasePriority } = req.body;
+    const {
+      name,
+      description,
+      quantityOnHand,
+      room,
+      shelf,
+      repairStatus,
+      purchasePriority
+    } = req.body;
     
-    // For single-file upload, the S3 location is in req.file
+    // If multer-s3 uploaded a file, req.file.location is the S3 URL
     let imageUrl = '';
     if (req.file && req.file.location) {
-      imageUrl = req.file.location; // e.g. https://your-bucket.s3.amazonaws.com/inventory/filename.jpg
+      imageUrl = req.file.location;
     }
 
     const newTool = new Tool({
@@ -64,20 +79,29 @@ exports.createTool = async (req, res) => {
 };
 
 /**
- * Update an existing tool.
- * If a new image is uploaded, replace the existing imageUrl.
+ * @function updateTool
+ * @description Updates an existing Tool in MongoDB by _id. Replaces the tool's imageUrl if a new image is uploaded.
+ * @route PUT /api/tools/:id
  */
 exports.updateTool = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, quantityOnHand, room, shelf, repairStatus, purchasePriority } = req.body;
+    const {
+      name,
+      description,
+      quantityOnHand,
+      room,
+      shelf,
+      repairStatus,
+      purchasePriority
+    } = req.body;
 
     const tool = await Tool.findById(id);
     if (!tool) {
       return res.status(404).json({ message: 'Tool not found' });
     }
 
-    // For single-file upload
+    // If an image is uploaded, overwrite the old imageUrl
     if (req.file && req.file.location) {
       tool.imageUrl = req.file.location;
     }
@@ -99,7 +123,9 @@ exports.updateTool = async (req, res) => {
 };
 
 /**
- * Delete a tool by ID.
+ * @function deleteTool
+ * @description Deletes an existing Tool by _id.
+ * @route DELETE /api/tools/:id
  */
 exports.deleteTool = async (req, res) => {
   try {

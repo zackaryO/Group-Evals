@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const loanerToolboxController = require('../controllers/loanerToolboxController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
-const { uploadArray } = require('../controllers/uploadMiddleware');
+const { uploadArray } = require('../middleware/uploadMiddleware');
 
 // GET all loaner toolboxes
 router.get(

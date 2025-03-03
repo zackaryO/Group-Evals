@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const facilityNeedController = require('../controllers/facilityNeedController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
-const { uploadArray } = require('../controllers/uploadMiddleware');
+const { uploadArray } = require('../middleware/uploadMiddleware');
 
 // GET all facility needs
 router.get(
