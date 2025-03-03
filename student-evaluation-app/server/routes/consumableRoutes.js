@@ -1,6 +1,6 @@
 /**
- * consumableRoutes.js
- * Routes for Consumable resource.
+ * @file consumableRoutes.js
+ * @description Routes for Consumable resource. Similar to Tools approach, but no Tools code.
  */
 
 const express = require('express');
@@ -25,7 +25,7 @@ router.get(
   consumableController.getConsumableById
 );
 
-// CREATE a consumable
+// CREATE a consumable (with optional single image)
 router.post(
   '/',
   authenticateToken,
