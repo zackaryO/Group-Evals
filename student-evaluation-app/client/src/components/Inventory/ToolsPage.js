@@ -1,7 +1,7 @@
 /**
  * @file ToolsPage.jsx
- * @description React component for managing Tool records (CRUD) with optional image uploads to S3.
- *              This page is designed to be mobile-responsive and user-friendly.
+ * @description React component for managing Tool records (CRUD) with optional image uploads to S3
+ *              (via the backend). Displaying images is limited in max size for better UI.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -12,9 +12,8 @@ import './ToolsPage.css'; // Import the CSS for styling
 
 /**
  * ToolsPage Component
- * - Fetches and displays a list of tools.
- * - Provides a form to create or edit a tool.
- * - Allows uploading an image (single file) to S3 via the backend.
+ * - Fetches and displays a list of tools from /api/tools
+ * - Provides a form to create or edit a tool, including optional image upload
  */
 const ToolsPage = () => {
   // State to hold all tool records
@@ -25,8 +24,9 @@ const ToolsPage = () => {
 
   // Form fields
   const [name, setName] = useState('');
+  const [partnum, setPartnum] = useState('')
   const [description, setDescription] = useState('');
-  const [quantityOnHand, setQuantityOnHand] = useState(0);
+  const [quantityOnHand, setQuantityOnHand] = useState(1);
   const [room, setRoom] = useState('');
   const [shelf, setShelf] = useState('');
   const [repairStatus, setRepairStatus] = useState('Good');
@@ -69,6 +69,7 @@ const ToolsPage = () => {
       // Prepare FormData for file upload (if image is selected)
       const formData = new FormData();
       formData.append('name', name);
+      formData.append('partnum', partnum);
       formData.append('description', description);
       formData.append('quantityOnHand', quantityOnHand);
       formData.append('room', room);
@@ -76,15 +77,17 @@ const ToolsPage = () => {
       formData.append('repairStatus', repairStatus);
       formData.append('purchasePriority', purchasePriority);
       if (image) {
-        formData.append('image', image); // must match 'uploadSingle("image")' on the server
+        formData.append('image', image); // must match "uploadSingle('image')" on the server
       }
 
       // Determine create vs. update
       if (selectedTool) {
+        // Update
         await axios.put(`${URL}/api/tools/${selectedTool._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
+        // Create new
         await axios.post(`${URL}/api/tools`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -98,7 +101,6 @@ const ToolsPage = () => {
       setTools(Array.isArray(refreshed.data) ? refreshed.data : []);
     } catch (error) {
       console.error('Error saving tool:', error);
-      // If it's a 500 from the server, check your AWS or multer config
     }
   };
 
@@ -108,13 +110,14 @@ const ToolsPage = () => {
   const handleEdit = (tool) => {
     setSelectedTool(tool);
     setName(tool.name);
+    setPartnum(tool.partnum);
     setDescription(tool.description || '');
-    setQuantityOnHand(tool.quantityOnHand || 0);
+    setQuantityOnHand(tool.quantityOnHand || 1);
     setRoom(tool.location?.room || '');
     setShelf(tool.location?.shelf || '');
     setRepairStatus(tool.repairStatus || 'Good');
     setPurchasePriority(tool.purchasePriority || 'None');
-    setImage(null); // Clear old image from state
+    setImage(null); // clear old file from state
   };
 
   /**
@@ -138,8 +141,9 @@ const ToolsPage = () => {
   const resetForm = () => {
     setSelectedTool(null);
     setName('');
+    setPartnum('');
     setDescription('');
-    setQuantityOnHand(0);
+    setQuantityOnHand(1);
     setRoom('');
     setShelf('');
     setRepairStatus('Good');
@@ -162,12 +166,18 @@ const ToolsPage = () => {
                 <strong>Quantity:</strong> {tool.quantityOnHand}
               </p>
               <p>
+                <strong>Part Number:</strong> {tool.partnum}
+              </p>
+              <p>
+                <strong>Description:</strong> {tool.description}
+              </p>
+              <p>
                 <strong>Repair Status:</strong> {tool.repairStatus}
               </p>
               <p>
                 <strong>Priority:</strong> {tool.purchasePriority}
               </p>
-              {/* Display tool image if exists, using a limited max size */}
+              {/* Show an image if present */}
               {tool.imageUrl && (
                 <img
                   src={tool.imageUrl}
@@ -207,6 +217,15 @@ const ToolsPage = () => {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="tools-form-group">
+              <label>Part Number:</label>
+              <input
+                type="text"
+                value={partnum}
+                onChange={(e) => setPartnum(e.target.value)}
                 required
               />
             </div>

@@ -46,6 +46,7 @@ exports.createTool = async (req, res) => {
   try {
     const {
       name,
+      partnum,
       description,
       quantityOnHand,
       room,
@@ -79,6 +80,7 @@ exports.createTool = async (req, res) => {
 
     const newTool = new Tool({
       name,
+      partnum,
       description,
       quantityOnHand,
       location: { room, shelf },
@@ -104,6 +106,7 @@ exports.updateTool = async (req, res) => {
     const { id } = req.params;
     const {
       name,
+      partnum,
       description,
       quantityOnHand,
       room,
@@ -141,6 +144,7 @@ exports.updateTool = async (req, res) => {
 
     // Update other fields if changed
     if (name !== undefined) tool.name = name;
+    if (partnum !== undefined) tool.partnum = partnum;
     if (description !== undefined) tool.description = description;
     if (quantityOnHand !== undefined) tool.quantityOnHand = quantityOnHand;
     if (room !== undefined) tool.location.room = room;

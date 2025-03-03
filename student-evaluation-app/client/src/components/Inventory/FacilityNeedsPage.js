@@ -1,108 +1,118 @@
+/**
+ * @file FacilityNeedsPage.jsx
+ * @description React component for managing FacilityNeed records (CRUD), including multiple images.
+ */
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import URL from '../../backEndURL';
 
-const styles = {
-  pageContainer: {
-    maxWidth: '1200px',
-    margin: '2rem auto',
-    background: '#fafafa',
-    borderRadius: '8px',
-    padding: '20px',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-  },
-  heading: {
-    textAlign: 'center',
-    marginBottom: '1.5rem',
-    color: '#333',
-  },
-  contentWrapper: {
-    display: 'flex',
-    gap: '2rem',
-  },
-  listContainer: {
-    flex: 1,
-    overflowY: 'auto',
-  },
-  itemCard: {
-    background: '#fff',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    padding: '1rem',
-    marginBottom: '1rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  },
-  itemTitle: {
-    fontWeight: 'bold',
-    marginBottom: '0.5rem',
-    color: '#555',
-  },
-  formContainer: {
-    flex: 1,
-    background: '#fff',
-    padding: '1rem',
-    borderRadius: '6px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  },
-  formGroup: {
-    marginBottom: '1rem',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '0.4rem',
-    fontWeight: '500',
-    color: '#333',
-  },
-  input: {
-    width: '100%',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-  },
-  textarea: {
-    width: '100%',
-    minHeight: '60px',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-  },
-  select: {
-    width: '100%',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-  },
-  buttonRow: {
-    display: 'flex',
-    gap: '0.5rem',
-    marginTop: '1rem',
-  },
-  button: {
-    background: '#007bff',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  buttonSecondary: {
-    background: '#6c757d',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  imageThumb: {
-    width: '80px',
-    margin: '0.5rem 0',
-    borderRadius: '4px',
-    objectFit: 'cover',
-    border: '1px solid #ddd',
-  },
-};
-
 const FacilityNeedsPage = () => {
+  // Inline style objects for layout
+  const styles = {
+    pageContainer: {
+      maxWidth: '1200px',
+      margin: '2rem auto',
+      background: '#fafafa',
+      borderRadius: '8px',
+      padding: '20px',
+      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+    },
+    heading: {
+      textAlign: 'center',
+      marginBottom: '1.5rem',
+      color: '#333',
+    },
+    contentWrapper: {
+      display: 'flex',
+      gap: '2rem',
+    },
+    listContainer: {
+      flex: 1,
+    },
+    itemCard: {
+      background: '#fff',
+      border: '1px solid #ddd',
+      borderRadius: '6px',
+      padding: '1rem',
+      marginBottom: '1rem',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    },
+    itemTitle: {
+      fontWeight: 'bold',
+      marginBottom: '0.5rem',
+      color: '#555',
+    },
+    buttonRow: {
+      display: 'flex',
+      gap: '0.5rem',
+      marginTop: '1rem',
+    },
+    button: {
+      background: '#007bff',
+      color: '#fff',
+      border: 'none',
+      padding: '0.5rem 1rem',
+      borderRadius: '4px',
+      cursor: 'pointer',
+    },
+    buttonSecondary: {
+      background: '#6c757d',
+      color: '#fff',
+      border: 'none',
+      padding: '0.5rem 1rem',
+      borderRadius: '4px',
+      cursor: 'pointer',
+    },
+    imageThumb: {
+      width: '80px',
+      margin: '0.5rem 0',
+      borderRadius: '4px',
+      objectFit: 'cover',
+      border: '1px solid #ddd',
+    },
+    formContainer: {
+      flex: 1,
+      background: '#fff',
+      padding: '1rem',
+      borderRadius: '6px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    },
+    formGroup: {
+      marginBottom: '1rem',
+    },
+    label: {
+      display: 'block',
+      marginBottom: '0.4rem',
+      fontWeight: '500',
+      color: '#333',
+    },
+    input: {
+      width: '100%',
+      padding: '0.5rem',
+      borderRadius: '4px',
+      border: '1px solid #ccc',
+    },
+    textarea: {
+      width: '100%',
+      minHeight: '60px',
+      padding: '0.5rem',
+      borderRadius: '4px',
+      border: '1px solid #ccc',
+    },
+    select: {
+      width: '100%',
+      padding: '0.5rem',
+      borderRadius: '4px',
+      border: '1px solid #ccc',
+    },
+    buttonRowForm: {
+      display: 'flex',
+      gap: '0.5rem',
+      marginTop: '1rem',
+    },
+  };
+
   const [needs, setNeeds] = useState([]);
   const [selectedNeed, setSelectedNeed] = useState(null);
   const [description, setDescription] = useState('');
@@ -195,30 +205,24 @@ const FacilityNeedsPage = () => {
     <div style={styles.pageContainer}>
       <h2 style={styles.heading}>Facility Needs / Repairs</h2>
       <div style={styles.contentWrapper}>
+        {/* LIST (READ) */}
         <div style={styles.listContainer}>
           <h3>Existing Facility Needs</h3>
           {needs.map((need) => (
             <div key={need._id} style={styles.itemCard}>
               <p style={styles.itemTitle}>{need.description}</p>
-              <p>
-                <strong>Status:</strong> {need.status}
-              </p>
-              <p>
-                <strong>Priority:</strong> {need.priority}
-              </p>
-              {need.images &&
-                need.images.map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={img}
-                    alt="Need"
-                    style={styles.imageThumb}
-                  />
-                ))}
+              <p><strong>Status:</strong> {need.status}</p>
+              <p><strong>Priority:</strong> {need.priority}</p>
+              {need.images && need.images.map((img, idx) => (
+                <img
+                  key={idx}
+                  src={img}
+                  alt="Need"
+                  style={styles.imageThumb}
+                />
+              ))}
               <div style={styles.buttonRow}>
-                <button style={styles.button} onClick={() => handleEdit(need)}>
-                  Edit
-                </button>
+                <button style={styles.button} onClick={() => handleEdit(need)}>Edit</button>
                 <button
                   style={styles.buttonSecondary}
                   onClick={() => handleDelete(need._id)}
@@ -230,6 +234,7 @@ const FacilityNeedsPage = () => {
           ))}
         </div>
 
+        {/* FORM (CREATE/UPDATE) */}
         <div style={styles.formContainer}>
           <h3>{selectedNeed ? 'Edit Need' : 'Add New Need'}</h3>
           <form onSubmit={handleSubmit} encType="multipart/form-data">
@@ -289,11 +294,7 @@ const FacilityNeedsPage = () => {
                 {selectedNeed ? 'Update' : 'Create'}
               </button>
               {selectedNeed && (
-                <button
-                  style={styles.buttonSecondary}
-                  type="button"
-                  onClick={resetForm}
-                >
+                <button style={styles.buttonSecondary} type="button" onClick={resetForm}>
                   Cancel
                 </button>
               )}

@@ -1,9 +1,14 @@
+/**
+ * @file ConsumablesPage.jsx
+ * @description React component for managing Consumable items (CRUD), including optional image uploads.
+ */
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import URL from '../../backEndURL';
+import URL from '../../backEndURL'; // Your backend base URL
 
 const ConsumablesPage = () => {
-  // --- Inline style objects (same snippet as above) ---
+  // Inline styles for layout and form
   const styles = {
     pageContainer: {
       maxWidth: '1200px',
@@ -61,19 +66,6 @@ const ConsumablesPage = () => {
       borderRadius: '4px',
       border: '1px solid #ccc',
     },
-    textarea: {
-      width: '100%',
-      minHeight: '60px',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    select: {
-      width: '100%',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
     buttonRow: {
       display: 'flex',
       gap: '0.5rem',
@@ -103,7 +95,6 @@ const ConsumablesPage = () => {
       border: '1px solid #ddd',
     },
   };
-  // ----------------------------------------------------
 
   const [consumables, setConsumables] = useState([]);
   const [selectedConsumable, setSelectedConsumable] = useState(null);
@@ -116,6 +107,7 @@ const ConsumablesPage = () => {
   const [desiredQuantity, setDesiredQuantity] = useState(0);
   const [image, setImage] = useState(null);
 
+  // Fetch all consumables on mount
   useEffect(() => {
     fetchConsumables();
   }, []);
@@ -126,7 +118,6 @@ const ConsumablesPage = () => {
       const res = await axios.get(`${URL}/api/consumables`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Ensure the result is an array:
       const data = Array.isArray(res.data) ? res.data : [];
       setConsumables(data);
     } catch (error) {
@@ -149,10 +140,12 @@ const ConsumablesPage = () => {
       }
 
       if (selectedConsumable) {
+        // Update existing
         await axios.put(`${URL}/api/consumables/${selectedConsumable._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
+        // Create new
         await axios.post(`${URL}/api/consumables`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -200,7 +193,7 @@ const ConsumablesPage = () => {
     <div style={styles.pageContainer}>
       <h2 style={styles.heading}>Consumables</h2>
       <div style={styles.contentWrapper}>
-        {/* LIST */}
+        {/* LIST (read) */}
         <div style={styles.listContainer}>
           <h3>Existing Consumables</h3>
           {consumables.map((item) => (
@@ -217,13 +210,15 @@ const ConsumablesPage = () => {
               )}
               <div style={styles.buttonRow}>
                 <button style={styles.button} onClick={() => handleEdit(item)}>Edit</button>
-                <button style={styles.buttonSecondary} onClick={() => handleDelete(item._id)}>Delete</button>
+                <button style={styles.buttonSecondary} onClick={() => handleDelete(item._id)}>
+                  Delete
+                </button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* FORM */}
+        {/* FORM (create/update) */}
         <div style={styles.formContainer}>
           <h3>{selectedConsumable ? 'Edit Consumable' : 'Add New Consumable'}</h3>
           <form onSubmit={handleSubmit} encType="multipart/form-data">
@@ -286,7 +281,7 @@ const ConsumablesPage = () => {
                 {selectedConsumable ? 'Update' : 'Create'}
               </button>
               {selectedConsumable && (
-                <button style={styles.buttonSecondary} onClick={resetForm} type="button">
+                <button style={styles.buttonSecondary} type="button" onClick={resetForm}>
                   Cancel
                 </button>
               )}

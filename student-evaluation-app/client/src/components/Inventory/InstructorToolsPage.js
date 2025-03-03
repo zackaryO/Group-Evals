@@ -1,16 +1,18 @@
 /**
- * InstructorToolsPage.js
- *
- * Provides CRUD interface for InstructorTool records.
- * Fields: instructor (ObjectId), toolName, imageUrl, description.
- *
- * Endpoint: /api/instructor-tools
- * Typically, you'd default "instructor" to the current user (if you want).
+ * @file InstructorToolsPage.jsx
+ * @description React component for managing InstructorTool records (CRUD),
+ *              allowing an image upload for each tool.
  */
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import URL from '../../backEndURL';
 
+/**
+ * InstructorToolsPage
+ * - Fetches and displays a list of instructor tools
+ * - Allows create, update, delete with optional image
+ */
 const InstructorToolsPage = () => {
   const [tools, setTools] = useState([]);
   const [selectedTool, setSelectedTool] = useState(null);
@@ -18,16 +20,13 @@ const InstructorToolsPage = () => {
   // Form fields
   const [toolName, setToolName] = useState('');
   const [description, setDescription] = useState('');
-  const [instructorId, setInstructorId] = useState(''); // or auto-fill from user context
+  const [instructorId, setInstructorId] = useState('');
   const [image, setImage] = useState(null);
 
   useEffect(() => {
     fetchInstructorTools();
   }, []);
 
-  /**
-   * Fetch all instructor tools
-   */
   const fetchInstructorTools = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -40,9 +39,6 @@ const InstructorToolsPage = () => {
     }
   };
 
-  /**
-   * Handle form submit
-   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -75,20 +71,14 @@ const InstructorToolsPage = () => {
     }
   };
 
-  /**
-   * Populate form for editing
-   */
   const handleEdit = (tool) => {
     setSelectedTool(tool);
     setToolName(tool.toolName);
     setDescription(tool.description || '');
-    setInstructorId(tool.instructor?._id || ''); // might be
+    setInstructorId(tool.instructor?._id || '');
     setImage(null);
   };
 
-  /**
-   * Delete tool
-   */
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
@@ -101,9 +91,6 @@ const InstructorToolsPage = () => {
     }
   };
 
-  /**
-   * Reset form
-   */
   const resetForm = () => {
     setSelectedTool(null);
     setToolName('');
@@ -127,12 +114,15 @@ const InstructorToolsPage = () => {
               <p><strong>Tool Name:</strong> {tool.toolName}</p>
               <p><strong>Description:</strong> {tool.description}</p>
               <p>
-                <strong>Instructor:</strong>{' '}
-                {tool.instructor?.firstName || ''} {tool.instructor?.lastName || ''}
+                <strong>Instructor:</strong> {tool.instructor?.firstName || ''} {tool.instructor?.lastName || ''}
               </p>
               {tool.imageUrl && (
                 <div>
-                  <img src={tool.imageUrl} alt={tool.toolName} style={{ width: '100px' }} />
+                  <img
+                    src={tool.imageUrl}
+                    alt={tool.toolName}
+                    style={{ width: '100px' }}
+                  />
                 </div>
               )}
               <button onClick={() => handleEdit(tool)}>Edit</button>
@@ -168,10 +158,6 @@ const InstructorToolsPage = () => {
                 value={instructorId}
                 onChange={(e) => setInstructorId(e.target.value)}
               />
-              {/* 
-                If you want to always set it to the current user, 
-                you can skip this input and store user._id in state 
-              */}
             </div>
             <div>
               <label>Image:</label>

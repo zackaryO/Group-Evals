@@ -7,9 +7,10 @@ const mongoose = require('mongoose');
 const toolSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    partnum: { type: String },
     description: { type: String },
     imageUrl: { type: String },  // We'll store the S3 file URL here
-    quantityOnHand: { type: Number, default: 0 },
+    quantityOnHand: { type: Number, default: 1 },
     location: {
       room: { type: String },
       shelf: { type: String },
