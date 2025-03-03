@@ -1,13 +1,13 @@
 /**
  * @file ConsumablesPage.jsx
- * @description React component for managing Consumables (CRUD) with optional image uploads.
- *              Uses a phone-friendly layout similar to ToolsPage.
+ * @description React component for managing Consumable items (CRUD), including optional image uploads.
+ *              Adopts a phone-friendly layout style similar to ToolsPage, with a separate CSS file.
  */
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import URL from '../../backEndURL'; // Adjust if needed
-import './ConsumablesPage.css';     // For phone-friendly layout
+import URL from '../../backEndURL'; // Your backend base URL
+import './ConsumablesPage.css';    // For phone-friendly layout
 
 const ConsumablesPage = () => {
   const [consumables, setConsumables] = useState([]);
@@ -21,7 +21,9 @@ const ConsumablesPage = () => {
   const [desiredQuantity, setDesiredQuantity] = useState(0);
   const [image, setImage] = useState(null);
 
-  // Fetch all consumables on mount
+  /**
+   * Fetch existing Consumables upon component mount.
+   */
   useEffect(() => {
     fetchConsumables();
   }, []);
@@ -39,6 +41,9 @@ const ConsumablesPage = () => {
     }
   };
 
+  /**
+   * Handle form submission for create or update.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -51,7 +56,7 @@ const ConsumablesPage = () => {
       formData.append('desiredQuantity', desiredQuantity);
 
       if (image) {
-        formData.append('image', image); // must match uploadSingle('image') in the back end
+        formData.append('image', image); // must match uploadSingle('image')
       }
 
       if (selectedConsumable) {
@@ -65,6 +70,7 @@ const ConsumablesPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
+
       resetForm();
       fetchConsumables();
     } catch (error) {
@@ -72,6 +78,9 @@ const ConsumablesPage = () => {
     }
   };
 
+  /**
+   * Populate form fields for editing a Consumable.
+   */
   const handleEdit = (item) => {
     setSelectedConsumable(item);
     setName(item.name);
@@ -82,6 +91,9 @@ const ConsumablesPage = () => {
     setImage(null);
   };
 
+  /**
+   * Delete a specific Consumable.
+   */
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
@@ -94,6 +106,9 @@ const ConsumablesPage = () => {
     }
   };
 
+  /**
+   * Reset the form to initial state.
+   */
   const resetForm = () => {
     setSelectedConsumable(null);
     setName('');

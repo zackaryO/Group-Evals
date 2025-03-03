@@ -1,11 +1,19 @@
 /**
- * sparePartController.js
- *
- * CRUD operations for SparePart model.
- * Only instructors should access these routes (enforced at the route level).
+ * @file sparePartController.js
+ * @description CRUD operations for SparePart model,
+ *              using AWS SDK v3 for optional image upload.
  */
 
 const SparePart = require('../models/SparePart');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
 /**
  * GET /api/spare-parts
@@ -38,8 +46,7 @@ exports.getSparePartById = async (req, res) => {
 
 /**
  * POST /api/spare-parts
- * Create a new spare part.
- * Can include image in req.file (S3).
+ * Create a new spare part. If an image is uploaded, store it in S3 + CloudFront URL.
  */
 exports.createSparePart = async (req, res) => {
   try {
@@ -54,9 +61,19 @@ exports.createSparePart = async (req, res) => {
       purchasePriority,
     } = req.body;
 
-    let imageUrl = '';
-    if (req.file && req.file.location) {
-      imageUrl = req.file.location;
+    let imageUrl = null;
+    if (req.file) {
+      const file = req.file;
+      const uniqueKey = `spareparts/${Date.now()}-${file.originalname}`;
+
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+        Key: uniqueKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }));
+      const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN;
+      imageUrl = `https://${cloudfrontDomain}/${uniqueKey}`;
     }
 
     const newPart = new SparePart({
@@ -79,7 +96,7 @@ exports.createSparePart = async (req, res) => {
 
 /**
  * PUT /api/spare-parts/:id
- * Update an existing spare part.
+ * Update a spare part, optionally with a new image.
  */
 exports.updateSparePart = async (req, res) => {
   try {
@@ -100,12 +117,20 @@ exports.updateSparePart = async (req, res) => {
       return res.status(404).json({ message: 'Spare part not found' });
     }
 
-    // Update image if new file uploaded
-    if (req.file && req.file.location) {
-      part.imageUrl = req.file.location;
+    if (req.file) {
+      const file = req.file;
+      const uniqueKey = `spareparts/${Date.now()}-${file.originalname}`;
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+        Key: uniqueKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }));
+      const cfDomain = process.env.AWS_S3_CUSTOM_DOMAIN;
+      part.imageUrl = `https://${cfDomain}/${uniqueKey}`;
     }
 
-    // Update fields if provided
+    // Update fields
     part.partName = partName ?? part.partName;
     part.partNumber = partNumber ?? part.partNumber;
     part.description = description ?? part.description;
@@ -124,7 +149,7 @@ exports.updateSparePart = async (req, res) => {
 
 /**
  * DELETE /api/spare-parts/:id
- * Delete a spare part by ID.
+ * Delete a spare part.
  */
 exports.deleteSparePart = async (req, res) => {
   try {

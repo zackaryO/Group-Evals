@@ -1,53 +1,67 @@
 /**
- * facilityNeedController.js
- *
- * CRUD operations for FacilityNeed model.
- * Only instructors should access these routes (enforced at the route level).
+ * @file facilityNeedController.js
+ * @description CRUD for FacilityNeed model, using AWS SDK v3 if images are uploaded.
  */
 
 const FacilityNeed = require('../models/FacilityNeed');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+
+// Initialize S3
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
 /**
  * GET /api/facility-needs
- * Retrieve all facility needs.
  */
 exports.getAllFacilityNeeds = async (req, res) => {
   try {
     const needs = await FacilityNeed.find().sort({ createdAt: -1 });
-    return res.json(needs);
+    res.json(needs);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 /**
  * GET /api/facility-needs/:id
- * Retrieve a single facility need by ID.
  */
 exports.getFacilityNeedById = async (req, res) => {
   try {
     const need = await FacilityNeed.findById(req.params.id);
-    if (!need) {
-      return res.status(404).json({ message: 'Facility need not found' });
-    }
-    return res.json(need);
+    if (!need) return res.status(404).json({ message: 'Facility need not found' });
+    res.json(need);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 /**
  * POST /api/facility-needs
- * Create a new facility need/improvement.
+ * Allows multiple images. We'll build a CloudFront URL for each.
  */
 exports.createFacilityNeed = async (req, res) => {
   try {
     const { description, status, priority, assignedTo } = req.body;
 
-    // If multiple images are uploaded
+    // For multiple images
     let images = [];
     if (req.files && req.files.length > 0) {
-      images = req.files.map((file) => file.location);
+      const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN;
+      for (const file of req.files) {
+        const uniqueKey = `facility/${Date.now()}-${file.originalname}`;
+        await s3.send(new PutObjectCommand({
+          Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+          Key: uniqueKey,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        }));
+        images.push(`https://${cloudfrontDomain}/${uniqueKey}`);
+      }
     }
 
     const newNeed = new FacilityNeed({
@@ -59,15 +73,14 @@ exports.createFacilityNeed = async (req, res) => {
     });
 
     const savedNeed = await newNeed.save();
-    return res.status(201).json(savedNeed);
+    res.status(201).json(savedNeed);
   } catch (error) {
-    return res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
 /**
  * PUT /api/facility-needs/:id
- * Update an existing facility need.
  */
 exports.updateFacilityNeed = async (req, res) => {
   try {
@@ -79,10 +92,20 @@ exports.updateFacilityNeed = async (req, res) => {
       return res.status(404).json({ message: 'Facility need not found' });
     }
 
-    // If new images uploaded
+    // If new images come in
     if (req.files && req.files.length > 0) {
-      const newImages = req.files.map((file) => file.location);
-      // Overwrite or push to existing array (decide your approach):
+      const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN;
+      let newImages = [];
+      for (const file of req.files) {
+        const uniqueKey = `facility/${Date.now()}-${file.originalname}`;
+        await s3.send(new PutObjectCommand({
+          Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+          Key: uniqueKey,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        }));
+        newImages.push(`https://${cloudfrontDomain}/${uniqueKey}`);
+      }
       need.images = newImages;
     }
 
@@ -92,15 +115,14 @@ exports.updateFacilityNeed = async (req, res) => {
     need.assignedTo = assignedTo ?? need.assignedTo;
 
     const updatedNeed = await need.save();
-    return res.json(updatedNeed);
+    res.json(updatedNeed);
   } catch (error) {
-    return res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };
 
 /**
  * DELETE /api/facility-needs/:id
- * Delete a facility need by ID.
  */
 exports.deleteFacilityNeed = async (req, res) => {
   try {
@@ -110,8 +132,8 @@ exports.deleteFacilityNeed = async (req, res) => {
       return res.status(404).json({ message: 'Facility need not found' });
     }
     await FacilityNeed.deleteOne({ _id: id });
-    return res.json({ message: 'Facility need deleted successfully' });
+    res.json({ message: 'Facility need deleted successfully' });
   } catch (error) {
-    return res.status(400).json({ message: error.message });
+    res.status(400).json({ message: error.message });
   }
 };

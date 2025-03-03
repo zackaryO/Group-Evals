@@ -1,33 +1,15 @@
+/**
+ * @file InventoryReportsPage.jsx
+ * @description React component to download PDF reports for various inventory categories,
+ *              styled with a phone-friendly approach similar to ToolsPage.
+ */
+
 import React from 'react';
 import axios from 'axios';
 import URL from '../../backEndURL';
+import './InventoryReportsPage.css';
 
 const InventoryReportsPage = () => {
-  const styles = {
-    pageContainer: {
-      maxWidth: '600px',
-      margin: '2rem auto',
-      background: '#fafafa',
-      borderRadius: '8px',
-      padding: '20px',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-      textAlign: 'center',
-    },
-    heading: {
-      marginBottom: '1.5rem',
-      color: '#333',
-    },
-    button: {
-      background: '#007bff',
-      color: '#fff',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      margin: '1rem',
-    },
-  };
-
   const token = localStorage.getItem('token');
 
   const downloadPDF = async (endpoint) => {
@@ -50,19 +32,37 @@ const InventoryReportsPage = () => {
   };
 
   return (
-    <div style={styles.pageContainer}>
-      <h2 style={styles.heading}>Inventory Reports</h2>
-      <p>Select a report below to download a PDF.</p>
-      <div>
-        <button style={styles.button} onClick={() => downloadPDF(`${URL}/api/reports/tools`)}>
-          Tools Report
+    <div className="reports-page-container">
+      <h2 className="reports-heading">Inventory Reports</h2>
+      <p className="reports-description">
+        Select a report below to download a PDF of that inventory category.
+      </p>
+      <div className="reports-button-wrapper">
+        <button
+          className="reports-button"
+          onClick={() => downloadPDF(`${URL}/api/reports/consumables`)}
+        >
+          Low-Stock Consumables
         </button>
-        <button style={styles.button} onClick={() => downloadPDF(`${URL}/api/reports/consumables`)}>
-          Consumables Report
+        <button
+          className="reports-button"
+          onClick={() => downloadPDF(`${URL}/api/reports/vehicles`)}
+        >
+          Training Vehicles
         </button>
-        <button style={styles.button} onClick={() => downloadPDF(`${URL}/api/reports/vehicles`)}>
-          Training Vehicles Report
+        <button
+          className="reports-button"
+          onClick={() => downloadPDF(`${URL}/api/reports/spareparts`)}
+        >
+          Spare Parts (example)
         </button>
+                <button
+          className="reports-button"
+          onClick={() => downloadPDF(`${URL}/api/reports/tools`)}
+        >
+          Tools Inventory
+        </button>
+        {/* Add more if needed */}
       </div>
     </div>
   );

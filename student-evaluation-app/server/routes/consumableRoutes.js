@@ -1,6 +1,6 @@
 /**
  * @file consumableRoutes.js
- * @description Routes for Consumable resource. Similar to Tools approach, but no Tools code.
+ * @description Routes for Consumable resource, phone-friendly front-end, AWS v3 backend.
  */
 
 const express = require('express');
@@ -10,45 +10,18 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
 const { uploadSingle } = require('../middleware/uploadMiddleware');
 
 // GET all consumables
-router.get(
-  '/',
-  authenticateToken,
-  authorizeRoles('instructor'),
-  consumableController.getAllConsumables
-);
+router.get('/', authenticateToken, authorizeRoles('instructor'), consumableController.getAllConsumables);
 
-// GET a single consumable
-router.get(
-  '/:id',
-  authenticateToken,
-  authorizeRoles('instructor'),
-  consumableController.getConsumableById
-);
+// GET one consumable
+router.get('/:id', authenticateToken, authorizeRoles('instructor'), consumableController.getConsumableById);
 
-// CREATE a consumable (with optional single image)
-router.post(
-  '/',
-  authenticateToken,
-  authorizeRoles('instructor'),
-  uploadSingle('image'),
-  consumableController.createConsumable
-);
+// CREATE
+router.post('/', authenticateToken, authorizeRoles('instructor'), uploadSingle('image'), consumableController.createConsumable);
 
-// UPDATE a consumable
-router.put(
-  '/:id',
-  authenticateToken,
-  authorizeRoles('instructor'),
-  uploadSingle('image'),
-  consumableController.updateConsumable
-);
+// UPDATE
+router.put('/:id', authenticateToken, authorizeRoles('instructor'), uploadSingle('image'), consumableController.updateConsumable);
 
-// DELETE a consumable
-router.delete(
-  '/:id',
-  authenticateToken,
-  authorizeRoles('instructor'),
-  consumableController.deleteConsumable
-);
+// DELETE
+router.delete('/:id', authenticateToken, authorizeRoles('instructor'), consumableController.deleteConsumable);
 
 module.exports = router;
