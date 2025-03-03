@@ -90,7 +90,7 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/assignments', assignmentRoutes);
 
 // NEW: Register inventory-related routes
-app.use('api/tools', toolRoutes);
+app.use('/api/tools', toolRoutes);
 app.use('/api/loaner-toolboxes', loanerToolboxRoutes);
 app.use('/api/spare-parts', sparePartRoutes);
 app.use('/api/instructor-tools', instructorToolRoutes);
