@@ -1,122 +1,33 @@
 /**
- * ToolsPage.js
- * For CRUD on Tools (name, description, quantityOnHand, location, etc.)
- * Endpoint: /api/tools
+ * @file ToolsPage.jsx
+ * @description React component for managing Tool records (CRUD) with optional image uploads to S3.
+ *              This page is designed to be mobile-responsive and user-friendly.
+ *
+ * @author 
+ * @date 
  */
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+// Change this to your own backend base URL
 import URL from '../../backEndURL';
+import './ToolsPage.css'; // Import the separate CSS for responsive styling
 
+/**
+ * ToolsPage Component
+ * - Fetches and displays a list of tools.
+ * - Provides a form to create or edit a tool.
+ * - Allows uploading an image (single file) to S3 via the backend.
+ */
 const ToolsPage = () => {
-  const styles = {
-    pageContainer: {
-      maxWidth: '1200px',
-      margin: '2rem auto',
-      background: '#fafafa',
-      borderRadius: '8px',
-      padding: '20px',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-    },
-    heading: {
-      textAlign: 'center',
-      marginBottom: '1.5rem',
-      color: '#333',
-    },
-    contentWrapper: {
-      display: 'flex',
-      gap: '2rem',
-    },
-    listContainer: {
-      flex: 1,
-    },
-    itemCard: {
-      background: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: '6px',
-      padding: '1rem',
-      marginBottom: '1rem',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    },
-    itemTitle: {
-      fontWeight: 'bold',
-      marginBottom: '0.5rem',
-      color: '#555',
-    },
-    buttonRow: {
-      display: 'flex',
-      gap: '0.5rem',
-      marginTop: '1rem',
-    },
-    button: {
-      background: '#007bff',
-      color: '#fff',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '4px',
-      cursor: 'pointer',
-    },
-    buttonSecondary: {
-      background: '#6c757d',
-      color: '#fff',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '4px',
-      cursor: 'pointer',
-    },
-    imageThumb: {
-      width: '80px',
-      margin: '0.5rem 0',
-      borderRadius: '4px',
-      objectFit: 'cover',
-      border: '1px solid #ddd',
-    },
-    formContainer: {
-      flex: 1,
-      background: '#fff',
-      padding: '1rem',
-      borderRadius: '6px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    },
-    formGroup: {
-      marginBottom: '1rem',
-    },
-    label: {
-      display: 'block',
-      marginBottom: '0.4rem',
-      fontWeight: '500',
-      color: '#333',
-    },
-    input: {
-      width: '100%',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    textarea: {
-      width: '100%',
-      minHeight: '60px',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    select: {
-      width: '100%',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    buttonRowForm: {
-      display: 'flex',
-      gap: '0.5rem',
-      marginTop: '1rem',
-    },
-  };
-
+  // State to hold all tool records
   const [tools, setTools] = useState([]);
+
+  // State for editing a specific tool
   const [selectedTool, setSelectedTool] = useState(null);
 
+  // Form fields
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [quantityOnHand, setQuantityOnHand] = useState(0);
@@ -128,6 +39,10 @@ const ToolsPage = () => {
 
   const navigate = useNavigate();
 
+  /**
+   * Fetch all tools on component mount.
+   * If unauthorized (401), redirect to /login.
+   */
   useEffect(() => {
     const fetchTools = async () => {
       try {
@@ -147,10 +62,15 @@ const ToolsPage = () => {
     fetchTools();
   }, [navigate]);
 
+  /**
+   * Handle form submission (create or update a tool).
+   * Sends multipart/form-data if an image is present.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
+      // Prepare FormData for file upload (if image is selected)
       const formData = new FormData();
       formData.append('name', name);
       formData.append('description', description);
@@ -160,9 +80,10 @@ const ToolsPage = () => {
       formData.append('repairStatus', repairStatus);
       formData.append('purchasePriority', purchasePriority);
       if (image) {
-        formData.append('image', image);
+        formData.append('image', image); // must match 'uploadSingle("image")' on the server
       }
 
+      // Determine create vs. update
       if (selectedTool) {
         await axios.put(`${URL}/api/tools/${selectedTool._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
@@ -173,6 +94,7 @@ const ToolsPage = () => {
         });
       }
 
+      // Refresh the list
       resetForm();
       const refreshed = await axios.get(`${URL}/api/tools`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -180,9 +102,13 @@ const ToolsPage = () => {
       setTools(Array.isArray(refreshed.data) ? refreshed.data : []);
     } catch (error) {
       console.error('Error saving tool:', error);
+      // If it's a 500 from the server, check your AWS or multer config
     }
   };
 
+  /**
+   * Begin editing a tool (loads the tool data into the form).
+   */
   const handleEdit = (tool) => {
     setSelectedTool(tool);
     setName(tool.name);
@@ -192,9 +118,12 @@ const ToolsPage = () => {
     setShelf(tool.location?.shelf || '');
     setRepairStatus(tool.repairStatus || 'Good');
     setPurchasePriority(tool.purchasePriority || 'None');
-    setImage(null);
+    setImage(null); // Clear old image from state
   };
 
+  /**
+   * Delete a specific tool by ID.
+   */
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
@@ -207,6 +136,9 @@ const ToolsPage = () => {
     }
   };
 
+  /**
+   * Reset the form to a blank state.
+   */
   const resetForm = () => {
     setSelectedTool(null);
     setName('');
@@ -220,15 +152,16 @@ const ToolsPage = () => {
   };
 
   return (
-    <div style={styles.pageContainer}>
-      <h2 style={styles.heading}>Tools Inventory</h2>
-      <div style={styles.contentWrapper}>
+    <div className="tools-page-container">
+      <h2 className="tools-heading">Tools Inventory</h2>
+
+      <div className="tools-content-wrapper">
         {/* LIST OF TOOLS */}
-        <div style={styles.listContainer}>
+        <div className="tools-list-container">
           <h3>Existing Tools</h3>
           {tools.map((tool) => (
-            <div key={tool._id} style={styles.itemCard}>
-              <p style={styles.itemTitle}>{tool.name}</p>
+            <div key={tool._id} className="tool-item-card">
+              <p className="tool-item-title">{tool.name}</p>
               <p><strong>Quantity:</strong> {tool.quantityOnHand}</p>
               <p><strong>Repair Status:</strong> {tool.repairStatus}</p>
               <p><strong>Priority:</strong> {tool.purchasePriority}</p>
@@ -236,13 +169,18 @@ const ToolsPage = () => {
                 <img
                   src={tool.imageUrl}
                   alt={tool.name}
-                  style={styles.imageThumb}
+                  className="tool-image-thumb"
                 />
               )}
-              <div style={styles.buttonRow}>
-                <button style={styles.button} onClick={() => handleEdit(tool)}>Edit</button>
+              <div className="tool-button-row">
                 <button
-                  style={styles.buttonSecondary}
+                  className="tool-button-primary"
+                  onClick={() => handleEdit(tool)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="tool-button-secondary"
                   onClick={() => handleDelete(tool._id)}
                 >
                   Delete
@@ -253,58 +191,56 @@ const ToolsPage = () => {
         </div>
 
         {/* TOOL FORM */}
-        <div style={styles.formContainer}>
+        <div className="tools-form-container">
           <h3>{selectedTool ? 'Edit Tool' : 'Add New Tool'}</h3>
-          <form onSubmit={handleSubmit} encType="multipart/form-data">
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Name:</label>
+          <form
+            onSubmit={handleSubmit}
+            encType="multipart/form-data"
+            className="tools-form"
+          >
+            <div className="tools-form-group">
+              <label>Name:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Description:</label>
+            <div className="tools-form-group">
+              <label>Description:</label>
               <textarea
-                style={styles.textarea}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Quantity On Hand:</label>
+            <div className="tools-form-group">
+              <label>Quantity On Hand:</label>
               <input
-                style={styles.input}
                 type="number"
                 value={quantityOnHand}
                 onChange={(e) => setQuantityOnHand(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Room:</label>
+            <div className="tools-form-group">
+              <label>Room:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={room}
                 onChange={(e) => setRoom(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Shelf:</label>
+            <div className="tools-form-group">
+              <label>Shelf:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={shelf}
                 onChange={(e) => setShelf(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Repair Status:</label>
+            <div className="tools-form-group">
+              <label>Repair Status:</label>
               <select
-                style={styles.select}
                 value={repairStatus}
                 onChange={(e) => setRepairStatus(e.target.value)}
               >
@@ -313,10 +249,9 @@ const ToolsPage = () => {
                 <option value="Under Repair">Under Repair</option>
               </select>
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Purchase Priority:</label>
+            <div className="tools-form-group">
+              <label>Purchase Priority:</label>
               <select
-                style={styles.select}
                 value={purchasePriority}
                 onChange={(e) => setPurchasePriority(e.target.value)}
               >
@@ -326,22 +261,22 @@ const ToolsPage = () => {
                 <option value="High">High</option>
               </select>
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Image:</label>
+            <div className="tools-form-group">
+              <label>Image (optional):</label>
               <input
-                style={styles.input}
                 type="file"
                 onChange={(e) => setImage(e.target.files[0])}
+                accept="image/*"
               />
             </div>
-            <div style={styles.buttonRowForm}>
-              <button style={styles.button} type="submit">
+            <div className="tools-form-button-row">
+              <button type="submit" className="tool-button-primary">
                 {selectedTool ? 'Update' : 'Create'}
               </button>
               {selectedTool && (
                 <button
-                  style={styles.buttonSecondary}
                   type="button"
+                  className="tool-button-secondary"
                   onClick={resetForm}
                 >
                   Cancel

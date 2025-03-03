@@ -1,17 +1,20 @@
 /**
- * toolRoutes.js
- * Express routes for managing Tool resources.
+ * @file toolRoutes.js
+ * @description Express routes for creating, retrieving, updating, and deleting Tool records.
+ *              Supports single-image upload via AWS S3 using "multer-s3".
  */
+
 const express = require('express');
 const router = express.Router();
 const toolController = require('../controllers/toolController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
-// Updated import path for upload middleware
-const { uploadSingle } = require('../controllers/uploadMiddleware');
+// IMPORTANT: must import from "../middleware/uploadMiddleware", not "../controllers/uploadMiddleware"
+const { uploadSingle } = require('../middleware/uploadMiddleware');
 
 /**
  * GET /api/tools
  * Retrieve all tools (instructor only).
+ * @returns {Array} List of Tool objects.
  */
 router.get(
   '/',
@@ -22,7 +25,8 @@ router.get(
 
 /**
  * GET /api/tools/:id
- * Retrieve a single tool by ID (instructor only).
+ * Retrieve a single tool by its ID (instructor only).
+ * @returns {Object} The requested Tool.
  */
 router.get(
   '/:id',
@@ -33,21 +37,23 @@ router.get(
 
 /**
  * POST /api/tools
- * Create a new tool (instructor only).
- * Upload a single image field named 'image'.
+ * Create a new Tool (instructor only).
+ * Single image upload field named 'image'.
+ * @returns {Object} The newly-created Tool object.
  */
 router.post(
   '/',
   authenticateToken,
   authorizeRoles('instructor'),
-  uploadSingle('image'),
+  uploadSingle('image'), // matches the formData.append('image', file)
   toolController.createTool
 );
 
 /**
  * PUT /api/tools/:id
- * Update an existing tool by ID (instructor only).
- * Can also update the image by uploading new 'image' file.
+ * Update an existing tool (instructor only).
+ * Can optionally update the image by uploading a new 'image' file.
+ * @returns {Object} The updated Tool object.
  */
 router.put(
   '/:id',
@@ -60,6 +66,7 @@ router.put(
 /**
  * DELETE /api/tools/:id
  * Delete a tool by ID (instructor only).
+ * @returns {Object} A success message.
  */
 router.delete(
   '/:id',
