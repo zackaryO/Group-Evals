@@ -25,6 +25,7 @@ exports.generateToolsReport = async (req, res) => {
     const tools = await Tool.find();
     tools.forEach((tool) => {
       doc.fontSize(12).text(`Name: ${tool.name}`);
+      doc.text(`Part Number: ${tool.partnum}`);
       doc.text(`Quantity: ${tool.quantityOnHand}`);
       doc.text(`Repair Status: ${tool.repairStatus}`);
       doc.text(`Purchase Priority: ${tool.purchasePriority}`);

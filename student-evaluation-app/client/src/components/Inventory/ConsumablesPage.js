@@ -1,110 +1,15 @@
+/**
+ * @file ConsumablesPage.jsx
+ * @description React component for managing Consumable items (CRUD), including optional image uploads.
+ *              Adopts a phone-friendly layout style similar to ToolsPage, with a separate CSS file.
+ */
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import URL from '../../backEndURL';
+import URL from '../../backEndURL'; // Your backend base URL
+import './ConsumablesPage.css';    // For phone-friendly layout
 
 const ConsumablesPage = () => {
-  // --- Inline style objects (same snippet as above) ---
-  const styles = {
-    pageContainer: {
-      maxWidth: '1200px',
-      margin: '2rem auto',
-      background: '#fafafa',
-      borderRadius: '8px',
-      padding: '20px',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-    },
-    heading: {
-      textAlign: 'center',
-      marginBottom: '1.5rem',
-      color: '#333',
-    },
-    contentWrapper: {
-      display: 'flex',
-      gap: '2rem',
-    },
-    listContainer: {
-      flex: 1,
-      overflowY: 'auto',
-    },
-    itemCard: {
-      background: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: '6px',
-      padding: '1rem',
-      marginBottom: '1rem',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    },
-    itemTitle: {
-      fontWeight: 'bold',
-      marginBottom: '0.5rem',
-      color: '#555',
-    },
-    formContainer: {
-      flex: 1,
-      background: '#fff',
-      padding: '1rem',
-      borderRadius: '6px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    },
-    formGroup: {
-      marginBottom: '1rem',
-    },
-    label: {
-      display: 'block',
-      marginBottom: '0.4rem',
-      fontWeight: '500',
-      color: '#333',
-    },
-    input: {
-      width: '100%',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    textarea: {
-      width: '100%',
-      minHeight: '60px',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    select: {
-      width: '100%',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    buttonRow: {
-      display: 'flex',
-      gap: '0.5rem',
-      marginTop: '1rem',
-    },
-    button: {
-      background: '#007bff',
-      color: '#fff',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '4px',
-      cursor: 'pointer',
-    },
-    buttonSecondary: {
-      background: '#6c757d',
-      color: '#fff',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '4px',
-      cursor: 'pointer',
-    },
-    imageThumb: {
-      width: '80px',
-      margin: '0.5rem 0',
-      borderRadius: '4px',
-      objectFit: 'cover',
-      border: '1px solid #ddd',
-    },
-  };
-  // ----------------------------------------------------
-
   const [consumables, setConsumables] = useState([]);
   const [selectedConsumable, setSelectedConsumable] = useState(null);
 
@@ -116,6 +21,9 @@ const ConsumablesPage = () => {
   const [desiredQuantity, setDesiredQuantity] = useState(0);
   const [image, setImage] = useState(null);
 
+  /**
+   * Fetch existing Consumables upon component mount.
+   */
   useEffect(() => {
     fetchConsumables();
   }, []);
@@ -126,7 +34,6 @@ const ConsumablesPage = () => {
       const res = await axios.get(`${URL}/api/consumables`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Ensure the result is an array:
       const data = Array.isArray(res.data) ? res.data : [];
       setConsumables(data);
     } catch (error) {
@@ -134,6 +41,9 @@ const ConsumablesPage = () => {
     }
   };
 
+  /**
+   * Handle form submission for create or update.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -144,19 +54,23 @@ const ConsumablesPage = () => {
       formData.append('shelf', shelf);
       formData.append('quantityOnHand', quantityOnHand);
       formData.append('desiredQuantity', desiredQuantity);
+
       if (image) {
-        formData.append('image', image);
+        formData.append('image', image); // must match uploadSingle('image')
       }
 
       if (selectedConsumable) {
+        // Update
         await axios.put(`${URL}/api/consumables/${selectedConsumable._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
+        // Create
         await axios.post(`${URL}/api/consumables`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
+
       resetForm();
       fetchConsumables();
     } catch (error) {
@@ -164,16 +78,22 @@ const ConsumablesPage = () => {
     }
   };
 
-  const handleEdit = (c) => {
-    setSelectedConsumable(c);
-    setName(c.name);
-    setRoom(c.location?.room || '');
-    setShelf(c.location?.shelf || '');
-    setQuantityOnHand(c.quantityOnHand || 0);
-    setDesiredQuantity(c.desiredQuantity || 0);
+  /**
+   * Populate form fields for editing a Consumable.
+   */
+  const handleEdit = (item) => {
+    setSelectedConsumable(item);
+    setName(item.name);
+    setRoom(item.location?.room || '');
+    setShelf(item.location?.shelf || '');
+    setQuantityOnHand(item.quantityOnHand || 0);
+    setDesiredQuantity(item.desiredQuantity || 0);
     setImage(null);
   };
 
+  /**
+   * Delete a specific Consumable.
+   */
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
@@ -186,6 +106,9 @@ const ConsumablesPage = () => {
     }
   };
 
+  /**
+   * Reset the form to initial state.
+   */
   const resetForm = () => {
     setSelectedConsumable(null);
     setName('');
@@ -197,96 +120,110 @@ const ConsumablesPage = () => {
   };
 
   return (
-    <div style={styles.pageContainer}>
-      <h2 style={styles.heading}>Consumables</h2>
-      <div style={styles.contentWrapper}>
-        {/* LIST */}
-        <div style={styles.listContainer}>
+    <div className="cons-page-container">
+      <h2 className="cons-heading">Consumables</h2>
+
+      <div className="cons-content-wrapper">
+        {/* LIST SECTION */}
+        <div className="cons-list-container">
           <h3>Existing Consumables</h3>
           {consumables.map((item) => (
-            <div key={item._id} style={styles.itemCard}>
-              <p style={styles.itemTitle}>{item.name}</p>
+            <div key={item._id} className="cons-item-card">
+              <p className="cons-item-title">{item.name}</p>
               <p><strong>On Hand:</strong> {item.quantityOnHand}</p>
               <p><strong>Desired:</strong> {item.desiredQuantity}</p>
+
               {item.imageUrl && (
                 <img
                   src={item.imageUrl}
                   alt={item.name}
-                  style={styles.imageThumb}
+                  className="cons-image-thumb"
                 />
               )}
-              <div style={styles.buttonRow}>
-                <button style={styles.button} onClick={() => handleEdit(item)}>Edit</button>
-                <button style={styles.buttonSecondary} onClick={() => handleDelete(item._id)}>Delete</button>
+
+              <div className="cons-button-row">
+                <button
+                  className="cons-button-primary"
+                  onClick={() => handleEdit(item)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="cons-button-secondary"
+                  onClick={() => handleDelete(item._id)}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}
         </div>
 
-        {/* FORM */}
-        <div style={styles.formContainer}>
+        {/* FORM SECTION */}
+        <div className="cons-form-container">
           <h3>{selectedConsumable ? 'Edit Consumable' : 'Add New Consumable'}</h3>
-          <form onSubmit={handleSubmit} encType="multipart/form-data">
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Name:</label>
+
+          <form onSubmit={handleSubmit} encType="multipart/form-data" className="cons-form">
+            <div className="cons-form-group">
+              <label>Name:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Room:</label>
+            <div className="cons-form-group">
+              <label>Room:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={room}
                 onChange={(e) => setRoom(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Shelf:</label>
+            <div className="cons-form-group">
+              <label>Shelf:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={shelf}
                 onChange={(e) => setShelf(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Quantity On Hand:</label>
+            <div className="cons-form-group">
+              <label>Quantity On Hand:</label>
               <input
-                style={styles.input}
                 type="number"
                 value={quantityOnHand}
                 onChange={(e) => setQuantityOnHand(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Desired Quantity:</label>
+            <div className="cons-form-group">
+              <label>Desired Quantity:</label>
               <input
-                style={styles.input}
                 type="number"
                 value={desiredQuantity}
                 onChange={(e) => setDesiredQuantity(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Image:</label>
+            <div className="cons-form-group">
+              <label>Image (optional):</label>
               <input
-                style={styles.input}
                 type="file"
                 onChange={(e) => setImage(e.target.files[0])}
+                accept="image/*"
               />
             </div>
-            <div style={styles.buttonRow}>
-              <button style={styles.button} type="submit">
+
+            <div className="cons-button-row-form">
+              <button className="cons-button-primary" type="submit">
                 {selectedConsumable ? 'Update' : 'Create'}
               </button>
               {selectedConsumable && (
-                <button style={styles.buttonSecondary} onClick={resetForm} type="button">
+                <button
+                  className="cons-button-secondary"
+                  type="button"
+                  onClick={resetForm}
+                >
                   Cancel
                 </button>
               )}

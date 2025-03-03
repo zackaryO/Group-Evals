@@ -1,0 +1,118 @@
+/**
+ * @file TrainingVehiclesPage.css
+ * @description CSS for TrainingVehiclesPage, phone-friendly layout.
+ */
+
+.tv-page-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.tv-heading {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.tv-content-wrapper {
+  display: flex;
+  gap: 2rem;
+}
+
+.tv-list-container {
+  flex: 1;
+}
+
+.tv-item-card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tv-item-title {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.tv-button-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.tv-button-primary {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tv-button-secondary {
+  background: #6c757d;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tv-form-container {
+  flex: 1;
+  background: #fff;
+  padding: 1rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.tv-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.tv-form-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.tv-form-group label {
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.tv-form-group input[type='text'],
+.tv-form-group input[type='number'],
+.tv-form-group textarea {
+  padding: 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.tv-button-row-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* MEDIA QUERIES for phone screens */
+@media (max-width: 768px) {
+  .tv-content-wrapper {
+    flex-direction: column;
+  }
+
+  .tv-page-container {
+    margin: 1rem;
+    padding: 1rem;
+  }
+}

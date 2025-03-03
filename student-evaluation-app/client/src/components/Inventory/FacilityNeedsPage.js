@@ -1,106 +1,13 @@
+/**
+ * @file FacilityNeedsPage.jsx
+ * @description React component for managing FacilityNeeds (CRUD), multiple images allowed.
+ *              Uses phone-friendly styling akin to ToolsPage.
+ */
+
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import URL from '../../backEndURL';
-
-const styles = {
-  pageContainer: {
-    maxWidth: '1200px',
-    margin: '2rem auto',
-    background: '#fafafa',
-    borderRadius: '8px',
-    padding: '20px',
-    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-  },
-  heading: {
-    textAlign: 'center',
-    marginBottom: '1.5rem',
-    color: '#333',
-  },
-  contentWrapper: {
-    display: 'flex',
-    gap: '2rem',
-  },
-  listContainer: {
-    flex: 1,
-    overflowY: 'auto',
-  },
-  itemCard: {
-    background: '#fff',
-    border: '1px solid #ddd',
-    borderRadius: '6px',
-    padding: '1rem',
-    marginBottom: '1rem',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  },
-  itemTitle: {
-    fontWeight: 'bold',
-    marginBottom: '0.5rem',
-    color: '#555',
-  },
-  formContainer: {
-    flex: 1,
-    background: '#fff',
-    padding: '1rem',
-    borderRadius: '6px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  },
-  formGroup: {
-    marginBottom: '1rem',
-  },
-  label: {
-    display: 'block',
-    marginBottom: '0.4rem',
-    fontWeight: '500',
-    color: '#333',
-  },
-  input: {
-    width: '100%',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-  },
-  textarea: {
-    width: '100%',
-    minHeight: '60px',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-  },
-  select: {
-    width: '100%',
-    padding: '0.5rem',
-    borderRadius: '4px',
-    border: '1px solid #ccc',
-  },
-  buttonRow: {
-    display: 'flex',
-    gap: '0.5rem',
-    marginTop: '1rem',
-  },
-  button: {
-    background: '#007bff',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  buttonSecondary: {
-    background: '#6c757d',
-    color: '#fff',
-    border: 'none',
-    padding: '0.5rem 1rem',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  imageThumb: {
-    width: '80px',
-    margin: '0.5rem 0',
-    borderRadius: '4px',
-    objectFit: 'cover',
-    border: '1px solid #ddd',
-  },
-};
+import './FacilityNeedsPage.css';
 
 const FacilityNeedsPage = () => {
   const [needs, setNeeds] = useState([]);
@@ -111,6 +18,9 @@ const FacilityNeedsPage = () => {
   const [assignedTo, setAssignedTo] = useState('');
   const [images, setImages] = useState(null);
 
+  /**
+   * Fetch facility needs on mount
+   */
   useEffect(() => {
     fetchFacilityNeeds();
   }, []);
@@ -128,6 +38,9 @@ const FacilityNeedsPage = () => {
     }
   };
 
+  /**
+   * Handle form (create/update)
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -146,10 +59,12 @@ const FacilityNeedsPage = () => {
       }
 
       if (selectedNeed) {
+        // Update
         await axios.put(`${URL}/api/facility-needs/${selectedNeed._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
+        // Create
         await axios.post(`${URL}/api/facility-needs`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -192,35 +107,34 @@ const FacilityNeedsPage = () => {
   };
 
   return (
-    <div style={styles.pageContainer}>
-      <h2 style={styles.heading}>Facility Needs / Repairs</h2>
-      <div style={styles.contentWrapper}>
-        <div style={styles.listContainer}>
+    <div className="fn-page-container">
+      <h2 className="fn-heading">Facility Needs / Repairs</h2>
+      <div className="fn-content-wrapper">
+        {/* LIST */}
+        <div className="fn-list-container">
           <h3>Existing Facility Needs</h3>
           {needs.map((need) => (
-            <div key={need._id} style={styles.itemCard}>
-              <p style={styles.itemTitle}>{need.description}</p>
-              <p>
-                <strong>Status:</strong> {need.status}
-              </p>
-              <p>
-                <strong>Priority:</strong> {need.priority}
-              </p>
-              {need.images &&
-                need.images.map((img, idx) => (
-                  <img
-                    key={idx}
-                    src={img}
-                    alt="Need"
-                    style={styles.imageThumb}
-                  />
-                ))}
-              <div style={styles.buttonRow}>
-                <button style={styles.button} onClick={() => handleEdit(need)}>
+            <div key={need._id} className="fn-item-card">
+              <p className="fn-item-title">{need.description}</p>
+              <p><strong>Status:</strong> {need.status}</p>
+              <p><strong>Priority:</strong> {need.priority}</p>
+              {need.images && need.images.map((img, idx) => (
+                <img
+                  key={idx}
+                  src={img}
+                  alt="Need"
+                  className="fn-image-thumb"
+                />
+              ))}
+              <div className="fn-button-row">
+                <button
+                  className="fn-button-primary"
+                  onClick={() => handleEdit(need)}
+                >
                   Edit
                 </button>
                 <button
-                  style={styles.buttonSecondary}
+                  className="fn-button-secondary"
                   onClick={() => handleDelete(need._id)}
                 >
                   Delete
@@ -230,22 +144,21 @@ const FacilityNeedsPage = () => {
           ))}
         </div>
 
-        <div style={styles.formContainer}>
+        {/* FORM */}
+        <div className="fn-form-container">
           <h3>{selectedNeed ? 'Edit Need' : 'Add New Need'}</h3>
-          <form onSubmit={handleSubmit} encType="multipart/form-data">
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Description:</label>
+          <form onSubmit={handleSubmit} encType="multipart/form-data" className="fn-form">
+            <div className="fn-form-group">
+              <label>Description:</label>
               <textarea
-                style={styles.textarea}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 required
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Status:</label>
+            <div className="fn-form-group">
+              <label>Status:</label>
               <select
-                style={styles.select}
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
@@ -254,10 +167,9 @@ const FacilityNeedsPage = () => {
                 <option value="Completed">Completed</option>
               </select>
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Priority:</label>
+            <div className="fn-form-group">
+              <label>Priority:</label>
               <select
-                style={styles.select}
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
               >
@@ -266,31 +178,29 @@ const FacilityNeedsPage = () => {
                 <option value="High">High</option>
               </select>
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Assigned To (UserID):</label>
+            <div className="fn-form-group">
+              <label>Assigned To (UserID):</label>
               <input
-                style={styles.input}
                 type="text"
                 value={assignedTo}
                 onChange={(e) => setAssignedTo(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Images (multiple):</label>
+            <div className="fn-form-group">
+              <label>Images (multiple):</label>
               <input
-                style={styles.input}
                 type="file"
                 multiple
                 onChange={(e) => setImages(e.target.files)}
               />
             </div>
-            <div style={styles.buttonRow}>
-              <button style={styles.button} type="submit">
+            <div className="fn-button-row-form">
+              <button className="fn-button-primary" type="submit">
                 {selectedNeed ? 'Update' : 'Create'}
               </button>
               {selectedNeed && (
                 <button
-                  style={styles.buttonSecondary}
+                  className="fn-button-secondary"
                   type="button"
                   onClick={resetForm}
                 >

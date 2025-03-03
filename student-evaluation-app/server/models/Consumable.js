@@ -1,6 +1,6 @@
 /**
- * Consumable Model
- * Represents consumable items in inventory.
+ * @file Consumable.js
+ * @description Mongoose model for Consumable items, with an optional S3 imageUrl.
  */
 
 const mongoose = require('mongoose');
@@ -8,7 +8,7 @@ const mongoose = require('mongoose');
 const consumableSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
-    imageUrl: { type: String }, // S3 URL
+    imageUrl: { type: String },
     location: {
       room: { type: String },
       shelf: { type: String },

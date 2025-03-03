@@ -1,8 +1,7 @@
 /**
- * trainingVehicleController.js
- *
- * CRUD operations for TrainingVehicle model.
- * Only instructors should access these routes (enforced at the route level).
+ * @file trainingVehicleController.js
+ * @description CRUD operations for TrainingVehicle model. 
+ *              No file uploads here (by default), but fully supports phone-friendly front-end.
  */
 
 const TrainingVehicle = require('../models/TrainingVehicle');
@@ -38,7 +37,7 @@ exports.getTrainingVehicleById = async (req, res) => {
 
 /**
  * POST /api/training-vehicles
- * Create a new training vehicle.
+ * Create a new training vehicle (no images by default).
  */
 exports.createTrainingVehicle = async (req, res) => {
   try {
@@ -103,7 +102,7 @@ exports.updateTrainingVehicle = async (req, res) => {
       return res.status(404).json({ message: 'Training vehicle not found' });
     }
 
-    // Update fields
+    // Update fields if provided
     vehicle.year = year ?? vehicle.year;
     vehicle.make = make ?? vehicle.make;
     vehicle.model = model ?? vehicle.model;

@@ -1,6 +1,7 @@
 /**
  * @file ToolsPage.css
- * @description CSS for ToolsPage component, ensuring mobile responsiveness and a clean layout.
+ * @description CSS for ToolsPage component, ensuring mobile responsiveness, 
+ *              a clean layout, and controlling max image size.
  */
 
 /* Container for the entire page */
@@ -45,7 +46,7 @@
 .tool-item-title {
   font-weight: bold;
   margin-bottom: 0.5rem;
-  color: #555;
+  color: #000000;
 }
 
 /* Row for Edit/Delete buttons in each item */
@@ -77,11 +78,13 @@
 
 /* Thumbnail for tool images */
 .tool-image-thumb {
-  width: 80px;
+  display: block;
   margin: 0.5rem 0;
   border-radius: 4px;
-  object-fit: cover;
   border: 1px solid #ddd;
+  object-fit: cover;
+  max-width: 200px;   /* Limit how wide the image can get */
+  max-height: 150px;  /* Limit how tall the image can get */
 }
 
 /* Right side: Form container */
@@ -152,7 +155,7 @@
   }
 
   .tool-image-thumb {
-    width: 100px;
-    margin: 0.5rem 0;
+    max-width: 100px;  /* smaller max width on mobile if you like */
+    max-height: 80px;
   }
 }

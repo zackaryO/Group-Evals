@@ -1,99 +1,118 @@
 /**
  * @file toolController.js
- * @description Controller methods for handling Tool CRUD operations.
- *              Integrates with "multer-s3" for image uploads.
+ * @description Controller for handling Tool CRUD and image uploads with AWS SDK v3 + CloudFront domain.
  */
 
 const Tool = require('../models/Tool');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
-/**
- * @function getAllTools
- * @description Fetches and returns all tools, sorted by creation date (descending).
- * @route GET /api/tools
- */
+// Initialize the S3 client (no ACL usage).
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
+
 exports.getAllTools = async (req, res) => {
   try {
     const tools = await Tool.find().sort({ createdAt: -1 });
-    return res.json(tools);
+    res.json(tools);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error('[getAllTools] Error:', error);
+    res.status(500).json({ message: 'Error fetching tools' });
   }
 };
 
-/**
- * @function getToolById
- * @description Fetches a single Tool by its MongoDB _id.
- * @route GET /api/tools/:id
- */
 exports.getToolById = async (req, res) => {
   try {
     const tool = await Tool.findById(req.params.id);
     if (!tool) {
       return res.status(404).json({ message: 'Tool not found' });
     }
-    return res.json(tool);
+    res.json(tool);
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error('[getToolById] Error:', error);
+    res.status(500).json({ message: 'Error fetching tool' });
   }
 };
 
 /**
- * @function createTool
- * @description Creates a new Tool document in MongoDB.
- *              If an image was uploaded, stores the S3 URL in tool.imageUrl.
- * @route POST /api/tools
+ * Create a new tool, optionally uploading an image to S3.
+ * The final public URL will be served from CloudFront (AWS_S3_CUSTOM_DOMAIN).
  */
 exports.createTool = async (req, res) => {
   try {
     const {
       name,
+      partnum,
       description,
       quantityOnHand,
       room,
       shelf,
       repairStatus,
-      purchasePriority
+      purchasePriority,
     } = req.body;
-    
-    // If multer-s3 uploaded a file, req.file.location is the S3 URL
-    let imageUrl = '';
-    if (req.file && req.file.location) {
-      imageUrl = req.file.location;
+
+    let imageUrl = null;
+    if (req.file) {
+      // The user uploaded a file
+      const file = req.file;
+      // Use a unique name for the S3 key
+      const uniqueKey = `inventory/${Date.now()}-${file.originalname}`;
+
+      // NOTE: No "ACL" property here, because your bucket is in "Bucket owner enforced" mode
+      const putParams = {
+        Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+        Key: uniqueKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      };
+
+      // Upload to S3
+      await s3.send(new PutObjectCommand(putParams));
+
+      // Construct the URL using your CloudFront domain from .env
+      const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN; // e.g. "d12345abcd.cloudfront.net"
+      imageUrl = `https://${cloudfrontDomain}/${uniqueKey}`;
     }
 
     const newTool = new Tool({
       name,
+      partnum,
       description,
       quantityOnHand,
       location: { room, shelf },
       repairStatus,
       purchasePriority,
-      imageUrl,
+      imageUrl, // store the CloudFront-based URL
     });
 
     const savedTool = await newTool.save();
     return res.status(201).json(savedTool);
   } catch (error) {
-    return res.status(400).json({ message: error.message });
+    console.error('[createTool] Error:', error);
+    res.status(500).json({ message: 'Error creating tool' });
   }
 };
 
 /**
- * @function updateTool
- * @description Updates an existing Tool in MongoDB by _id. Replaces the tool's imageUrl if a new image is uploaded.
- * @route PUT /api/tools/:id
+ * Update an existing tool. If an image is uploaded, we upload it to S3,
+ * then store its CloudFront URL in "imageUrl".
  */
 exports.updateTool = async (req, res) => {
   try {
     const { id } = req.params;
     const {
       name,
+      partnum,
       description,
       quantityOnHand,
       room,
       shelf,
       repairStatus,
-      purchasePriority
+      purchasePriority,
     } = req.body;
 
     const tool = await Tool.findById(id);
@@ -101,31 +120,48 @@ exports.updateTool = async (req, res) => {
       return res.status(404).json({ message: 'Tool not found' });
     }
 
-    // If an image is uploaded, overwrite the old imageUrl
-    if (req.file && req.file.location) {
-      tool.imageUrl = req.file.location;
+    if (req.file) {
+      const file = req.file;
+      const uniqueKey = `inventory/${Date.now()}-${file.originalname}`;
+
+      const putParams = {
+        Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+        Key: uniqueKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      };
+
+      await s3.send(new PutObjectCommand(putParams));
+
+      const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN;
+      const newImageUrl = `https://${cloudfrontDomain}/${uniqueKey}`;
+      console.log('AWS_S3_CUSTOM_DOMAIN:', process.env.AWS_S3_CUSTOM_DOMAIN); 
+      // Overwrite the old image URL in the DB record
+      tool.imageUrl = newImageUrl;
+
+      // (Optional) If you want to remove the old S3 file, you'd call DeleteObjectCommand here
     }
 
-    // Update other fields if provided
-    tool.name = name ?? tool.name;
-    tool.description = description ?? tool.description;
-    tool.quantityOnHand = quantityOnHand ?? tool.quantityOnHand;
-    tool.location.room = room ?? tool.location.room;
-    tool.location.shelf = shelf ?? tool.location.shelf;
-    tool.repairStatus = repairStatus ?? tool.repairStatus;
-    tool.purchasePriority = purchasePriority ?? tool.purchasePriority;
+    // Update other fields if changed
+    if (name !== undefined) tool.name = name;
+    if (partnum !== undefined) tool.partnum = partnum;
+    if (description !== undefined) tool.description = description;
+    if (quantityOnHand !== undefined) tool.quantityOnHand = quantityOnHand;
+    if (room !== undefined) tool.location.room = room;
+    if (shelf !== undefined) tool.location.shelf = shelf;
+    if (repairStatus !== undefined) tool.repairStatus = repairStatus;
+    if (purchasePriority !== undefined) tool.purchasePriority = purchasePriority;
 
     const updatedTool = await tool.save();
-    return res.json(updatedTool);
+    res.json(updatedTool);
   } catch (error) {
-    return res.status(400).json({ message: error.message });
+    console.error('[updateTool] Error:', error);
+    res.status(500).json({ message: 'Error updating tool' });
   }
 };
 
 /**
- * @function deleteTool
- * @description Deletes an existing Tool by _id.
- * @route DELETE /api/tools/:id
+ * Delete a tool by ID (Optional: also delete its file from S3 if desired).
  */
 exports.deleteTool = async (req, res) => {
   try {
@@ -134,9 +170,15 @@ exports.deleteTool = async (req, res) => {
     if (!tool) {
       return res.status(404).json({ message: 'Tool not found' });
     }
+
+    // (Optional) If you'd like to remove the old image from S3, parse the Key from tool.imageUrl
+    //   e.g. const key = tool.imageUrl.split('.amazonaws.com/')[1];
+    //   await s3.send(new DeleteObjectCommand({ Bucket, Key: key }));
+
     await Tool.deleteOne({ _id: id });
-    return res.json({ message: 'Tool deleted successfully' });
+    res.json({ message: 'Tool deleted successfully' });
   } catch (error) {
-    return res.status(400).json({ message: error.message });
+    console.error('[deleteTool] Error:', error);
+    res.status(500).json({ message: 'Error deleting tool' });
   }
 };

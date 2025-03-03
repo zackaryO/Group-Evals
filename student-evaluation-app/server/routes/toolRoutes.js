@@ -1,20 +1,18 @@
 /**
  * @file toolRoutes.js
- * @description Express routes for creating, retrieving, updating, and deleting Tool records.
- *              Supports single-image upload via AWS S3 using "multer-s3".
+ * @description Express routes for managing Tool resources (CRUD).
+ *              Uses new memory-based multer + AWS SDK v3 in the controller.
  */
 
 const express = require('express');
 const router = express.Router();
 const toolController = require('../controllers/toolController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
-// IMPORTANT: must import from "../middleware/uploadMiddleware", not "../controllers/uploadMiddleware"
 const { uploadSingle } = require('../middleware/uploadMiddleware');
 
 /**
- * GET /api/tools
- * Retrieve all tools (instructor only).
- * @returns {Array} List of Tool objects.
+ * GET /api/tools (instructor only)
+ * Fetch all tools.
  */
 router.get(
   '/',
@@ -24,9 +22,8 @@ router.get(
 );
 
 /**
- * GET /api/tools/:id
- * Retrieve a single tool by its ID (instructor only).
- * @returns {Object} The requested Tool.
+ * GET /api/tools/:id (instructor only)
+ * Fetch a single tool by ID.
  */
 router.get(
   '/:id',
@@ -36,37 +33,32 @@ router.get(
 );
 
 /**
- * POST /api/tools
- * Create a new Tool (instructor only).
- * Single image upload field named 'image'.
- * @returns {Object} The newly-created Tool object.
+ * POST /api/tools (instructor only)
+ * Create a new tool with optional image upload in req.file.
  */
 router.post(
   '/',
   authenticateToken,
   authorizeRoles('instructor'),
-  uploadSingle('image'), // matches the formData.append('image', file)
+  uploadSingle('image'),  // <--- memory-based
   toolController.createTool
 );
 
 /**
- * PUT /api/tools/:id
- * Update an existing tool (instructor only).
- * Can optionally update the image by uploading a new 'image' file.
- * @returns {Object} The updated Tool object.
+ * PUT /api/tools/:id (instructor only)
+ * Update an existing tool by ID, with optional new image.
  */
 router.put(
   '/:id',
   authenticateToken,
   authorizeRoles('instructor'),
-  uploadSingle('image'),
+  uploadSingle('image'),  // <--- memory-based
   toolController.updateTool
 );
 
 /**
- * DELETE /api/tools/:id
- * Delete a tool by ID (instructor only).
- * @returns {Object} A success message.
+ * DELETE /api/tools/:id (instructor only)
+ * Delete a tool by ID.
  */
 router.delete(
   '/:id',

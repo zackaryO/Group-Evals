@@ -1,0 +1,48 @@
+/**
+ * @file InventoryReportsPage.css
+ * @description CSS for InventoryReportsPage, phone-friendly layout similar to ToolsPage.
+ */
+
+.reports-page-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  text-align: center;
+}
+
+.reports-heading {
+  margin-bottom: 1.5rem;
+  color: #333;
+}
+
+.reports-description {
+  margin-bottom: 1rem;
+  color: #555;
+}
+
+.reports-button-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.reports-button {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  padding: 0.7rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* MEDIA QUERIES for phone screens */
+@media (max-width: 768px) {
+  .reports-page-container {
+    margin: 1rem;
+    padding: 1rem;
+  }
+}

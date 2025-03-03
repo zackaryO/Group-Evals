@@ -1,111 +1,15 @@
 /**
- * TrainingVehiclesPage.js
- * Provides CRUD interface for TrainingVehicle records.
- * Endpoint: /api/training-vehicles
+ * @file TrainingVehiclesPage.jsx
+ * @description React component for managing TrainingVehicle records (CRUD),
+ *              using a phone-friendly layout with separate CSS.
  */
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import URL from '../../backEndURL';
+import './TrainingVehiclesPage.css';
 
 const TrainingVehiclesPage = () => {
-  const styles = {
-    pageContainer: {
-      maxWidth: '1200px',
-      margin: '2rem auto',
-      background: '#fafafa',
-      borderRadius: '8px',
-      padding: '20px',
-      boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-    },
-    heading: {
-      textAlign: 'center',
-      marginBottom: '1.5rem',
-      color: '#333',
-    },
-    contentWrapper: {
-      display: 'flex',
-      gap: '2rem',
-    },
-    listContainer: {
-      flex: 1,
-    },
-    itemCard: {
-      background: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: '6px',
-      padding: '1rem',
-      marginBottom: '1rem',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    },
-    itemTitle: {
-      fontWeight: 'bold',
-      marginBottom: '0.5rem',
-      color: '#555',
-    },
-    buttonRow: {
-      display: 'flex',
-      gap: '0.5rem',
-      marginTop: '1rem',
-    },
-    button: {
-      background: '#007bff',
-      color: '#fff',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '4px',
-      cursor: 'pointer',
-    },
-    buttonSecondary: {
-      background: '#6c757d',
-      color: '#fff',
-      border: 'none',
-      padding: '0.5rem 1rem',
-      borderRadius: '4px',
-      cursor: 'pointer',
-    },
-    formContainer: {
-      flex: 1,
-      background: '#fff',
-      padding: '1rem',
-      borderRadius: '6px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-    },
-    formGroup: {
-      marginBottom: '1rem',
-    },
-    label: {
-      display: 'block',
-      marginBottom: '0.4rem',
-      fontWeight: '500',
-      color: '#333',
-    },
-    input: {
-      width: '100%',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    textarea: {
-      width: '100%',
-      minHeight: '60px',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    select: {
-      width: '100%',
-      padding: '0.5rem',
-      borderRadius: '4px',
-      border: '1px solid #ccc',
-    },
-    buttonRowForm: {
-      display: 'flex',
-      gap: '0.5rem',
-      marginTop: '1rem',
-    },
-  };
-
   const [vehicles, setVehicles] = useState([]);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
 
@@ -126,6 +30,9 @@ const TrainingVehiclesPage = () => {
     fetchVehicles();
   }, []);
 
+  /**
+   * Fetch existing training vehicles
+   */
   const fetchVehicles = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -139,6 +46,9 @@ const TrainingVehiclesPage = () => {
     }
   };
 
+  /**
+   * Create or update a vehicle
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -158,14 +68,17 @@ const TrainingVehiclesPage = () => {
       };
 
       if (selectedVehicle) {
+        // Update
         await axios.put(`${URL}/api/training-vehicles/${selectedVehicle._id}`, data, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
+        // Create
         await axios.post(`${URL}/api/training-vehicles`, data, {
           headers: { Authorization: `Bearer ${token}` },
         });
       }
+
       resetForm();
       fetchVehicles();
     } catch (error) {
@@ -173,6 +86,9 @@ const TrainingVehiclesPage = () => {
     }
   };
 
+  /**
+   * Populate form to edit
+   */
   const handleEdit = (v) => {
     setSelectedVehicle(v);
     setYear(v.year || '');
@@ -188,6 +104,9 @@ const TrainingVehiclesPage = () => {
     setPartsNeeded(v.partsNeeded || '');
   };
 
+  /**
+   * Delete vehicle
+   */
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
@@ -200,6 +119,9 @@ const TrainingVehiclesPage = () => {
     }
   };
 
+  /**
+   * Reset the form
+   */
   const resetForm = () => {
     setSelectedVehicle(null);
     setYear('');
@@ -216,15 +138,15 @@ const TrainingVehiclesPage = () => {
   };
 
   return (
-    <div style={styles.pageContainer}>
-      <h2 style={styles.heading}>Training Vehicles</h2>
-      <div style={styles.contentWrapper}>
+    <div className="tv-page-container">
+      <h2 className="tv-heading">Training Vehicles</h2>
+      <div className="tv-content-wrapper">
         {/* LIST */}
-        <div style={styles.listContainer}>
+        <div className="tv-list-container">
           <h3>Existing Vehicles</h3>
           {vehicles.map((veh) => (
-            <div key={veh._id} style={styles.itemCard}>
-              <p style={styles.itemTitle}>
+            <div key={veh._id} className="tv-item-card">
+              <p className="tv-item-title">
                 {veh.year} {veh.make} {veh.model}
               </p>
               <p>VIN: {veh.vin}</p>
@@ -234,10 +156,12 @@ const TrainingVehiclesPage = () => {
               <p>Baumuster: {veh.baumuster}</p>
               <p>Repairs Needed: {veh.repairsNeeded}</p>
               <p>Parts Needed: {veh.partsNeeded}</p>
-              <div style={styles.buttonRow}>
-                <button style={styles.button} onClick={() => handleEdit(veh)}>Edit</button>
+              <div className="tv-button-row">
+                <button className="tv-button-primary" onClick={() => handleEdit(veh)}>
+                  Edit
+                </button>
                 <button
-                  style={styles.buttonSecondary}
+                  className="tv-button-secondary"
                   onClick={() => handleDelete(veh._id)}
                 >
                   Delete
@@ -248,113 +172,102 @@ const TrainingVehiclesPage = () => {
         </div>
 
         {/* FORM */}
-        <div style={styles.formContainer}>
+        <div className="tv-form-container">
           <h3>{selectedVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}</h3>
-          <form onSubmit={handleSubmit}>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Year:</label>
+          <form onSubmit={handleSubmit} className="tv-form">
+            <div className="tv-form-group">
+              <label>Year:</label>
               <input
-                style={styles.input}
                 type="number"
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Make:</label>
+            <div className="tv-form-group">
+              <label>Make:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={make}
                 onChange={(e) => setMake(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Model:</label>
+            <div className="tv-form-group">
+              <label>Model:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>VIN:</label>
+            <div className="tv-form-group">
+              <label>VIN:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={vin}
                 onChange={(e) => setVin(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>RO Number:</label>
+            <div className="tv-form-group">
+              <label>RO Number:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={roNumber}
                 onChange={(e) => setRoNumber(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Engine Code:</label>
+            <div className="tv-form-group">
+              <label>Engine Code:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={engineCode}
                 onChange={(e) => setEngineCode(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Transmission Code:</label>
+            <div className="tv-form-group">
+              <label>Transmission Code:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={transmissionCode}
                 onChange={(e) => setTransmissionCode(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Mileage:</label>
+            <div className="tv-form-group">
+              <label>Mileage:</label>
               <input
-                style={styles.input}
                 type="number"
                 value={mileage}
                 onChange={(e) => setMileage(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Baumuster:</label>
+            <div className="tv-form-group">
+              <label>Baumuster:</label>
               <input
-                style={styles.input}
                 type="text"
                 value={baumuster}
                 onChange={(e) => setBaumuster(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Repairs Needed:</label>
+            <div className="tv-form-group">
+              <label>Repairs Needed:</label>
               <textarea
-                style={styles.textarea}
                 value={repairsNeeded}
                 onChange={(e) => setRepairsNeeded(e.target.value)}
               />
             </div>
-            <div style={styles.formGroup}>
-              <label style={styles.label}>Parts Needed:</label>
+            <div className="tv-form-group">
+              <label>Parts Needed:</label>
               <textarea
-                style={styles.textarea}
                 value={partsNeeded}
                 onChange={(e) => setPartsNeeded(e.target.value)}
               />
             </div>
-            <div style={styles.buttonRowForm}>
-              <button style={styles.button} type="submit">
+            <div className="tv-button-row-form">
+              <button className="tv-button-primary" type="submit">
                 {selectedVehicle ? 'Update' : 'Create'}
               </button>
               {selectedVehicle && (
                 <button
-                  style={styles.buttonSecondary}
+                  className="tv-button-secondary"
                   type="button"
                   onClick={resetForm}
                 >

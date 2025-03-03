@@ -1,11 +1,21 @@
 /**
- * consumableController.js
- *
- * CRUD operations for Consumable model.
- * Only instructors should access these routes (enforced at the route level).
+ * @file consumableController.js
+ * @description CRUD for Consumable model, using AWS SDK v3 to upload a single image to S3 (like Tools).
  */
 
 const Consumable = require('../models/Consumable');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+
+/**
+ * Initialize AWS S3 client (like Tools).
+ */
+const s3 = new S3Client({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+});
 
 /**
  * GET /api/consumables
@@ -22,7 +32,7 @@ exports.getAllConsumables = async (req, res) => {
 
 /**
  * GET /api/consumables/:id
- * Retrieve a single consumable by ID.
+ * Retrieve one consumable by ID.
  */
 exports.getConsumableById = async (req, res) => {
   try {
@@ -38,15 +48,26 @@ exports.getConsumableById = async (req, res) => {
 
 /**
  * POST /api/consumables
- * Create a new consumable.
+ * Create a new consumable. If an image is uploaded, store it in S3.
  */
 exports.createConsumable = async (req, res) => {
   try {
     const { name, room, shelf, quantityOnHand, desiredQuantity } = req.body;
 
-    let imageUrl = '';
-    if (req.file && req.file.location) {
-      imageUrl = req.file.location;
+    let imageUrl = null;
+    if (req.file) {
+      const file = req.file;
+      const uniqueKey = `consumables/${Date.now()}-${file.originalname}`;
+
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+        Key: uniqueKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }));
+
+      const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN; 
+      imageUrl = `https://${cloudfrontDomain}/${uniqueKey}`;
     }
 
     const newConsumable = new Consumable({
@@ -57,8 +78,8 @@ exports.createConsumable = async (req, res) => {
       desiredQuantity,
     });
 
-    const savedConsumable = await newConsumable.save();
-    return res.status(201).json(savedConsumable);
+    const savedItem = await newConsumable.save();
+    return res.status(201).json(savedItem);
   } catch (error) {
     return res.status(400).json({ message: error.message });
   }
@@ -66,7 +87,7 @@ exports.createConsumable = async (req, res) => {
 
 /**
  * PUT /api/consumables/:id
- * Update an existing consumable.
+ * Update a consumable. If a new image is uploaded, replace the old imageUrl with the new S3 URL.
  */
 exports.updateConsumable = async (req, res) => {
   try {
@@ -78,8 +99,19 @@ exports.updateConsumable = async (req, res) => {
       return res.status(404).json({ message: 'Consumable not found' });
     }
 
-    if (req.file && req.file.location) {
-      item.imageUrl = req.file.location;
+    if (req.file) {
+      const file = req.file;
+      const uniqueKey = `consumables/${Date.now()}-${file.originalname}`;
+
+      await s3.send(new PutObjectCommand({
+        Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+        Key: uniqueKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }));
+
+      const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN;
+      item.imageUrl = `https://${cloudfrontDomain}/${uniqueKey}`;
     }
 
     item.name = name ?? item.name;
@@ -97,7 +129,7 @@ exports.updateConsumable = async (req, res) => {
 
 /**
  * DELETE /api/consumables/:id
- * Delete a consumable by ID.
+ * Remove a consumable from the DB. (Optional: delete old S3 object.)
  */
 exports.deleteConsumable = async (req, res) => {
   try {
