@@ -1,10 +1,14 @@
 /**
  * @file LoanerToolboxesPage.css
- * @description CSS for LoanerToolboxesPage, ensuring phone-friendly layout.
+ * @description CSS for the LoanerToolboxesPage: 
+ *              - 2-list approach in the middle (IN vs OUT).
+ *              - Left column: Toolboxes
+ *              - Right column: Tool create/edit
+ *              - Sorting by drawer
  */
 
 .loaner-page-container {
-  max-width: 1200px;
+  max-width: 1300px;
   margin: 2rem auto;
   background: #fafafa;
   border-radius: 8px;
@@ -18,21 +22,55 @@
   color: #333;
 }
 
+/* Main layout: left col, mid col, right col */
 .loaner-content-wrapper {
   display: flex;
-  gap: 2rem;
+  gap: 1.5rem;
 }
 
-.loaner-list-container {
+/* LEFT col: list of toolboxes + create/edit form. */
+.loaner-left-col {
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
+/* MIDDLE col: in/out lists for the selected Toolbox. */
+.loaner-mid-col {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+}
+
+/* RIGHT col: create/edit Tool. */
+.loaner-right-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollable container for large lists. */
+.loaner-scrollable-list {
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.5rem;
+  background: #fff;
+  margin-bottom: 1rem;
+}
+
+.loaner-scrollable-list.tall {
+  max-height: 400px;
+}
+
+/* Card for each toolbox item. */
 .loaner-item-card {
   background: #fff;
   border: 1px solid #ddd;
   border-radius: 6px;
   padding: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
@@ -42,17 +80,19 @@
   color: #555;
 }
 
+/* Row of buttons (Select, Edit, Delete) */
 .loaner-button-row {
   display: flex;
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
+/* Standard button styles. */
 .loaner-button-primary {
   background: #007bff;
   color: #fff;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 4px;
   cursor: pointer;
 }
@@ -61,21 +101,22 @@
   background: #6c757d;
   color: #fff;
   border: none;
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 4px;
   cursor: pointer;
 }
 
-.loaner-image-thumb {
-  width: 80px;
-  margin: 0.5rem;
-  border-radius: 4px;
-  object-fit: cover;
-  border: 1px solid #ddd;
+/* For small thumbnails in the lists */
+.small-thumb {
+  width: 40px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  border: 1px solid #ccc;
 }
 
+/* Toolbox or Tool form container. */
 .loaner-form-container {
-  flex: 1;
+  margin-top: 1rem;
   background: #fff;
   padding: 1rem;
   border-radius: 6px;
@@ -85,34 +126,25 @@
 .loaner-form {
   display: flex;
   flex-direction: column;
+  gap: 0.8rem;
 }
 
 .loaner-form-group {
-  margin-bottom: 1rem;
   display: flex;
   flex-direction: column;
+  gap: 0.4rem;
 }
 
 .loaner-form-group label {
-  margin-bottom: 0.4rem;
   font-weight: 500;
   color: #333;
-}
-
-.loaner-tool-item {
-  border: 1px solid #999;
-  border-radius: 4px;
-  padding: 0.5rem;
-  margin-bottom: 1rem;
-  background: #fafafa;
 }
 
 .loaner-form-group input[type='text'],
 .loaner-form-group input[type='number'],
 .loaner-form-group input[type='file'],
 .loaner-form-group select {
-  width: 100%;
-  padding: 0.5rem;
+  padding: 0.4rem;
   border-radius: 4px;
   border: 1px solid #ccc;
 }
@@ -120,22 +152,44 @@
 .loaner-button-row-form {
   display: flex;
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
-/* MEDIA QUERIES for phone screens */
+/* The middle column, 2-lists side-by-side */
+.two-list-container {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.two-list-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.two-list-title {
+  margin-bottom: 0.3rem;
+}
+
+/* Each row in the "in/out" lists. */
+.tool-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+}
+
+/* ============== MEDIA QUERIES for phone screens ============== */
 @media (max-width: 768px) {
   .loaner-content-wrapper {
     flex-direction: column;
   }
-
   .loaner-page-container {
     margin: 1rem;
     padding: 1rem;
   }
-
-  .loaner-image-thumb {
-    max-width: 100px;
-    max-height: 80px;
+  .loaner-scrollable-list {
+    max-height: 250px;
   }
 }
