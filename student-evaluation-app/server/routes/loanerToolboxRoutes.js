@@ -1,15 +1,10 @@
-/**
- * loanerToolboxRoutes.js
- * Routes for LoanerToolbox resource.
- */
-
 const express = require('express');
 const router = express.Router();
 const loanerToolboxController = require('../controllers/loanerToolboxController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 const { uploadArray } = require('../middleware/uploadMiddleware');
 
-// GET all loaner toolboxes
+// GET all
 router.get(
   '/',
   authenticateToken,
@@ -17,7 +12,7 @@ router.get(
   loanerToolboxController.getAllLoanerToolboxes
 );
 
-// GET a single toolbox by ID
+// GET single
 router.get(
   '/:id',
   authenticateToken,
@@ -25,30 +20,54 @@ router.get(
   loanerToolboxController.getLoanerToolboxById
 );
 
-// CREATE a new toolbox (upload multiple drawer images if needed)
+// GET tools in / out
+router.get(
+  '/:id/tools',
+  authenticateToken,
+  authorizeRoles('instructor'),
+  loanerToolboxController.getToolboxTools
+);
+
+// CREATE
 router.post(
   '/',
   authenticateToken,
   authorizeRoles('instructor'),
-  uploadArray('images', 5),
+  uploadArray('drawerImages', 10),
   loanerToolboxController.createLoanerToolbox
 );
 
-// UPDATE a toolbox
+// UPDATE
 router.put(
   '/:id',
   authenticateToken,
   authorizeRoles('instructor'),
-  uploadArray('images', 5),
+  uploadArray('drawerImages', 10),
   loanerToolboxController.updateLoanerToolbox
 );
 
-// DELETE a toolbox
+// DELETE
 router.delete(
   '/:id',
   authenticateToken,
   authorizeRoles('instructor'),
   loanerToolboxController.deleteLoanerToolbox
+);
+
+// ATTACH
+router.post(
+  '/:id/attach-tool',
+  authenticateToken,
+  authorizeRoles('instructor'),
+  loanerToolboxController.attachTool
+);
+
+// DETACH
+router.post(
+  '/:id/detach-tool',
+  authenticateToken,
+  authorizeRoles('instructor'),
+  loanerToolboxController.detachTool
 );
 
 module.exports = router;
