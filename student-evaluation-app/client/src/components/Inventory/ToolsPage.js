@@ -2,17 +2,13 @@
  * @file ToolsPage.jsx
  * @description React component for managing Tool records (CRUD) with optional image uploads to S3.
  *              This page is designed to be mobile-responsive and user-friendly.
- *
- * @author 
- * @date 
  */
 
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-// Change this to your own backend base URL
-import URL from '../../backEndURL';
-import './ToolsPage.css'; // Import the separate CSS for responsive styling
+import URL from '../../backEndURL'; // Adjust to your actual backend URL
+import './ToolsPage.css'; // Import the CSS for styling
 
 /**
  * ToolsPage Component
@@ -161,10 +157,17 @@ const ToolsPage = () => {
           <h3>Existing Tools</h3>
           {tools.map((tool) => (
             <div key={tool._id} className="tool-item-card">
-              <p className="tool-item-title">{tool.name}</p>
-              <p><strong>Quantity:</strong> {tool.quantityOnHand}</p>
-              <p><strong>Repair Status:</strong> {tool.repairStatus}</p>
-              <p><strong>Priority:</strong> {tool.purchasePriority}</p>
+              <strong className="tool-item-title">{tool.name}</strong>
+              <p>
+                <strong>Quantity:</strong> {tool.quantityOnHand}
+              </p>
+              <p>
+                <strong>Repair Status:</strong> {tool.repairStatus}
+              </p>
+              <p>
+                <strong>Priority:</strong> {tool.purchasePriority}
+              </p>
+              {/* Display tool image if exists, using a limited max size */}
               {tool.imageUrl && (
                 <img
                   src={tool.imageUrl}
