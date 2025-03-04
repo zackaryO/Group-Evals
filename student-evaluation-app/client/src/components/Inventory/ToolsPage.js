@@ -2,6 +2,10 @@
  * @file ToolsPage.jsx
  * @description React component for managing Tool records (CRUD) with optional image uploads to S3
  *              (via the backend). Displaying images is limited in max size for better UI.
+ *              Now supports:
+ *                - Clickable image thumbnails that open a large modal
+ *                - Part number displayed in black
+ *                - Clearing the file input when form resets
  */
 
 import React, { useEffect, useState } from 'react';
@@ -13,32 +17,43 @@ import './ToolsPage.css'; // Import the CSS for styling
 /**
  * ToolsPage Component
  * - Fetches and displays a list of tools from /api/tools
- * - Provides a form to create or edit a tool, including optional image upload
+ * - Provides a form to create or edit a tool (including optional image upload)
+ * - Clicking a tool’s thumbnail image opens a modal with an enlarged view
  */
 const ToolsPage = () => {
-  // State to hold all tool records
+  // -------------------- STATE: Tools List --------------------
+  /** All tool records fetched from the backend. */
   const [tools, setTools] = useState([]);
 
-  // State for editing a specific tool
+  /** The currently selected tool for editing (null = creating new). */
   const [selectedTool, setSelectedTool] = useState(null);
 
-  // Form fields
+  // -------------------- STATE: Form Fields --------------------
   const [name, setName] = useState('');
-  const [partnum, setPartnum] = useState('')
+  const [partnum, setPartnum] = useState('');
   const [description, setDescription] = useState('');
   const [quantityOnHand, setQuantityOnHand] = useState(1);
   const [room, setRoom] = useState('');
   const [shelf, setShelf] = useState('');
   const [repairStatus, setRepairStatus] = useState('Good');
   const [purchasePriority, setPurchasePriority] = useState('None');
+
+  /** The file chosen for upload (if any). */
   const [image, setImage] = useState(null);
+
+  /**
+   * Key to force the file input to re-render (thus clearing it).
+   * Increment it whenever we reset the form or change editing states.
+   */
+  const [fileInputKey, setFileInputKey] = useState(Date.now());
+
+  // -------------------- STATE: Modal for Enlarged Images --------------------
+  /** If non-null, this is the URL of the image to show in the modal. */
+  const [selectedImageUrl, setSelectedImageUrl] = useState(null);
 
   const navigate = useNavigate();
 
-  /**
-   * Fetch all tools on component mount.
-   * If unauthorized (401), redirect to /login.
-   */
+  // -------------------- FETCHING TOOLS ON MOUNT --------------------
   useEffect(() => {
     const fetchTools = async () => {
       try {
@@ -58,6 +73,7 @@ const ToolsPage = () => {
     fetchTools();
   }, [navigate]);
 
+  // -------------------- CREATE or UPDATE --------------------
   /**
    * Handle form submission (create or update a tool).
    * Sends multipart/form-data if an image is present.
@@ -66,7 +82,7 @@ const ToolsPage = () => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      // Prepare FormData for file upload (if image is selected)
+      // Prepare FormData for file upload
       const formData = new FormData();
       formData.append('name', name);
       formData.append('partnum', partnum);
@@ -82,7 +98,7 @@ const ToolsPage = () => {
 
       // Determine create vs. update
       if (selectedTool) {
-        // Update
+        // Update an existing tool
         await axios.put(`${URL}/api/tools/${selectedTool._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -94,7 +110,7 @@ const ToolsPage = () => {
       }
 
       // Refresh the list
-      resetForm();
+      resetForm(); // also clears the file input
       const refreshed = await axios.get(`${URL}/api/tools`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -104,8 +120,10 @@ const ToolsPage = () => {
     }
   };
 
+  // -------------------- EDITING A TOOL --------------------
   /**
    * Begin editing a tool (loads the tool data into the form).
+   * @param {Object} tool - The tool to edit
    */
   const handleEdit = (tool) => {
     setSelectedTool(tool);
@@ -117,11 +135,17 @@ const ToolsPage = () => {
     setShelf(tool.location?.shelf || '');
     setRepairStatus(tool.repairStatus || 'Good');
     setPurchasePriority(tool.purchasePriority || 'None');
-    setImage(null); // clear old file from state
+
+    // Clear old file from state
+    setImage(null);
+    // Force the file input to reset
+    setFileInputKey(Date.now());
   };
 
+  // -------------------- DELETE A TOOL --------------------
   /**
    * Delete a specific tool by ID.
+   * @param {string} id - The tool's _id
    */
   const handleDelete = async (id) => {
     try {
@@ -135,8 +159,9 @@ const ToolsPage = () => {
     }
   };
 
+  // -------------------- RESETTING THE FORM --------------------
   /**
-   * Reset the form to a blank state.
+   * Reset the form to a blank state (no tool selected).
    */
   const resetForm = () => {
     setSelectedTool(null);
@@ -149,24 +174,44 @@ const ToolsPage = () => {
     setRepairStatus('Good');
     setPurchasePriority('None');
     setImage(null);
+
+    // Force <input type="file" /> to clear
+    setFileInputKey(Date.now());
   };
 
+  // -------------------- ENLARGED IMAGE MODAL --------------------
+  /**
+   * Opens the modal to show a larger image.
+   * @param {string} url - The image URL
+   */
+  const handleImageClick = (url) => {
+    setSelectedImageUrl(url);
+  };
+
+  /**
+   * Close the modal.
+   */
+  const closeModal = () => {
+    setSelectedImageUrl(null);
+  };
+
+  // -------------------- JSX RENDER --------------------
   return (
     <div className="tools-page-container">
       <h2 className="tools-heading">Tools Inventory</h2>
 
       <div className="tools-content-wrapper">
-        {/* LIST OF TOOLS */}
+        {/* ========== LEFT SIDE: LIST OF TOOLS ========== */}
         <div className="tools-list-container">
           <h3>Existing Tools</h3>
           {tools.map((tool) => (
             <div key={tool._id} className="tool-item-card">
               <strong className="tool-item-title">{tool.name}</strong>
-              <p>
-                <strong>Quantity:</strong> {tool.quantityOnHand}
+              <p style={{ color: '#000' }}>
+                <strong>Part Number:</strong> {tool.partnum}
               </p>
               <p>
-                <strong>Part Number:</strong> {tool.partnum}
+                <strong>Quantity:</strong> {tool.quantityOnHand}
               </p>
               <p>
                 <strong>Description:</strong> {tool.description}
@@ -177,12 +222,13 @@ const ToolsPage = () => {
               <p>
                 <strong>Priority:</strong> {tool.purchasePriority}
               </p>
-              {/* Show an image if present */}
+              {/* Show an image if present; make it clickable to open modal */}
               {tool.imageUrl && (
                 <img
                   src={tool.imageUrl}
                   alt={tool.name}
                   className="tool-image-thumb"
+                  onClick={() => handleImageClick(tool.imageUrl)}
                 />
               )}
               <div className="tool-button-row">
@@ -203,7 +249,7 @@ const ToolsPage = () => {
           ))}
         </div>
 
-        {/* TOOL FORM */}
+        {/* ========== RIGHT SIDE: TOOL FORM ========== */}
         <div className="tools-form-container">
           <h3>{selectedTool ? 'Edit Tool' : 'Add New Tool'}</h3>
           <form
@@ -211,6 +257,7 @@ const ToolsPage = () => {
             encType="multipart/form-data"
             className="tools-form"
           >
+            {/* Name */}
             <div className="tools-form-group">
               <label>Name:</label>
               <input
@@ -220,6 +267,7 @@ const ToolsPage = () => {
                 required
               />
             </div>
+            {/* Part Number */}
             <div className="tools-form-group">
               <label>Part Number:</label>
               <input
@@ -229,6 +277,7 @@ const ToolsPage = () => {
                 required
               />
             </div>
+            {/* Description */}
             <div className="tools-form-group">
               <label>Description:</label>
               <textarea
@@ -236,6 +285,7 @@ const ToolsPage = () => {
                 onChange={(e) => setDescription(e.target.value)}
               />
             </div>
+            {/* Quantity on Hand */}
             <div className="tools-form-group">
               <label>Quantity On Hand:</label>
               <input
@@ -244,6 +294,7 @@ const ToolsPage = () => {
                 onChange={(e) => setQuantityOnHand(e.target.value)}
               />
             </div>
+            {/* Room */}
             <div className="tools-form-group">
               <label>Room:</label>
               <input
@@ -252,6 +303,7 @@ const ToolsPage = () => {
                 onChange={(e) => setRoom(e.target.value)}
               />
             </div>
+            {/* Shelf */}
             <div className="tools-form-group">
               <label>Shelf:</label>
               <input
@@ -260,6 +312,7 @@ const ToolsPage = () => {
                 onChange={(e) => setShelf(e.target.value)}
               />
             </div>
+            {/* Repair Status */}
             <div className="tools-form-group">
               <label>Repair Status:</label>
               <select
@@ -271,6 +324,7 @@ const ToolsPage = () => {
                 <option value="Under Repair">Under Repair</option>
               </select>
             </div>
+            {/* Purchase Priority */}
             <div className="tools-form-group">
               <label>Purchase Priority:</label>
               <select
@@ -283,14 +337,17 @@ const ToolsPage = () => {
                 <option value="High">High</option>
               </select>
             </div>
+            {/* Image Upload */}
             <div className="tools-form-group">
               <label>Image (optional):</label>
               <input
+                key={fileInputKey}
                 type="file"
                 onChange={(e) => setImage(e.target.files[0])}
                 accept="image/*"
               />
             </div>
+            {/* Buttons */}
             <div className="tools-form-button-row">
               <button type="submit" className="tool-button-primary">
                 {selectedTool ? 'Update' : 'Create'}
@@ -308,6 +365,21 @@ const ToolsPage = () => {
           </form>
         </div>
       </div>
+
+      {/* ========== MODAL for Enlarged Image ========== */}
+      {selectedImageUrl && (
+        <div className="image-modal-overlay" onClick={closeModal}>
+          <div
+            className="image-modal-content"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img src={selectedImageUrl} alt="Enlarged" />
+            <button className="close-modal-btn" onClick={closeModal}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

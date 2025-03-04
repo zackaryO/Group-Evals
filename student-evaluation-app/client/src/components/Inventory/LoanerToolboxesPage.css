@@ -1,12 +1,15 @@
 /**
  * @file LoanerToolboxesPage.css
- * @description CSS for the LoanerToolboxesPage: 
- *              - 2-list approach in the middle (IN vs OUT).
- *              - Left column: Toolboxes
- *              - Right column: Tool create/edit
- *              - Sorting by drawer
+ * @description Styles for the updated LoanerToolboxesPage with:
+ *   - 3-column layout (left, middle, right).
+ *   - A draggable handle between the "IN" and "OUT" columns.
+ *   - Improved, consistent layout in the center for tool rows
+ *     (text on left, optional image to right, action buttons).
+ *   - A modal overlay for enlarged images.
+ *   - Mobile responsiveness.
  */
 
+/* -------------------- Container / Layout -------------------- */
 .loaner-page-container {
   max-width: 1300px;
   margin: 2rem auto;
@@ -22,34 +25,34 @@
   color: #333;
 }
 
-/* Main layout: left col, mid col, right col */
 .loaner-content-wrapper {
   display: flex;
   gap: 1.5rem;
 }
 
-/* LEFT col: list of toolboxes + create/edit form. */
+/* Left Column (Toolboxes) */
 .loaner-left-col {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-/* MIDDLE col: in/out lists for the selected Toolbox. */
+/* Middle Column (In/Out Tools) */
 .loaner-mid-col {
   flex: 2;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
-/* RIGHT col: create/edit Tool. */
+/* Right Column (Create/Edit Tool) */
 .loaner-right-col {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-/* Scrollable container for large lists. */
+/* Scrollable list container */
 .loaner-scrollable-list {
   max-height: 350px;
   overflow-y: auto;
@@ -64,7 +67,7 @@
   max-height: 400px;
 }
 
-/* Card for each toolbox item. */
+/* -------------------- Toolbox List Cards -------------------- */
 .loaner-item-card {
   background: #fff;
   border: 1px solid #ddd;
@@ -80,14 +83,29 @@
   color: #555;
 }
 
-/* Row of buttons (Select, Edit, Delete) */
+/* Thumbnails for the toolbox’s drawer images */
+.loaner-drawer-images {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.drawer-image-thumb {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* -------------------- Buttons -------------------- */
 .loaner-button-row {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
-/* Standard button styles. */
 .loaner-button-primary {
   background: #007bff;
   color: #fff;
@@ -106,15 +124,7 @@
   cursor: pointer;
 }
 
-/* For small thumbnails in the lists */
-.small-thumb {
-  width: 40px;
-  margin-left: 0.5rem;
-  vertical-align: middle;
-  border: 1px solid #ccc;
-}
-
-/* Toolbox or Tool form container. */
+/* -------------------- Forms -------------------- */
 .loaner-form-container {
   margin-top: 1rem;
   background: #fff;
@@ -142,8 +152,7 @@
 
 .loaner-form-group input[type='text'],
 .loaner-form-group input[type='number'],
-.loaner-form-group input[type='file'],
-.loaner-form-group select {
+.loaner-form-group input[type='file'] {
   padding: 0.4rem;
   border-radius: 4px;
   border: 1px solid #ccc;
@@ -155,41 +164,187 @@
   margin-top: 0.5rem;
 }
 
-/* The middle column, 2-lists side-by-side */
+/* -------------- Middle Column: Tools Layout -------------- */
 .two-list-container {
   display: flex;
-  gap: 1rem;
-  justify-content: space-between;
+  position: relative;
+  margin-top: 1rem;
+  height: auto;
 }
 
 .two-list-column {
-  flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin: 0 0.5rem;
+  background: #fff;
 }
 
+/* Single column if user selects only IN or only OUT */
+.single-list-container {
+  margin-top: 1rem;
+}
+
+/* Drag handle in the middle */
+.drag-handle {
+  width: 6px;
+  background-color: #aaa;
+  cursor: col-resize;
+  flex: 0 0 auto;
+  border-radius: 3px;
+  margin: 0 .5rem;
+}
+
+/* Column titles */
 .two-list-title {
-  margin-bottom: 0.3rem;
+  margin: 0.5rem auto 0.3rem auto;
+  font-weight: bold;
 }
 
-/* Each row in the "in/out" lists. */
+/* ---------- The tool-row with improved text/image layout ---------- */
 .tool-row {
   display: flex;
+  flex-wrap: wrap; /* allow wrapping on small screens */
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.4rem;
+  background-color: #fefefe;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 0.5rem;
+  margin-bottom: 0.6rem;
+  gap: 0.5rem;
 }
 
-/* ============== MEDIA QUERIES for phone screens ============== */
+.tool-row-left {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 120px;
+}
+
+.tool-row-title {
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 0.2rem;
+  color: #333;
+}
+
+.tool-row-details {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.tool-thumb {
+  width: 70px;
+  height: auto;
+  object-fit: cover;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tool-row-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto; /* push to right side on wide screens */
+}
+
+/* Toggle button row for "IN", "OUT", "BOTH" */
+.toggle-buttons-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.toggle-btn {
+  background: #ccc;
+  border: none;
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+.toggle-btn.active {
+  background: #007bff;
+  color: #fff;
+}
+
+/* -------------------- Image Modal Overlay -------------------- */
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  cursor: pointer;
+}
+
+.image-modal-content {
+  position: relative;
+  background-color: #fff;
+  padding: 1rem;
+  border-radius: 4px;
+  max-width: 90%;
+  max-height: 90%;
+  cursor: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-modal-content img {
+  max-width: 100%;
+  max-height: 80vh;
+  display: block;
+}
+
+.close-modal-btn {
+  margin-top: 0.5rem;
+  background: #6c757d;
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* -------------------- Responsive (Mobile) -------------------- */
 @media (max-width: 768px) {
   .loaner-content-wrapper {
     flex-direction: column;
   }
-  .loaner-page-container {
-    margin: 1rem;
-    padding: 1rem;
+
+  .two-list-container {
+    flex-direction: row;
+    overflow-x: auto; /* horizontal scroll if needed */
   }
+
+  .two-list-column {
+    min-width: 300px;
+    margin: 0 0.3rem;
+  }
+
+  .drag-handle {
+    flex: 0 0 auto;
+  }
+
   .loaner-scrollable-list {
-    max-height: 250px;
+    max-height: 220px;
+  }
+
+  .drawer-image-thumb {
+    width: 50px;
+    height: 50px;
+  }
+
+  .tool-thumb {
+    width: 60px;
   }
 }
