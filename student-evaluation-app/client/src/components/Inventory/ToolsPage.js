@@ -110,7 +110,7 @@ const ToolsPage = () => {
   const handleEdit = (tool) => {
     setSelectedTool(tool);
     setName(tool.name);
-    setPartnum(tool.partnum);
+    setPartnum(tool.partnum || '');
     setDescription(tool.description || '');
     setQuantityOnHand(tool.quantityOnHand || 1);
     setRoom(tool.location?.room || '');
