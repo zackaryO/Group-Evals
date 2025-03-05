@@ -99,6 +99,77 @@
   cursor: pointer;
 }
 
+/* A section in the edit form that shows existing drawer images. */
+.existing-drawers-section {
+  margin: 1rem 0;
+  padding: 0.5rem;
+  background: #fdfdfd;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Container for each drawer image + filename (left column) */
+.drawer-image-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* center the image + text */
+}
+
+/* The filename text under each drawer image */
+.drawer-image-filename {
+  font-size: 0.75rem;
+  color: #444;
+  margin-top: 0.2rem;
+  text-align: center;
+}
+
+.existing-drawers-section h4 {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+}
+
+/* A grid or flex container for existing images */
+.existing-drawers-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Each individual image + delete button pair */
+.existing-drawer-item {
+  position: relative; /* so we can position the delete button absolute */
+  width: 60px;
+  height: 60px;
+}
+
+.existing-drawer-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.drawer-image-delete-btn {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #dc3545;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  line-height: 0.8rem;
+  text-align: center;
+  padding: 0;
+}
+
 /* -------------------- Buttons -------------------- */
 .loaner-button-row {
   display: flex;
@@ -346,5 +417,18 @@
 
   .tool-thumb {
     width: 60px;
+  }
+}
+
+@media (max-width: 768px) {
+  .existing-drawer-item {
+    width: 50px;
+    height: 50px;
+  }
+  .drawer-image-delete-btn {
+    top: -5px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
   }
 }
