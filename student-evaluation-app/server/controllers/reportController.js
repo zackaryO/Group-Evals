@@ -9,7 +9,7 @@ const SparePart = require('../models/SparePart');
 const Consumable = require('../models/Consumable');
 const TrainingVehicle = require('../models/TrainingVehicle');
 // ... import other models as needed (LoanerToolbox, etc.)
-const PDFDocument = require('pdfkit');
+
 /**
  * Example: Generate a PDF of all Tools needing purchase or repair.
  */
