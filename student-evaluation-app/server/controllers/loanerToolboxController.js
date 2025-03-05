@@ -3,11 +3,15 @@
  * @description Controller for LoanerToolbox model (many-to-many with Tool).
  *              Includes S3 file uploads for drawerImages, attach/detach Tools,
  *              getToolboxTools returning { inTools, outTools }, etc.
+ *
+ *              Now also includes deleteDrawerImage method:
+ *              DELETE /api/loaner-toolboxes/:id/drawer-images 
+ *              to remove a single image from the toolbox drawerImages array.
  */
 
 const LoanerToolbox = require('../models/LoanerToolbox');
 const Tool = require('../models/Tool');
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 // Initialize S3 client (memory-based multer is used in middleware)
 const s3 = new S3Client({
@@ -83,13 +87,11 @@ exports.createLoanerToolbox = async (req, res) => {
       return res.status(400).json({ message: 'toolboxName is required' });
     }
 
-    // If any images are uploaded in memory, we upload each to S3
+    // If images are uploaded, send each to S3
     let drawerImages = [];
     if (req.files && req.files.length > 0) {
-      // Use your custom domain from environment
-      const cloudFrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN; 
+      const cloudFrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN;
       for (const file of req.files) {
-        // Construct a unique key
         const uniqueKey = `loaner-drawers/${Date.now()}-${file.originalname}`;
         await s3.send(new PutObjectCommand({
           Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
@@ -97,8 +99,6 @@ exports.createLoanerToolbox = async (req, res) => {
           Body: file.buffer,
           ContentType: file.mimetype,
         }));
-
-        // Build the CloudFront-based URL
         drawerImages.push(`https://${cloudFrontDomain}/${uniqueKey}`);
       }
     }
@@ -118,12 +118,13 @@ exports.createLoanerToolbox = async (req, res) => {
 
 /**
  * PUT /api/loaner-toolboxes/:id
- * Update toolboxName and optionally replace drawerImages with new uploads.
+ * Update toolboxName and optionally add new drawerImages.
+ * We do NOT remove old images unless the user calls the single-delete route.
  */
 exports.updateLoanerToolbox = async (req, res) => {
   try {
     const { id } = req.params;
-    const { toolboxName } = req.body; // any other fields?
+    const { toolboxName } = req.body;
 
     const toolbox = await LoanerToolbox.findById(id);
     if (!toolbox) {
@@ -134,7 +135,6 @@ exports.updateLoanerToolbox = async (req, res) => {
       toolbox.toolboxName = toolboxName;
     }
 
-    // If new images are uploaded, overwrite existing drawerImages
     if (req.files && req.files.length > 0) {
       const cloudFrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN;
       let newDrawerImages = [];
@@ -148,6 +148,8 @@ exports.updateLoanerToolbox = async (req, res) => {
         }));
         newDrawerImages.push(`https://${cloudFrontDomain}/${uniqueKey}`);
       }
+      // We append new images to existing. 
+      // Single-image removal is done via the dedicated deleteDrawerImage method.
       toolbox.drawerImages = toolbox.drawerImages.concat(newDrawerImages);
     }
 
@@ -160,7 +162,7 @@ exports.updateLoanerToolbox = async (req, res) => {
 
 /**
  * DELETE /api/loaner-toolboxes/:id
- * Remove the toolbox. Also remove references to it from Tools.
+ * Remove the entire toolbox. Also remove references to it in Tools.
  */
 exports.deleteLoanerToolbox = async (req, res) => {
   try {
@@ -170,21 +172,23 @@ exports.deleteLoanerToolbox = async (req, res) => {
       return res.status(404).json({ message: 'Toolbox not found' });
     }
 
-    // Remove the toolbox from each Tool's loanerToolboxes array
+    // Remove from each Tool's loanerToolboxes
     await Tool.updateMany(
       { _id: { $in: toolbox.tools } },
       { $pull: { loanerToolboxes: toolbox._id } }
     );
 
-    // Optionally, if you want to remove images from S3, parse the Key from each URL
+    // Optionally remove images from S3 (commented out here)
     // for (const imageUrl of toolbox.drawerImages) {
-    //   const s3Key = imageUrl.split('.amazonaws.com/')[1] || imageUrl.split('.cloudfront.net/')[1];
-    //   if (s3Key) {
-    //     await s3.send(new DeleteObjectCommand({ Bucket: process.env.AWS_STORAGE_BUCKET_NAME, Key: s3Key }));
+    //   const key = parseKeyFromUrl(imageUrl);
+    //   if (key) {
+    //     await s3.send(new DeleteObjectCommand({
+    //       Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+    //       Key: key
+    //     }));
     //   }
     // }
 
-    // Now delete the toolbox itself
     await LoanerToolbox.deleteOne({ _id: id });
     return res.json({ message: 'Loaner toolbox deleted successfully' });
   } catch (error) {
@@ -193,15 +197,82 @@ exports.deleteLoanerToolbox = async (req, res) => {
 };
 
 /**
+ * DELETE /api/loaner-toolboxes/:id/drawer-images
+ * Remove a single image from the toolbox's drawerImages array.
+ * 
+ * Expects { imageUrl } in the request body (in the DELETE's data).
+ * 
+ * Optionally deletes from S3 if desired (some code is commented out).
+ */
+exports.deleteDrawerImage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { imageUrl } = req.body; // or req.query, but here we use body
+
+    if (!imageUrl) {
+      return res.status(400).json({ message: 'imageUrl is required' });
+    }
+
+    const toolbox = await LoanerToolbox.findById(id);
+    if (!toolbox) {
+      return res.status(404).json({ message: 'Toolbox not found' });
+    }
+
+    // Filter out that image from drawerImages
+    const beforeCount = toolbox.drawerImages.length;
+    toolbox.drawerImages = toolbox.drawerImages.filter(img => img !== imageUrl);
+    const afterCount = toolbox.drawerImages.length;
+
+    if (afterCount === beforeCount) {
+      return res.status(404).json({ message: 'Image URL not found in this toolbox.' });
+    }
+
+    // Optionally remove from S3:
+    // let key = parseKeyFromUrl(imageUrl);
+    // if (key) {
+    //   await s3.send(new DeleteObjectCommand({
+    //     Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+    //     Key: key,
+    //   }));
+    // }
+
+    await toolbox.save();
+    return res.json({ message: 'Drawer image removed successfully' });
+  } catch (error) {
+    return res.status(400).json({ message: error.message });
+  }
+};
+
+/**
+ * Helper function to parse the S3 key from a URL, if needed.
+ * E.g. "https://cloudfront.net/loaner-drawers/1678123456-something.jpg"
+ * returns "loaner-drawers/1678123456-something.jpg"
+ * 
+ * @param {string} url 
+ * @returns {string|null} The parsed key or null
+ */
+// function parseKeyFromUrl(url) {
+//   try {
+//     const splitAmazon = url.split('.amazonaws.com/');
+//     if (splitAmazon.length === 2) return splitAmazon[1];
+//     const splitCloudfront = url.split('.cloudfront.net/');
+//     if (splitCloudfront.length === 2) return splitCloudfront[1];
+//     return null;
+//   } catch {
+//     return null;
+//   }
+// }
+
+/**
  * POST /api/loaner-toolboxes/:id/attach-tool
- * Add a tool reference to the toolbox (and vice versa) if not already present.
+ * Attach a tool to the toolbox if not present.
  */
 exports.attachTool = async (req, res) => {
   try {
-    const toolboxId = req.params.id;
+    const { id } = req.params;
     const { toolId } = req.body;
 
-    const toolbox = await LoanerToolbox.findById(toolboxId);
+    const toolbox = await LoanerToolbox.findById(id);
     if (!toolbox) {
       return res.status(404).json({ message: 'Toolbox not found' });
     }
@@ -211,17 +282,16 @@ exports.attachTool = async (req, res) => {
       return res.status(404).json({ message: 'Tool not found' });
     }
 
-    // Add if not present
     if (!toolbox.tools.includes(toolId)) {
       toolbox.tools.push(toolId);
       await toolbox.save();
     }
-    if (!tool.loanerToolboxes.includes(toolboxId)) {
-      tool.loanerToolboxes.push(toolboxId);
+    if (!tool.loanerToolboxes.includes(id)) {
+      tool.loanerToolboxes.push(id);
       await tool.save();
     }
 
-    res.json({ message: 'Tool attached successfully' });
+    return res.json({ message: 'Tool attached successfully' });
   } catch (error) {
     return res.status(400).json({ message: error.message });
   }
@@ -229,14 +299,14 @@ exports.attachTool = async (req, res) => {
 
 /**
  * POST /api/loaner-toolboxes/:id/detach-tool
- * Remove a tool from the toolbox (and remove the toolbox from the tool).
+ * Detach a tool from the toolbox (remove from each side).
  */
 exports.detachTool = async (req, res) => {
   try {
-    const toolboxId = req.params.id;
+    const { id } = req.params;
     const { toolId } = req.body;
 
-    const toolbox = await LoanerToolbox.findById(toolboxId);
+    const toolbox = await LoanerToolbox.findById(id);
     if (!toolbox) {
       return res.status(404).json({ message: 'Toolbox not found' });
     }
@@ -246,19 +316,13 @@ exports.detachTool = async (req, res) => {
       return res.status(404).json({ message: 'Tool not found' });
     }
 
-    // Remove the tool from toolbox's array
-    toolbox.tools = toolbox.tools.filter(
-      (tid) => tid.toString() !== tool._id.toString()
-    );
+    toolbox.tools = toolbox.tools.filter(t => t.toString() !== toolId.toString());
     await toolbox.save();
 
-    // Remove the toolbox from tool's loanerToolboxes
-    tool.loanerToolboxes = tool.loanerToolboxes.filter(
-      (tbid) => tbid.toString() !== toolbox._id.toString()
-    );
+    tool.loanerToolboxes = tool.loanerToolboxes.filter(tb => tb.toString() !== id.toString());
     await tool.save();
 
-    res.json({ message: 'Tool detached successfully' });
+    return res.json({ message: 'Tool detached successfully' });
   } catch (error) {
     return res.status(400).json({ message: error.message });
   }

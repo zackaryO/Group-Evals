@@ -28,7 +28,7 @@ router.get(
   loanerToolboxController.getToolboxTools
 );
 
-// CREATE
+// CREATE new toolbox
 router.post(
   '/',
   authenticateToken,
@@ -37,7 +37,7 @@ router.post(
   loanerToolboxController.createLoanerToolbox
 );
 
-// UPDATE
+// UPDATE toolbox
 router.put(
   '/:id',
   authenticateToken,
@@ -46,7 +46,7 @@ router.put(
   loanerToolboxController.updateLoanerToolbox
 );
 
-// DELETE
+// DELETE entire toolbox
 router.delete(
   '/:id',
   authenticateToken,
@@ -54,7 +54,15 @@ router.delete(
   loanerToolboxController.deleteLoanerToolbox
 );
 
-// ATTACH
+// DELETE a single drawer image from a toolbox
+router.delete(
+  '/:id/drawer-images',
+  authenticateToken,
+  authorizeRoles('instructor'),
+  loanerToolboxController.deleteDrawerImage
+);
+
+// ATTACH tool
 router.post(
   '/:id/attach-tool',
   authenticateToken,
@@ -62,7 +70,7 @@ router.post(
   loanerToolboxController.attachTool
 );
 
-// DETACH
+// DETACH tool
 router.post(
   '/:id/detach-tool',
   authenticateToken,
