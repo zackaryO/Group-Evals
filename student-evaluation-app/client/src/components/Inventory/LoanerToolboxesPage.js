@@ -473,12 +473,19 @@ const LoanerToolboxesPage = () => {
    */
   const renderToolRow = (tool, isIn) => {
     const drawer = tool.location?.room || '';
+    const expected = tool.expectedQuantity || 1;
+    const missingCount = Math.max(0, expected - (tool.quantityOnHand || 0));
     return (
       <div key={tool._id} className="tool-row">
         <div className="tool-row-left">
           <div className="tool-row-title">{tool.name}</div>
           <div className="tool-row-details">
-            Qty: {tool.quantityOnHand}, Drawer: {drawer}
+            Qty: {tool.quantityOnHand} / {expected}, Drawer: {drawer}
+              {missingCount > 0 && (
+               <div style={{ color: 'red' }}>
+               Missing: {missingCount}
+             </div>
+          )}
           </div>
         </div>
         {tool.imageUrl && (

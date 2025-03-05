@@ -27,8 +27,6 @@ exports.generateToolsReport = async (req, res) => {
       doc.fontSize(10).text(`Name: ${tool.name}`);
       doc.text(`Part Number: ${tool.partnum}`);
       doc.text(`Quantity: ${tool.quantityOnHand}`);
-      // doc.text(`Repair Status: ${tool.repairStatus}`);
-      // doc.text(`Purchase Priority: ${tool.purchasePriority}`);
       doc.text(`Location: ${tool.location.room} - ${tool.location.shelf}`);
       doc.moveDown();
     });

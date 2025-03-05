@@ -1,11 +1,7 @@
 /**
  * @file ToolsPage.jsx
- * @description React component for managing Tool records (CRUD) with optional image uploads to S3
- *              (via the backend). Displaying images is limited in max size for better UI.
- *              Now supports:
- *                - Clickable image thumbnails that open a large modal
- *                - Part number displayed in black
- *                - Clearing the file input when form resets
+ * @description React component for managing Tool records (CRUD) with optional image uploads,
+ *              now including an "expectedQuantity" field for tracking if some are missing.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -18,14 +14,14 @@ import './ToolsPage.css'; // Import the CSS for styling
  * ToolsPage Component
  * - Fetches and displays a list of tools from /api/tools
  * - Provides a form to create or edit a tool (including optional image upload)
+ * - Includes an "expectedQuantity" field for missing-tool tracking
  * - Clicking a tool’s thumbnail image opens a modal with an enlarged view
  */
 const ToolsPage = () => {
   // -------------------- STATE: Tools List --------------------
-  /** All tool records fetched from the backend. */
   const [tools, setTools] = useState([]);
 
-  /** The currently selected tool for editing (null = creating new). */
+  // Currently editing a specific tool (null = creating new)
   const [selectedTool, setSelectedTool] = useState(null);
 
   // -------------------- STATE: Form Fields --------------------
@@ -33,27 +29,28 @@ const ToolsPage = () => {
   const [partnum, setPartnum] = useState('');
   const [description, setDescription] = useState('');
   const [quantityOnHand, setQuantityOnHand] = useState(1);
+
+  /**
+   * A new state for "expectedQuantity":
+   * The number of tools we *should* have, so "missing = expected - onHand" if that is positive.
+   */
+  const [expectedQuantity, setExpectedQuantity] = useState(1);
+
   const [room, setRoom] = useState('');
   const [shelf, setShelf] = useState('');
   const [repairStatus, setRepairStatus] = useState('Good');
   const [purchasePriority, setPurchasePriority] = useState('None');
-
-  /** The file chosen for upload (if any). */
   const [image, setImage] = useState(null);
 
-  /**
-   * Key to force the file input to re-render (thus clearing it).
-   * Increment it whenever we reset the form or change editing states.
-   */
+  /** Key to reset file input (clear it). */
   const [fileInputKey, setFileInputKey] = useState(Date.now());
 
-  // -------------------- STATE: Modal for Enlarged Images --------------------
-  /** If non-null, this is the URL of the image to show in the modal. */
+  // Modal for enlarged image
   const [selectedImageUrl, setSelectedImageUrl] = useState(null);
 
   const navigate = useNavigate();
 
-  // -------------------- FETCHING TOOLS ON MOUNT --------------------
+  // -------------------- FETCH TOOLS ON MOUNT --------------------
   useEffect(() => {
     const fetchTools = async () => {
       try {
@@ -75,30 +72,29 @@ const ToolsPage = () => {
 
   // -------------------- CREATE or UPDATE --------------------
   /**
-   * Handle form submission (create or update a tool).
-   * Sends multipart/form-data if an image is present.
+   * Handle form submission for creating or updating a Tool,
+   * now sending "expectedQuantity" as well.
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      // Prepare FormData for file upload
       const formData = new FormData();
       formData.append('name', name);
       formData.append('partnum', partnum);
       formData.append('description', description);
       formData.append('quantityOnHand', quantityOnHand);
+      formData.append('expectedQuantity', expectedQuantity); // new field
       formData.append('room', room);
       formData.append('shelf', shelf);
       formData.append('repairStatus', repairStatus);
       formData.append('purchasePriority', purchasePriority);
       if (image) {
-        formData.append('image', image); // must match "uploadSingle('image')" on the server
+        formData.append('image', image);
       }
 
-      // Determine create vs. update
       if (selectedTool) {
-        // Update an existing tool
+        // Update existing
         await axios.put(`${URL}/api/tools/${selectedTool._id}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -110,7 +106,7 @@ const ToolsPage = () => {
       }
 
       // Refresh the list
-      resetForm(); // also clears the file input
+      resetForm();
       const refreshed = await axios.get(`${URL}/api/tools`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -122,8 +118,7 @@ const ToolsPage = () => {
 
   // -------------------- EDITING A TOOL --------------------
   /**
-   * Begin editing a tool (loads the tool data into the form).
-   * @param {Object} tool - The tool to edit
+   * Begin editing a tool: load the tool data into the form, including expectedQuantity.
    */
   const handleEdit = (tool) => {
     setSelectedTool(tool);
@@ -131,22 +126,17 @@ const ToolsPage = () => {
     setPartnum(tool.partnum || '');
     setDescription(tool.description || '');
     setQuantityOnHand(tool.quantityOnHand || 1);
+    setExpectedQuantity(tool.expectedQuantity || 1);
     setRoom(tool.location?.room || '');
     setShelf(tool.location?.shelf || '');
     setRepairStatus(tool.repairStatus || 'Good');
     setPurchasePriority(tool.purchasePriority || 'None');
 
-    // Clear old file from state
     setImage(null);
-    // Force the file input to reset
     setFileInputKey(Date.now());
   };
 
   // -------------------- DELETE A TOOL --------------------
-  /**
-   * Delete a specific tool by ID.
-   * @param {string} id - The tool's _id
-   */
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem('token');
@@ -159,43 +149,32 @@ const ToolsPage = () => {
     }
   };
 
-  // -------------------- RESETTING THE FORM --------------------
-  /**
-   * Reset the form to a blank state (no tool selected).
-   */
+  // -------------------- RESET FORM --------------------
   const resetForm = () => {
     setSelectedTool(null);
     setName('');
     setPartnum('');
     setDescription('');
     setQuantityOnHand(1);
+    setExpectedQuantity(1); // reset to 1
     setRoom('');
     setShelf('');
     setRepairStatus('Good');
     setPurchasePriority('None');
     setImage(null);
-
-    // Force <input type="file" /> to clear
     setFileInputKey(Date.now());
   };
 
-  // -------------------- ENLARGED IMAGE MODAL --------------------
-  /**
-   * Opens the modal to show a larger image.
-   * @param {string} url - The image URL
-   */
+  // -------------------- IMAGE MODAL --------------------
   const handleImageClick = (url) => {
     setSelectedImageUrl(url);
   };
 
-  /**
-   * Close the modal.
-   */
   const closeModal = () => {
     setSelectedImageUrl(null);
   };
 
-  // -------------------- JSX RENDER --------------------
+  // -------------------- RENDER --------------------
   return (
     <div className="tools-page-container">
       <h2 className="tools-heading">Tools Inventory</h2>
@@ -204,49 +183,61 @@ const ToolsPage = () => {
         {/* ========== LEFT SIDE: LIST OF TOOLS ========== */}
         <div className="tools-list-container">
           <h3>Existing Tools</h3>
-          {tools.map((tool) => (
-            <div key={tool._id} className="tool-item-card">
-              <strong className="tool-item-title">{tool.name}</strong>
-              <p style={{ color: '#000' }}>
-                <strong>Part Number:</strong> {tool.partnum}
-              </p>
-              <p>
-                <strong>Quantity:</strong> {tool.quantityOnHand}
-              </p>
-              <p>
-                <strong>Description:</strong> {tool.description}
-              </p>
-              <p>
-                <strong>Repair Status:</strong> {tool.repairStatus}
-              </p>
-              <p>
-                <strong>Priority:</strong> {tool.purchasePriority}
-              </p>
-              {/* Show an image if present; make it clickable to open modal */}
-              {tool.imageUrl && (
-                <img
-                  src={tool.imageUrl}
-                  alt={tool.name}
-                  className="tool-image-thumb"
-                  onClick={() => handleImageClick(tool.imageUrl)}
-                />
-              )}
-              <div className="tool-button-row">
-                <button
-                  className="tool-button-primary"
-                  onClick={() => handleEdit(tool)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="tool-button-secondary"
-                  onClick={() => handleDelete(tool._id)}
-                >
-                  Delete
-                </button>
+          {tools.map((tool) => {
+            // Compute missing if expected > onHand
+            const missingCount = Math.max(0, (tool.expectedQuantity || 1) - (tool.quantityOnHand || 0));
+            return (
+              <div key={tool._id} className="tool-item-card">
+                <strong className="tool-item-title">{tool.name}</strong>
+                <p style={{ color: '#000' }}>
+                  <strong>Part Number:</strong> {tool.partnum}
+                </p>
+                <p>
+                  <strong>Quantity On Hand:</strong> {tool.quantityOnHand}
+                </p>
+                <p>
+                  <strong>Expected Quantity:</strong> {tool.expectedQuantity}
+                </p>
+                {missingCount > 0 && (
+                  <p style={{ color: 'red' }}>
+                    <strong>Missing:</strong> {missingCount}
+                  </p>
+                )}
+                <p>
+                  <strong>Description:</strong> {tool.description}
+                </p>
+                <p>
+                  <strong>Repair Status:</strong> {tool.repairStatus}
+                </p>
+                <p>
+                  <strong>Priority:</strong> {tool.purchasePriority}
+                </p>
+                {/* Show an image if present; make it clickable to open modal */}
+                {tool.imageUrl && (
+                  <img
+                    src={tool.imageUrl}
+                    alt={tool.name}
+                    className="tool-image-thumb"
+                    onClick={() => handleImageClick(tool.imageUrl)}
+                  />
+                )}
+                <div className="tool-button-row">
+                  <button
+                    className="tool-button-primary"
+                    onClick={() => handleEdit(tool)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="tool-button-secondary"
+                    onClick={() => handleDelete(tool._id)}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* ========== RIGHT SIDE: TOOL FORM ========== */}
@@ -292,6 +283,16 @@ const ToolsPage = () => {
                 type="number"
                 value={quantityOnHand}
                 onChange={(e) => setQuantityOnHand(e.target.value)}
+              />
+            </div>
+            {/* Expected Quantity (New) */}
+            <div className="tools-form-group">
+              <label>Expected Quantity:</label>
+              <input
+                type="number"
+                value={expectedQuantity}
+                onChange={(e) => setExpectedQuantity(e.target.value)}
+                min="1"
               />
             </div>
             {/* Room */}

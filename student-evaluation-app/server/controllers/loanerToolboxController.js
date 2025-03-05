@@ -179,15 +179,15 @@ exports.deleteLoanerToolbox = async (req, res) => {
     );
 
     // Optionally remove images from S3 (commented out here)
-    // for (const imageUrl of toolbox.drawerImages) {
-    //   const key = parseKeyFromUrl(imageUrl);
-    //   if (key) {
-    //     await s3.send(new DeleteObjectCommand({
-    //       Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
-    //       Key: key
-    //     }));
-    //   }
-    // }
+    for (const imageUrl of toolbox.drawerImages) {
+      const key = parseKeyFromUrl(imageUrl);
+      if (key) {
+        await s3.send(new DeleteObjectCommand({
+          Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+          Key: key
+        }));
+      }
+    }
 
     await LoanerToolbox.deleteOne({ _id: id });
     return res.json({ message: 'Loaner toolbox deleted successfully' });
@@ -228,13 +228,13 @@ exports.deleteDrawerImage = async (req, res) => {
     }
 
     // Optionally remove from S3:
-    // let key = parseKeyFromUrl(imageUrl);
-    // if (key) {
-    //   await s3.send(new DeleteObjectCommand({
-    //     Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
-    //     Key: key,
-    //   }));
-    // }
+    let key = parseKeyFromUrl(imageUrl);
+    if (key) {
+      await s3.send(new DeleteObjectCommand({
+        Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
+        Key: key,
+      }));
+    }
 
     await toolbox.save();
     return res.json({ message: 'Drawer image removed successfully' });
@@ -251,17 +251,17 @@ exports.deleteDrawerImage = async (req, res) => {
  * @param {string} url 
  * @returns {string|null} The parsed key or null
  */
-// function parseKeyFromUrl(url) {
-//   try {
-//     const splitAmazon = url.split('.amazonaws.com/');
-//     if (splitAmazon.length === 2) return splitAmazon[1];
-//     const splitCloudfront = url.split('.cloudfront.net/');
-//     if (splitCloudfront.length === 2) return splitCloudfront[1];
-//     return null;
-//   } catch {
-//     return null;
-//   }
-// }
+function parseKeyFromUrl(url) {
+  try {
+    const splitAmazon = url.split('.amazonaws.com/');
+    if (splitAmazon.length === 2) return splitAmazon[1];
+    const splitCloudfront = url.split('.cloudfront.net/');
+    if (splitCloudfront.length === 2) return splitCloudfront[1];
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * POST /api/loaner-toolboxes/:id/attach-tool
