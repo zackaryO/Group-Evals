@@ -116,6 +116,7 @@ const LoanerToolboxesPage = () => {
 
   /** Fields for name, description, quantity, drawer, image file. */
   const [toolName, setToolName] = useState('');
+  const [partnum, setPartNum] = useState('');
   const [toolDescription, setToolDescription] = useState('');
   const [toolQuantity, setToolQuantity] = useState(1);
   const [toolDrawer, setToolDrawer] = useState('');
@@ -376,6 +377,7 @@ const LoanerToolboxesPage = () => {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('name', toolName);
+      formData.append('partnum', partnum);
       formData.append('description', toolDescription);
       formData.append('quantityOnHand', toolQuantity);
       formData.append('room', toolDrawer);
@@ -412,6 +414,7 @@ const LoanerToolboxesPage = () => {
   const handleEditToolItem = (tool) => {
     setEditingToolId(tool._id);
     setToolName(tool.name || '');
+    setPartNum(tool.partnum || '');
     setToolDescription(tool.description || '');
     setToolQuantity(tool.quantityOnHand || 1);
     setToolDrawer(tool.location?.room || '');
@@ -424,6 +427,7 @@ const LoanerToolboxesPage = () => {
   const resetToolForm = () => {
     setEditingToolId(null);
     setToolName('');
+    setPartNum('');
     setToolDescription('');
     setToolQuantity(1);
     setToolDrawer('');
@@ -843,6 +847,15 @@ const LoanerToolboxesPage = () => {
                 type="text"
                 value={toolName}
                 onChange={(e) => setToolName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="loaner-form-group">
+              <label>Part/Item Number:</label>
+              <input
+                type="text"
+                value={partnum}
+                onChange={(e) => setPartNum(e.target.value)}
                 required
               />
             </div>
