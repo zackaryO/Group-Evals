@@ -1,6 +1,7 @@
 /**
  * @file toolController.js
  * @description Controller for handling Tool CRUD and image uploads with AWS SDK v3 + CloudFront domain.
+ *              Now also supports an "expectedQuantity" field so we can track "missing" tools.
  */
 
 const Tool = require('../models/Tool');
@@ -41,6 +42,7 @@ exports.getToolById = async (req, res) => {
 /**
  * Create a new tool, optionally uploading an image to S3.
  * The final public URL will be served from CloudFront (AWS_S3_CUSTOM_DOMAIN).
+ * Also includes "expectedQuantity" for tracking missing items.
  */
 exports.createTool = async (req, res) => {
   try {
@@ -49,6 +51,7 @@ exports.createTool = async (req, res) => {
       partnum,
       description,
       quantityOnHand,
+      expectedQuantity,      // <--- new for missing-tracking
       room,
       shelf,
       repairStatus,
@@ -59,22 +62,17 @@ exports.createTool = async (req, res) => {
     if (req.file) {
       // The user uploaded a file
       const file = req.file;
-      // Use a unique name for the S3 key
       const uniqueKey = `inventory/${Date.now()}-${file.originalname}`;
 
-      // NOTE: No "ACL" property here, because your bucket is in "Bucket owner enforced" mode
       const putParams = {
         Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
         Key: uniqueKey,
         Body: file.buffer,
         ContentType: file.mimetype,
       };
-
-      // Upload to S3
       await s3.send(new PutObjectCommand(putParams));
 
-      // Construct the URL using your CloudFront domain from .env
-      const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN; // e.g. "d12345abcd.cloudfront.net"
+      const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN; 
       imageUrl = `https://${cloudfrontDomain}/${uniqueKey}`;
     }
 
@@ -83,10 +81,11 @@ exports.createTool = async (req, res) => {
       partnum,
       description,
       quantityOnHand,
+      expectedQuantity,    // <--- stored in DB
       location: { room, shelf },
       repairStatus,
       purchasePriority,
-      imageUrl, // store the CloudFront-based URL
+      imageUrl,
     });
 
     const savedTool = await newTool.save();
@@ -99,7 +98,7 @@ exports.createTool = async (req, res) => {
 
 /**
  * Update an existing tool. If an image is uploaded, we upload it to S3,
- * then store its CloudFront URL in "imageUrl".
+ * then store its CloudFront URL in "imageUrl". Also includes expectedQuantity.
  */
 exports.updateTool = async (req, res) => {
   try {
@@ -109,6 +108,7 @@ exports.updateTool = async (req, res) => {
       partnum,
       description,
       quantityOnHand,
+      expectedQuantity,    // <--- for missing tracking
       room,
       shelf,
       repairStatus,
@@ -120,33 +120,25 @@ exports.updateTool = async (req, res) => {
       return res.status(404).json({ message: 'Tool not found' });
     }
 
+    // Handle optional image upload
     if (req.file) {
       const file = req.file;
       const uniqueKey = `inventory/${Date.now()}-${file.originalname}`;
-
-      const putParams = {
+      await s3.send(new PutObjectCommand({
         Bucket: process.env.AWS_STORAGE_BUCKET_NAME,
         Key: uniqueKey,
         Body: file.buffer,
         ContentType: file.mimetype,
-      };
-
-      await s3.send(new PutObjectCommand(putParams));
-
+      }));
       const cloudfrontDomain = process.env.AWS_S3_CUSTOM_DOMAIN;
-      const newImageUrl = `https://${cloudfrontDomain}/${uniqueKey}`;
-      console.log('AWS_S3_CUSTOM_DOMAIN:', process.env.AWS_S3_CUSTOM_DOMAIN); 
-      // Overwrite the old image URL in the DB record
-      tool.imageUrl = newImageUrl;
-
-      // (Optional) If you want to remove the old S3 file, you'd call DeleteObjectCommand here
+      tool.imageUrl = `https://${cloudfrontDomain}/${uniqueKey}`;
     }
 
-    // Update other fields if changed
     if (name !== undefined) tool.name = name;
     if (partnum !== undefined) tool.partnum = partnum;
     if (description !== undefined) tool.description = description;
     if (quantityOnHand !== undefined) tool.quantityOnHand = quantityOnHand;
+    if (expectedQuantity !== undefined) tool.expectedQuantity = expectedQuantity; // <--- store
     if (room !== undefined) tool.location.room = room;
     if (shelf !== undefined) tool.location.shelf = shelf;
     if (repairStatus !== undefined) tool.repairStatus = repairStatus;
@@ -161,7 +153,7 @@ exports.updateTool = async (req, res) => {
 };
 
 /**
- * Delete a tool by ID (Optional: also delete its file from S3 if desired).
+ * Delete a tool by ID.
  */
 exports.deleteTool = async (req, res) => {
   try {
@@ -171,9 +163,8 @@ exports.deleteTool = async (req, res) => {
       return res.status(404).json({ message: 'Tool not found' });
     }
 
-    // (Optional) If you'd like to remove the old image from S3, parse the Key from tool.imageUrl
-    //   e.g. const key = tool.imageUrl.split('.amazonaws.com/')[1];
-    //   await s3.send(new DeleteObjectCommand({ Bucket, Key: key }));
+    // (Optional) remove from S3 as well if you want
+    // parseKeyFromUrl(tool.imageUrl)...
 
     await Tool.deleteOne({ _id: id });
     res.json({ message: 'Tool deleted successfully' });
