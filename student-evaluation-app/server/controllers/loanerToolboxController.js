@@ -148,7 +148,7 @@ exports.updateLoanerToolbox = async (req, res) => {
         }));
         newDrawerImages.push(`https://${cloudFrontDomain}/${uniqueKey}`);
       }
-      toolbox.drawerImages = newDrawerImages;
+      toolbox.drawerImages = toolbox.drawerImages.concat(newDrawerImages);
     }
 
     const updated = await toolbox.save();
