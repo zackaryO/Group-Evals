@@ -17,12 +17,12 @@
  *      - A user can change the tool's "drawer" field to move it around.
  *
  *   Additionally:
- *      - Each toolbox can accept, display, and delete multiple drawer images
- *        in one form submission. 
- *      - Each drawer image’s filename (minus extension) is displayed below
- *        the thumbnail, while tool images do not display filenames.
- *      - Images open in a large popup modal when clicked.
- *      - Works well on phone screens (responsive design).
+ *      - The left column never takes more than 1/3 of the screen on larger (desktop) layouts.
+ *      - Drawer images are wrapped into multiple rows if there are many.
+ *      - We have backend functionality to delete single drawer images (via DELETE /api/loaner-toolboxes/:id/drawer-images).
+ *      - No other logic changed, everything else remains intact.
+ *      - Large images load gracefully with a "Loading..." placeholder.
+ *      - Stripped drawer filenames to recognized patterns ("Drawer 1", "Shelve 2", etc.).
  */
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -31,90 +31,115 @@ import URL from '../../backEndURL';
 import './LoanerToolboxesPage.css';
 
 /**
- * Helper to extract a filename (minus extension) from a full S3/URL path.
- * For example, if the URL is:
- *   https://cloudfront.net/loaner-drawers/1678123456-MyDrawer.jpg
- * This function returns "1678123456-MyDrawer".
+ * A small subcomponent to handle "graceful loading" of large drawer images.
+ * Displays "Loading..." or "Failed to load" while waiting on the image.
  *
- * @param {string} imageUrl - The full S3-based URL
- * @returns {string} The base filename without any extension
+ * @param {Object} props - React props
+ * @param {string} props.src - The image URL
+ * @param {string} props.alt - The alt text for the image
+ * @param {function} [props.onClick] - Optional handler for clicks (like opening a modal)
+ * @returns {JSX.Element} The image or a placeholder
  */
-function getFilenameWithoutExtension(imageUrl) {
+function DrawerImageLoader({ src, alt, onClick }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  return (
+    <div className="drawer-image-loader">
+      {loading && !error && (
+        <div className="drawer-image-loading">Loading...</div>
+      )}
+      {error && (
+        <div className="drawer-image-fail">Failed to load</div>
+      )}
+      {!error && (
+        <img
+          src={src}
+          alt={alt}
+          className="drawer-image-thumb"
+          onLoad={() => setLoading(false)}
+          onError={() => {
+            setError(true);
+            setLoading(false);
+          }}
+          onClick={onClick}
+          style={{ display: loading ? 'none' : 'block' }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Parse a known name like "Drawer 1", "Shelve 2", or "Compartment 3" from a filename.
+ * If no match is found, returns "".
+ *
+ * @param {string} baseName
+ * @returns {string} e.g. "Drawer 2" or ""
+ */
+function parseKnownDrawerName(baseName) {
+  const pattern = /\b(Drawer\s\d+|Shelve\s\d+|Compartment\s\d+)\b/i;
+  const match = baseName.match(pattern);
+  if (!match) return '';
+  const recognized = match[0];
+  return recognized.charAt(0).toUpperCase() + recognized.slice(1);
+}
+
+/**
+ * Extract the recognized label from the URL's filename (minus extension).
+ * e.g. "Drawer 2" if it matches, otherwise "".
+ *
+ * @param {string} imageUrl
+ * @returns {string} - recognized label or ""
+ */
+function getDrawerLabel(imageUrl) {
   try {
-    // Split by '/' to get the last segment (e.g. '1678123456-MyDrawer.jpg')
     const parts = imageUrl.split('/');
     const lastSegment = parts[parts.length - 1];
-
-    // Find the '.' from the right to remove extension
     const dotIndex = lastSegment.lastIndexOf('.');
-    if (dotIndex === -1) return lastSegment; // no extension found
+    const baseName = (dotIndex === -1)
+      ? lastSegment
+      : lastSegment.substring(0, dotIndex);
 
-    return lastSegment.substring(0, dotIndex); 
-  } catch (err) {
-    // If any parsing fails, return the entire URL
-    return imageUrl;
+    return parseKnownDrawerName(baseName);
+  } catch {
+    return '';
   }
 }
 
 /**
- * Main LoanerToolboxesPage component that manages:
- * - Displaying all LoanerToolboxes and their images
- * - Selecting a toolbox to view/edit the Tools IN vs Tools OUT
- * - Handling a form to create/update a toolbox (with multiple images)
- * - Deleting or removing single images
- * - Displaying Tools in a 2-list approach with attach/detach
- * - Creating/updating Tools in the right column
- *
+ * Main LoanerToolboxesPage component.
+ * 
  * @component
- * @returns {JSX.Element} The fully responsive LoanerToolboxesPage
+ * @returns {JSX.Element}
  */
 const LoanerToolboxesPage = () => {
   // --------------------- STATE: Toolbox List ---------------------
   /**
    * @typedef {Object} Toolbox
-   * @property {string} _id - Unique ID
-   * @property {string} toolboxName - Display name
-   * @property {string[]} [drawerImages] - URLs for drawer images
+   * @property {string} _id
+   * @property {string} toolboxName
+   * @property {string[]} drawerImages
    */
 
-  /** All fetched toolboxes. */
+  /** All fetched toolboxes */
   const [toolboxes, setToolboxes] = useState([]);
 
-  /** Currently selected toolbox (null if none). */
+  /** The currently selected toolbox (null if none). */
   const [selectedToolbox, setSelectedToolbox] = useState(null);
 
-  // --------------------- STATE: Toolbox Form ---------------------
-  /** The toolbox being edited (null = create new). */
+  // --------------------- STATE: Toolbox Create/Edit Form ---------------------
   const [editToolboxTarget, setEditToolboxTarget] = useState(null);
-
-  /** Toolbox name in the form. */
   const [toolboxName, setToolboxName] = useState('');
-
-  /**
-   * FileList of newly selected drawer images (to add on save).
-   * @type {FileList|null}
-   */
-  const [drawerImages, setDrawerImages] = useState(null);
-
-  /**
-   * Existing images for a toolbox (only used in edit mode).
-   * We show them in a grid with a "Delete" button next to each.
-   * @type {string[]}
-   */
-  const [existingDrawerImages, setExistingDrawerImages] = useState([]);
+  const [drawerImages, setDrawerImages] = useState(null); // new images to add
+  const [existingDrawerImages, setExistingDrawerImages] = useState([]); // editing
 
   // --------------------- STATE: Tools In vs Out ---------------------
-  /** Tools currently IN the selected toolbox. */
   const [inTools, setInTools] = useState([]);
-
-  /** Tools NOT in the selected toolbox (available to attach). */
   const [outTools, setOutTools] = useState([]);
 
   // --------------------- STATE: Tool Create/Edit ---------------------
-  /** The ID of the tool being edited (null = creating new). */
   const [editingToolId, setEditingToolId] = useState(null);
-
-  /** Fields for name, description, quantity, drawer, image file. */
   const [toolName, setToolName] = useState('');
   const [partnum, setPartNum] = useState('');
   const [toolDescription, setToolDescription] = useState('');
@@ -123,17 +148,17 @@ const LoanerToolboxesPage = () => {
   const [toolImage, setToolImage] = useState(null);
 
   // --------------------- STATE: Image Modal ---------------------
-  /** URL of the image to show enlarged; null if no modal open. */
   const [selectedImageUrl, setSelectedImageUrl] = useState(null);
 
-  // --------------------- FETCHING ON MOUNT ---------------------
+  // --------------------- ON MOUNT: Fetch Toolboxes ---------------------
   useEffect(() => {
     fetchAllToolboxes();
   }, []);
 
   /**
    * Fetch all toolboxes from the server.
-   * @async
+   * On success, set state to the array of toolboxes.
+   * If error, log it.
    */
   const fetchAllToolboxes = async () => {
     try {
@@ -150,9 +175,8 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Fetch tools in/out for a chosen toolbox, sorted by numeric drawer in the "IN" list.
-   * @async
-   * @param {Toolbox} toolbox - The selected toolbox
+   * Fetch the Tools that are in vs out of a particular toolbox, sorted by numeric drawer for inTools.
+   * @param {Toolbox} toolbox
    */
   const fetchToolboxTools = async (toolbox) => {
     try {
@@ -160,15 +184,13 @@ const LoanerToolboxesPage = () => {
       const res = await axios.get(`${URL}/api/loaner-toolboxes/${toolbox._id}/tools`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       let inArr = res.data.inTools || [];
       let outArr = res.data.outTools || [];
 
-      // Sort by numeric drawer
       inArr.sort((a, b) => {
-        const dA = parseInt(a.location?.room, 10) || 0;
-        const dB = parseInt(b.location?.room, 10) || 0;
-        return dA - dB;
+        const numA = parseInt(a.location?.room, 10) || 0;
+        const numB = parseInt(b.location?.room, 10) || 0;
+        return numA - numB;
       });
 
       setInTools(inArr);
@@ -180,12 +202,10 @@ const LoanerToolboxesPage = () => {
     }
   };
 
-  // --------------------- Toolbox Handlers ---------------------
+  // --------------------- Toolbox Select / Edit / Delete ---------------------
   /**
-   * User selects a toolbox from the left column.  
-   * We fetch its in/out tools and show them in the middle columns.
-   * If we were editing a different toolbox, reset that form.
-   *
+   * Select a toolbox (show in/out tools in the middle).
+   * If editing a different box, reset that form.
    * @param {Toolbox} box
    */
   const handleSelectToolbox = (box) => {
@@ -200,18 +220,16 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Create or update a toolbox with multiple images at once.  
-   * Requires at least 1 total image (existing + newly selected).
-   * 
-   * @async
-   * @param {Event} e - The form submission event
+   * Create or update a toolbox. 
+   * Ensures at least 1 total drawer image (existing + new).
+   * @param {Event} e
    */
   const handleSubmitToolbox = async (e) => {
     e.preventDefault();
 
-    const totalImagesCount =
+    const totalImages =
       existingDrawerImages.length + (drawerImages ? drawerImages.length : 0);
-    if (totalImagesCount < 1) {
+    if (totalImages < 1) {
       alert('A toolbox must have at least 1 drawer image. Please add more.');
       return;
     }
@@ -221,7 +239,6 @@ const LoanerToolboxesPage = () => {
       const formData = new FormData();
       formData.append('toolboxName', toolboxName);
 
-      // Append newly added images (multiple in one go)
       if (drawerImages) {
         for (let i = 0; i < drawerImages.length; i++) {
           formData.append('drawerImages', drawerImages[i]);
@@ -230,17 +247,18 @@ const LoanerToolboxesPage = () => {
 
       if (editToolboxTarget) {
         // Update existing
-        await axios.put(
-          `${URL}/api/loaner-toolboxes/${editToolboxTarget._id}`,
+        await axios.put(`${URL}/api/loaner-toolboxes/${editToolboxTarget._id}`,
           formData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       } else {
         // Create new
-        await axios.post(`${URL}/api/loaner-toolboxes`, formData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axios.post(`${URL}/api/loaner-toolboxes`,
+          formData,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
       }
+
       resetToolboxForm();
       fetchAllToolboxes();
     } catch (error) {
@@ -249,9 +267,7 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Put the form into "edit mode" for a chosen toolbox.  
-   * We'll store its existing images in a separate array so we can display them for deletion.
-   *
+   * Enter "edit" mode for an existing toolbox: populate existing images in local state.
    * @param {Toolbox} box
    */
   const handleEditToolbox = (box) => {
@@ -262,7 +278,7 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Reset the toolbox form to a fresh state (no editing).
+   * Reset the "edit toolbox" form to default.
    */
   const resetToolboxForm = () => {
     setEditToolboxTarget(null);
@@ -272,9 +288,7 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Delete an entire toolbox by ID, then refresh the list.
-   *
-   * @async
+   * Delete a toolbox by ID, refresh the list, reset if necessary.
    * @param {string} toolboxId
    */
   const handleDeleteToolbox = async (toolboxId) => {
@@ -299,25 +313,27 @@ const LoanerToolboxesPage = () => {
 
   // --------------------- Single Drawer Image Delete ---------------------
   /**
-   * Delete a single drawer image from the currently edited toolbox (in edit mode).
-   * On success, updates local state and refetches the main list.
-   * 
-   * @async
-   * @param {string} imageUrl - The URL of the image to remove
+   * Delete a single drawer image from a toolbox (in edit mode).
+   * Calls the new backend route: DELETE /api/loaner-toolboxes/:id/drawer-images
+   * @param {string} imageUrl
    */
   const handleRemoveDrawerImage = async (imageUrl) => {
     if (!editToolboxTarget) return;
-    const confirmMsg = 'Are you sure you want to remove this image?';
-    if (!window.confirm(confirmMsg)) return;
+    if (!window.confirm('Are you sure you want to remove this image?')) return;
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${URL}/api/loaner-toolboxes/${editToolboxTarget._id}/drawer-images`, {
-        headers: { Authorization: `Bearer ${token}` },
-        data: { imageUrl },
-      });
+      await axios.delete(
+        `${URL}/api/loaner-toolboxes/${editToolboxTarget._id}/drawer-images`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          data: { imageUrl },
+        }
+      );
 
+      // Locally remove that image from existingDrawerImages
       setExistingDrawerImages((prev) => prev.filter((img) => img !== imageUrl));
+      // Refresh the entire toolboxes list so the left column is up to date
       fetchAllToolboxes();
     } catch (error) {
       console.error('Error removing drawer image:', error);
@@ -326,9 +342,8 @@ const LoanerToolboxesPage = () => {
 
   // --------------------- Attach / Detach Tools ---------------------
   /**
-   * Attach a tool to the currently selected toolbox.
-   * @async
-   * @param {string} toolId 
+   * Attach a tool to the selected toolbox, then refresh in/out Tools.
+   * @param {string} toolId
    */
   const handleAttachTool = async (toolId) => {
     if (!selectedToolbox) return;
@@ -346,9 +361,8 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Detach a tool from the currently selected toolbox.
-   * @async
-   * @param {string} toolId 
+   * Detach a tool from the selected toolbox, then refresh in/out Tools.
+   * @param {string} toolId
    */
   const handleDetachTool = async (toolId) => {
     if (!selectedToolbox) return;
@@ -367,9 +381,9 @@ const LoanerToolboxesPage = () => {
 
   // --------------------- Create / Edit Tool ---------------------
   /**
-   * Create or update a tool using the form data.
-   * @async
-   * @param {Event} e 
+   * Submit the "create/edit tool" form. 
+   * Either updates an existing tool or creates a new one.
+   * @param {Event} e
    */
   const handleSubmitTool = async (e) => {
     e.preventDefault();
@@ -387,12 +401,12 @@ const LoanerToolboxesPage = () => {
       }
 
       if (editingToolId) {
-        // Update existing tool
+        // Update
         await axios.put(`${URL}/api/tools/${editingToolId}`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        // Create new tool
+        // Create
         await axios.post(`${URL}/api/tools`, formData, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -408,8 +422,8 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Populate the form fields for editing an existing tool.
-   * @param {Object} tool 
+   * Populate the "create/edit tool" form with data from an existing tool.
+   * @param {Object} tool
    */
   const handleEditToolItem = (tool) => {
     setEditingToolId(tool._id);
@@ -422,7 +436,7 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Reset the tool form to default (cancel editing).
+   * Reset the "create/edit tool" form fields.
    */
   const resetToolForm = () => {
     setEditingToolId(null);
@@ -436,26 +450,25 @@ const LoanerToolboxesPage = () => {
 
   // --------------------- Image Modal ---------------------
   /**
-   * Open a modal to show the selected drawer/tool image in large form.
-   * @param {string} url 
+   * Show a larger version of a selected image in a modal overlay.
+   * @param {string} url
    */
   const handleImageClick = (url) => {
     setSelectedImageUrl(url);
   };
 
   /**
-   * Close the image modal by clearing the selectedImageUrl.
+   * Close the modal by clearing selectedImageUrl.
    */
   const closeModal = () => {
     setSelectedImageUrl(null);
   };
 
-  // --------------------- Rendering Tools IN / OUT with improved layout ---------------------
+  // --------------------- Rendering Tools IN / OUT ---------------------
   /**
-   * Render one tool row with name, qty, drawer, optional image, and attach/detach buttons.
-   *
-   * @param {Object} tool - The tool object
-   * @param {Boolean} isIn - if true, we show "Detach"; else "Attach"
+   * Render a single tool row with name, qty, drawer, optional image, attach/detach buttons.
+   * @param {Object} tool
+   * @param {boolean} isIn
    * @returns {JSX.Element}
    */
   const renderToolRow = (tool, isIn) => {
@@ -468,7 +481,6 @@ const LoanerToolboxesPage = () => {
             Qty: {tool.quantityOnHand}, Drawer: {drawer}
           </div>
         </div>
-
         {tool.imageUrl && (
           <img
             src={tool.imageUrl}
@@ -477,7 +489,6 @@ const LoanerToolboxesPage = () => {
             onClick={() => handleImageClick(tool.imageUrl)}
           />
         )}
-
         <div className="tool-row-actions">
           <button
             className="loaner-button-secondary"
@@ -506,7 +517,7 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Render the "Tools IN" list for the selected toolbox.
+   * Render all "IN" tools or placeholders if none.
    * @returns {JSX.Element|JSX.Element[]}
    */
   const renderToolsInSelected = () => {
@@ -520,7 +531,7 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * Render the "Tools OUT" list (tools not in the selected toolbox).
+   * Render all "OUT" tools or placeholders if none.
    * @returns {JSX.Element|JSX.Element[]}
    */
   const renderToolsNotInSelected = () => {
@@ -533,23 +544,16 @@ const LoanerToolboxesPage = () => {
     return outTools.map((tool) => renderToolRow(tool, false));
   };
 
-  // --------------------- Toggle + Resizable Columns (IN/OUT) ---------------------
-  /**
-   * viewMode can be "in", "out", or "both".
-   * - "in": show only Tools IN
-   * - "out": show only Tools OUT
-   * - "both": show both side by side
-   */
-  const [viewMode, setViewMode] = useState('both');
-
-  /** The user can drag a handle in the middle to resize the two sub-columns. */
-  const [inWidth, setInWidth] = useState(50);
+  // --------------------- Toggle + Draggable Columns (IN/OUT) ---------------------
+  const [viewMode, setViewMode] = useState('both'); // can be "in", "out", or "both"
+  const [inWidth, setInWidth] = useState(50); // left column width in percent
   const [isDragging, setIsDragging] = useState(false);
 
   const containerRef = useRef(null);
 
   /**
-   * Handle the user starting to drag the vertical handle.
+   * Start dragging the vertical handle.
+   * @param {Event} e
    */
   const handleDragStart = (e) => {
     e.preventDefault();
@@ -557,7 +561,8 @@ const LoanerToolboxesPage = () => {
   };
 
   /**
-   * As user drags, recalc the left column width.
+   * While dragging, recalc the left column width.
+   * @param {Event} e
    */
   const handleDragMove = (e) => {
     if (!isDragging || !containerRef.current) return;
@@ -571,8 +576,6 @@ const LoanerToolboxesPage = () => {
     const containerWidth = containerRect.width;
 
     let newInWidth = ((clientX - containerLeft) / containerWidth) * 100;
-
-    // Clamp between 5% and 95%.
     if (newInWidth < 5) newInWidth = 5;
     if (newInWidth > 95) newInWidth = 95;
     setInWidth(newInWidth);
@@ -585,7 +588,7 @@ const LoanerToolboxesPage = () => {
     setIsDragging(false);
   };
 
-  // Hook global events for dragging
+  // Add global listeners for dragging
   useEffect(() => {
     if (isDragging) {
       window.addEventListener('mousemove', handleDragMove);
@@ -606,7 +609,7 @@ const LoanerToolboxesPage = () => {
     };
   }, [isDragging]);
 
-  // --------------------- JSX RETURN ---------------------
+  // --------------------- RENDER ---------------------
   return (
     <div className="loaner-page-container">
       <h2 className="loaner-heading">
@@ -615,31 +618,28 @@ const LoanerToolboxesPage = () => {
 
       <div className="loaner-content-wrapper">
         {/* ===== LEFT COLUMN: Toolbox List + Create/Edit Toolbox Form ===== */}
-        <div className="loaner-left-col">
+        <div className="loaner-left-col narrowed-left-col">
           <h3>Loaner Toolboxes</h3>
           <div className="loaner-scrollable-list">
             {toolboxes.map((box) => (
               <div key={box._id} className="loaner-item-card">
                 <div>
                   <p className="loaner-item-title">{box.toolboxName}</p>
-
-                  {/* Display each drawer image as a small thumbnail plus filename */}
-                  <div className="loaner-drawer-images">
+                  <div className="loaner-drawer-images reduced-gap" style={{ flexWrap: 'wrap' }}>
                     {box.drawerImages?.map((imgUrl, idx) => {
-                      // For each image, parse the base filename
-                      const filenameNoExt = getFilenameWithoutExtension(imgUrl);
+                      const recognizedLabel = getDrawerLabel(imgUrl);
                       return (
                         <div key={idx} className="drawer-image-container">
-                          <img
+                          <DrawerImageLoader
                             src={imgUrl}
                             alt={`Drawer ${idx + 1}`}
-                            className="drawer-image-thumb"
                             onClick={() => handleImageClick(imgUrl)}
                           />
-                          {/* Show the parsed filename below the image */}
-                          <div className="drawer-image-filename">
-                            {filenameNoExt}
-                          </div>
+                          {recognizedLabel && (
+                            <div className="drawer-image-filename">
+                              {recognizedLabel}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -670,33 +670,28 @@ const LoanerToolboxesPage = () => {
             ))}
           </div>
 
-          {/* Toolbox Create/Edit Form */}
+          {/* Toolbox Form (Create/Edit) */}
           <div className="loaner-form-container">
             <h3>{editToolboxTarget ? 'Edit Toolbox' : 'Create Toolbox'}</h3>
 
-            {/* 
-              If editing an existing toolbox, show a grid of existing drawer images
-              each with a 'Delete' button so user can remove them individually,
-              plus the base filename below each image.
-            */}
             {editToolboxTarget && existingDrawerImages.length > 0 && (
               <div className="existing-drawers-section">
                 <h4>Existing Drawer Images:</h4>
-                <div className="existing-drawers-grid">
+                <div className="existing-drawers-grid" style={{ flexWrap: 'wrap' }}>
                   {existingDrawerImages.map((imgUrl, idx) => {
-                    const filenameNoExt = getFilenameWithoutExtension(imgUrl);
+                    const recognizedLabel = getDrawerLabel(imgUrl);
                     return (
                       <div key={idx} className="existing-drawer-item">
-                        <img
+                        <DrawerImageLoader
                           src={imgUrl}
                           alt={`Drawer ${idx + 1}`}
-                          className="existing-drawer-thumb"
                           onClick={() => handleImageClick(imgUrl)}
                         />
-                        {/* Show the filename below the image (no extension) */}
-                        <div className="drawer-image-filename">
-                          {filenameNoExt}
-                        </div>
+                        {recognizedLabel && (
+                          <div className="drawer-image-filename">
+                            {recognizedLabel}
+                          </div>
+                        )}
                         <button
                           type="button"
                           className="drawer-image-delete-btn"
@@ -753,7 +748,7 @@ const LoanerToolboxesPage = () => {
           </div>
         </div>
 
-        {/* ===== MIDDLE COLUMN: Tools In / Tools Out ===== */}
+        {/* ===== MIDDLE COLUMN: Tools In vs Tools Out ===== */}
         <div className="loaner-mid-col">
           <h3>
             {selectedToolbox
@@ -761,7 +756,6 @@ const LoanerToolboxesPage = () => {
               : 'No Toolbox Selected'}
           </h3>
 
-          {/* Toggle buttons for "IN" / "OUT" / "BOTH" */}
           <div className="toggle-buttons-row">
             <button
               className={viewMode === 'in' ? 'toggle-btn active' : 'toggle-btn'}
@@ -783,10 +777,8 @@ const LoanerToolboxesPage = () => {
             </button>
           </div>
 
-          {/* The two-list container is only visible if viewMode === 'both'. */}
           {viewMode === 'both' && (
             <div className="two-list-container" ref={containerRef}>
-              {/* IN column */}
               <div
                 className="two-list-column"
                 style={{ width: `${inWidth}%` }}
@@ -797,14 +789,12 @@ const LoanerToolboxesPage = () => {
                 </div>
               </div>
 
-              {/* Resizable drag handle */}
               <div
                 className="drag-handle"
                 onMouseDown={handleDragStart}
                 onTouchStart={handleDragStart}
               />
 
-              {/* OUT column */}
               <div
                 className="two-list-column"
                 style={{ width: `${100 - inWidth}%` }}
@@ -817,7 +807,6 @@ const LoanerToolboxesPage = () => {
             </div>
           )}
 
-          {/* Single column if viewMode === 'in' or 'out' */}
           {viewMode === 'in' && (
             <div className="single-list-container">
               <h4 className="two-list-title">Tools IN (Sorted by Drawer)</h4>
