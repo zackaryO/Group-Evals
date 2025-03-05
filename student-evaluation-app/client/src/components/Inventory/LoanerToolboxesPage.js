@@ -20,9 +20,9 @@
  *      - The left column never takes more than 1/3 of the screen on larger (desktop) layouts.
  *      - Drawer images are wrapped into multiple rows if there are many.
  *      - We have backend functionality to delete single drawer images (via DELETE /api/loaner-toolboxes/:id/drawer-images).
- *      - No other logic changed, everything else remains intact.
  *      - Large images load gracefully with a "Loading..." placeholder.
  *      - Stripped drawer filenames to recognized patterns ("Drawer 1", "Shelve 2", etc.).
+ *      - **Now includes an "Expected Quantity" field** in the create/edit Tool form.
  */
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -144,6 +144,7 @@ const LoanerToolboxesPage = () => {
   const [partnum, setPartNum] = useState('');
   const [toolDescription, setToolDescription] = useState('');
   const [toolQuantity, setToolQuantity] = useState(1);
+  const [toolExpected, setToolExpected] = useState(1); // NEW: track expectedQuantity
   const [toolDrawer, setToolDrawer] = useState('');
   const [toolImage, setToolImage] = useState(null);
 
@@ -383,6 +384,8 @@ const LoanerToolboxesPage = () => {
   /**
    * Submit the "create/edit tool" form. 
    * Either updates an existing tool or creates a new one.
+   * - Includes expectedQuantity in the form.
+   *
    * @param {Event} e
    */
   const handleSubmitTool = async (e) => {
@@ -394,6 +397,7 @@ const LoanerToolboxesPage = () => {
       formData.append('partnum', partnum);
       formData.append('description', toolDescription);
       formData.append('quantityOnHand', toolQuantity);
+      formData.append('expectedQuantity', toolExpected); // NEW: send expectedQuantity
       formData.append('room', toolDrawer);
 
       if (toolImage) {
@@ -431,6 +435,7 @@ const LoanerToolboxesPage = () => {
     setPartNum(tool.partnum || '');
     setToolDescription(tool.description || '');
     setToolQuantity(tool.quantityOnHand || 1);
+    setToolExpected(tool.expectedQuantity || 1); // NEW: load expectedQuantity
     setToolDrawer(tool.location?.room || '');
     setToolImage(null);
   };
@@ -444,6 +449,7 @@ const LoanerToolboxesPage = () => {
     setPartNum('');
     setToolDescription('');
     setToolQuantity(1);
+    setToolExpected(1); // reset to 1
     setToolDrawer('');
     setToolImage(null);
   };
@@ -466,7 +472,9 @@ const LoanerToolboxesPage = () => {
 
   // --------------------- Rendering Tools IN / OUT ---------------------
   /**
-   * Render a single tool row with name, qty, drawer, optional image, attach/detach buttons.
+   * Render a single tool row with name, qty, drawer, optional image, attach/detach buttons,
+   * plus missing info if quantityOnHand < expectedQuantity.
+   *
    * @param {Object} tool
    * @param {boolean} isIn
    * @returns {JSX.Element}
@@ -481,11 +489,11 @@ const LoanerToolboxesPage = () => {
           <div className="tool-row-title">{tool.name}</div>
           <div className="tool-row-details">
             Qty: {tool.quantityOnHand} / {expected}, Drawer: {drawer}
-              {missingCount > 0 && (
-               <div style={{ color: 'red' }}>
-               Missing: {missingCount}
-             </div>
-          )}
+            {missingCount > 0 && (
+              <div style={{ color: 'red' }}>
+                Missing: {missingCount}
+              </div>
+            )}
           </div>
         </div>
         {tool.imageUrl && (
@@ -640,7 +648,10 @@ const LoanerToolboxesPage = () => {
                           <DrawerImageLoader
                             src={imgUrl}
                             alt={`Drawer ${idx + 1}`}
-                            onClick={() => handleImageClick(imgUrl)}
+                            onClick={() => {
+                              /* open modal */
+                              setSelectedImageUrl(imgUrl);
+                            }}
                           />
                           {recognizedLabel && (
                             <div className="drawer-image-filename">
@@ -692,7 +703,7 @@ const LoanerToolboxesPage = () => {
                         <DrawerImageLoader
                           src={imgUrl}
                           alt={`Drawer ${idx + 1}`}
-                          onClick={() => handleImageClick(imgUrl)}
+                          onClick={() => setSelectedImageUrl(imgUrl)}
                         />
                         {recognizedLabel && (
                           <div className="drawer-image-filename">
@@ -871,6 +882,18 @@ const LoanerToolboxesPage = () => {
                 onChange={(e) => setToolQuantity(e.target.value)}
               />
             </div>
+
+            {/* NEW: Expected Quantity Field */}
+            <div className="loaner-form-group">
+              <label>Expected Quantity:</label>
+              <input
+                type="number"
+                value={toolExpected}
+                onChange={(e) => setToolExpected(e.target.value)}
+                min="1"
+              />
+            </div>
+
             <div className="loaner-form-group">
               <label>Drawer (numeric):</label>
               <input

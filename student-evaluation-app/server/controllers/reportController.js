@@ -12,8 +12,7 @@ const TrainingVehicle = require('../models/TrainingVehicle');
 
 /**
  * Example: Generate a PDF of all Tools needing purchase or repair.
- */
-exports.generateToolsReport = async (req, res) => {
+ */exports.generateToolsReport = async (req, res) => {
   try {
     // 1) Initialize a PDFDoc in landscape mode
     const doc = new PDFDocument({
@@ -55,18 +54,28 @@ exports.generateToolsReport = async (req, res) => {
        .lineTo(750, startY + 15)
        .stroke();
 
-    // 5) Fetch tools from DB (include expectedQuantity in your schema)
+    // 5) Fetch tools from DB (assumes you have expectedQuantity in your schema)
     const tools = await Tool.find();
 
     // 6) Vertical spacing for each row
     let rowY = startY + 25;
+    const rowHeight = 20; // how tall each row is
 
     // 7) Loop each tool as a row in the table
-    tools.forEach((tool) => {
+    tools.forEach((tool, i) => {
       // Compute "missing" items
       const onHand = tool.quantityOnHand || 0;
       const expected = tool.expectedQuantity || 1;
       const missing = Math.max(0, expected - onHand);
+
+      // Alternate background shading: if i is even, draw a light-gray rect
+      if (i % 2 === 0) {
+        doc.save();
+        doc.rect(40, rowY - 2, 710, rowHeight) // leftX, topY, width, height
+           .fillColor('#eeeeee')
+           .fill();
+        doc.restore();
+      }
 
       // If onHand < expected, we bold this row
       if (onHand < expected) {
@@ -84,16 +93,19 @@ exports.generateToolsReport = async (req, res) => {
 
       // Print each column at the chosen x-coordinates, on rowY
       doc.fontSize(9);
-      doc.text(tool.name || '',         50,  rowY, { width: 120 });
-      doc.text(tool.partnum || '',     180,  rowY, { width: 110 });
-      doc.text(`${onHand}`,           300,  rowY, { width: 70, align: 'right' });
-      doc.text(`${expected}`,         390,  rowY, { width: 60, align: 'right' });
+      doc.text(tool.name || '',          50, rowY, { width: 120 });
+      doc.text(tool.partnum || '',      180, rowY, { width: 110 });
+      doc.text(`${onHand}`,            300, rowY, { width: 70, align: 'right' });
+      doc.text(`${expected}`,          390, rowY, { width: 60, align: 'right' });
+      
+      // Show missing if > 0, otherwise '-'
       doc.text(missing > 0 ? `${missing}` : '-', 460, rowY, { width: 60, align: 'right' });
-      doc.text(drawerText,           530,  rowY, { width: 80 });
+      doc.text(drawerText,             530, rowY, { width: 80 });
       doc.text(tool.location?.shelf || '', 620, rowY, { width: 80 });
 
       // move to the next row
-      rowY += 20;
+      rowY += rowHeight;
+
       // if we near the bottom, add a new page
       if (rowY > doc.page.height - 50) {
         doc.addPage();
@@ -109,6 +121,7 @@ exports.generateToolsReport = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
+
 
 /**
  * Example: Generate a PDF of Consumables needing reorder (quantity < desiredQuantity).
