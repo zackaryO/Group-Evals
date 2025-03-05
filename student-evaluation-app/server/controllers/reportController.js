@@ -46,7 +46,7 @@ const TrainingVehicle = require('../models/TrainingVehicle');
     doc.text('Qty On Hand', 300, startY);
     doc.text('Expected',    390, startY);
     doc.text('Missing',     460, startY);
-    doc.text('Drawer #',    530, startY);
+    doc.text('Drawer / Room',    530, startY);
     doc.text('Shelf',       620, startY);
 
     // Draw a line under the headers
