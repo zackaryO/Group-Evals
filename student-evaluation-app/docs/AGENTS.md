@@ -22,8 +22,8 @@ _Last updated: 2025‑07‑21_
 
 | ID  | Description                                                                                                  | Owner       | Status | Notes |
 | ----| ------------------------------------------------------------------------------------------------------------- | ----------- | ------ | ----- |
-| T‑1 | Create/write‑able **uploads** directory on server start to eliminate `ENOTDIR` error                          | backend     | 🔴     | Add startup script or runtime check |
-| T‑2 | Commit `.gitkeep` (or similar) so `uploads/` exists in deployments                                           | backend     | 🔴     | Required for Render / Vercel |
+| T‑1 | Create/write‑able **uploads** directory on server start to eliminate `ENOTDIR` error                          | backend     | 🟢     | Add startup script or runtime check |
+| T‑2 | Commit `.gitkeep` (or similar) so `uploads/` exists in deployments                                           | backend     | 🟢     | Required for Render / Vercel |
 | T‑3 | Verify static route `app.use('/uploads', express.static('uploads'))` serves images correctly                  | backend     | 🟢     | Already present in codebase |
 | T‑4 | Update **PUT** route to delete old image when a new one is uploaded                                           | backend     | 🔴     | Prevent orphaned files |
 | T‑5 | Update **DELETE** question route to remove associated image file                                              | backend     | 🔴     | File‑system hygiene |
