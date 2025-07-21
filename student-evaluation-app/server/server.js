@@ -10,11 +10,13 @@ const dotenv = require('dotenv');
 dotenv.config(); // If your .env is in this same folder, no path needed
 // Or if your .env is in a parent folder, use: dotenv.config({ path: path.join(__dirname, '../.env') });
 
-// Ensure the uploads directory exists on startup
+// Ensure the uploads directory exists on startup (asynchronously)
 const uploadsPath = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath, { recursive: true });
-}
+fs.promises
+  .mkdir(uploadsPath, { recursive: true })
+  .catch((err) => {
+    console.error('Failed to create uploads directory:', err);
+  });
 
 const express = require('express');
 const mongoose = require('mongoose');
