@@ -6,21 +6,13 @@ const Quiz = require('../models/Quiz');
 const QuizQuestion = require('../models/QuizQuestion');
 const QuizSubmission = require('../models/QuizSubmission');
 const multer = require('multer');
-const path = require('path');
+const { uploadBufferToS3 } = require('../utils/s3');
 
 /**
- * Configure Multer for local image uploads.
- * The "uploads" folder should exist at the root of your server.
+ * Configure Multer for in-memory image uploads.
+ * TODO-S3: remove disk storage and upload buffers directly to S3.
  */
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    // Prepend a timestamp to avoid file name collisions
-    cb(null, Date.now() + '-' + file.originalname);
-  },
-});
+const storage = multer.memoryStorage();
 
 // Only allow image files
 const fileFilter = (req, file, cb) => {
@@ -30,7 +22,11 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-const upload = multer({ storage, fileFilter });
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 /**
  * @route POST /api/quizzes/create
@@ -123,10 +119,11 @@ router.post('/:quizId/add-question', upload.single('questionImage'), async (req,
       options = JSON.parse(req.body.options);
     }
 
-    // If file was uploaded, store the filename; otherwise, use empty string
+    // If file was uploaded, push to S3 and store returned URL
     let imagePath = '';
     if (req.file) {
-      imagePath = req.file.filename;
+      const key = `quiz-images/${Date.now()}-${req.file.originalname}`;
+      imagePath = await uploadBufferToS3(req.file.buffer, key, req.file.mimetype);
     }
 
     const newQuestion = new QuizQuestion({
@@ -163,10 +160,15 @@ router.put('/:quizId/question/:questionId', upload.single('questionImage'), asyn
       options = JSON.parse(req.body.options);
     }
 
-    // If file was uploaded, store the new filename
+    // If a new file is uploaded, push to S3 and store URL
     let imagePath;
     if (req.file) {
-      imagePath = req.file.filename;
+      const key = `quiz-images/${Date.now()}-${req.file.originalname}`;
+      imagePath = await uploadBufferToS3(
+        req.file.buffer,
+        key,
+        req.file.mimetype
+      );
     }
 
     // Build update object

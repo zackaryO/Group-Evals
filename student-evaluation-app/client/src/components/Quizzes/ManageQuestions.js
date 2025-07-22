@@ -206,7 +206,7 @@ const ManageQuestions = () => {
               {/* Display image if available */}
               {question.image && (
                 <img
-                  src={`${URL}/uploads/${question.image}`}
+                  src={question.image}
                   alt="Question"
                   className="question-image-display"
                 />
