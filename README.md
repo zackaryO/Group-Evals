@@ -181,3 +181,19 @@ The textual sequence diagram above is intended to be added to a `README.md` file
 
 Feel free to adjust any descriptions or participants as your application evolves.
 
+## Environment Variables
+
+Configure the following variables in your `.env` file:
+
+```
+MONGODB_URI=<your mongo uri>
+JWT_SECRET=<session secret>
+AWS_S3_BUCKET=<s3 bucket name>
+AWS_REGION=<aws region>
+AWS_ACCESS_KEY_ID=<access key>
+AWS_SECRET_ACCESS_KEY=<secret key>
+CLOUD_FRONT_URL=<optional cloudfront url>
+```
+
+Images uploaded to quizzes are stored in the S3 bucket under the `quiz-images/` prefix. If `CLOUD_FRONT_URL` is provided, image URLs will use that domain. Otherwise they will use the S3 bucket URL.
+

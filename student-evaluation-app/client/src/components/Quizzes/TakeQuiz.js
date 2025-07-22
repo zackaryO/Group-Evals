@@ -128,7 +128,7 @@ const TakeQuiz = ({ user }) => {
               {/* If a question has an image, display it */}
               {question.image && (
                 <img
-                  src={`${URL}/uploads/${question.image}`}
+                  src={question.image}
                   alt="Question"
                   style={{
                     maxWidth: '100%',
