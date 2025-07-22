@@ -6,7 +6,9 @@ const Quiz = require('../models/Quiz');
 const QuizQuestion = require('../models/QuizQuestion');
 const QuizSubmission = require('../models/QuizSubmission');
 const multer = require('multer');
-const { uploadBufferToS3 } = require('../utils/s3');
+
+const { uploadBufferToS3, deleteFromS3 } = require('../utils/s3');
+
 
 /**
  * Configure Multer for in-memory image uploads.
@@ -215,6 +217,30 @@ router.delete('/:quizId/question/:questionId', async (req, res) => {
     res.json({ message: 'Question deleted successfully' });
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route DELETE /api/questions/:questionId/image
+ * @desc Remove an image from a question and delete from S3
+ */
+router.delete('/questions/:questionId/image', async (req, res) => {
+  try {
+    const question = await QuizQuestion.findById(req.params.questionId);
+    if (!question || !question.image) {
+      return res.status(404).json({ message: 'Image not found' });
+    }
+
+    const key = new URL(question.image).pathname.slice(1);
+    await deleteFromS3(key);
+
+    question.image = '';
+    await question.save();
+
+    res.json({ message: 'Image removed' });
+  } catch (error) {
+    console.error('Error removing image:', error);
+    res.status(500).json({ message: 'Error removing image' });
   }
 });
 
