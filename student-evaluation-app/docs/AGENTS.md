@@ -31,11 +31,13 @@ _Last updated: 2025‑07‑22_
 | T‑7 | **Migration script** – iterate existing questions, read file from local `/uploads` (if exists), push to S3, update `image` field to new URL. Skip 404s. | `scripts/migrateQuizImagesToS3.js`                      | backend | 🟢 |
 | T‑8 | **Front‑end editor** (`QuizQuestionForm.tsx`) – use `imageUrl` returned by API. Show preview from S3. No assumption of `/uploads/`.  | `client/src/components/quiz/QuizQuestionForm.tsx`       | frontend | 🟢 |
 | T‑9 | **Front‑end player** (`TakeQuiz.tsx`) – load `question.image` as absolute URL. Remove local path concatenation logic.                 | `client/src/pages/TakeQuiz.tsx`                         | frontend | 🟢 |
+
 | T‑10| **Image remove flow** – on “Remove Image” click, backend deletes S3 object (`deleteObject`) & nulls `image` in DB. Front‑end updates state. | Route: `DELETE /api/questions/:id/image`                | full‑stack | 🟢 |
 | T‑11| **Permissions / IAM** – policy allows `s3:PutObject`, `s3:DeleteObject`, `s3:GetObject` on bucket path `quiz‑images/*`.               | AWS console / Terraform                                 | DevOps | 🔴 |
 | T‑12| **E2E Cypress tests** – ① upload image ➜ persists after page reload ② image visible next day via mocked container restart.            | `cypress/e2e/quizImage.spec.js`                         | QA    | 🔴 |
 | T‑13| **Remove obsolete `/uploads` directory** from repo; add `.gitkeep` only if other modules still rely; update `.gitignore`.             | root                                                    | backend | 🟢 |
 | T‑14| **Docs update** – README + API docs with new `imageUrl` behaviour, env vars, migration instructions.                                 | `docs/api.md`, `README.md`                              | docs  | 🟢 |
+
 | T‑15| **Code review & merge** – open PR, satisfy lint/tests, squash‑merge to `main`.                                                       | GitHub PR                                               | maint | 🔴 |
 
 ---
