@@ -7,8 +7,8 @@ const {
 
 
 const REGION = process.env.AWS_REGION;
-const BUCKET = process.env.AWS_S3_BUCKET;
-const CLOUD_FRONT_URL = process.env.CLOUD_FRONT_URL;
+const BUCKET = process.env.AWS_STORAGE_BUCKET_NAME;
+const AWS_S3_CUSTOM_DOMAIN = process.env.AWS_S3_CUSTOM_DOMAIN;
 
 const s3 = new S3Client({ region: REGION });
 
@@ -20,7 +20,7 @@ async function uploadBufferToS3(buffer, key, mime, client = s3) {
     ContentType: mime,
   });
   await client.send(command);
-  const baseUrl = CLOUD_FRONT_URL || `https://${BUCKET}.s3.${REGION}.amazonaws.com`;
+  const baseUrl = AWS_S3_CUSTOM_DOMAIN || `https://${BUCKET}.s3.${REGION}.amazonaws.com`;
   return `${baseUrl}/${key}`;
 }
 
