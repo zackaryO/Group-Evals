@@ -1,48 +1,50 @@
-# Codex Agents Task Board  
-_Last updated: 2025‑07‑21_
+# docs/AGENTS.md – Quiz‑Image S3 Migration  
+_Last updated: 2025‑07‑22_
 
-## Legend
+## ⏱️ Emoji Legend
 
-| Symbol / Tag | Meaning                              |
-| ------------ | ------------------------------------ |
-| 🔴 Backlog   | Not started                          |
-| 🔷 WIP       | Work in progress                     |
-| 🟢 Done      | Complete & merged                    |
-| ⚠️ Blocked   | Needs decision / external dependency |
-| 📐 Design    | Needs Figma / design sign‑off        |
+| Emoji | Meaning                              |
+| ----- | ------------------------------------ |
+| 🔴    | Backlog – not started                |
+| 🔷    | WIP – actively being worked          |
+| 🟢    | Done – merged to **main**            |
+| ⚠️    | Blocked – waiting on input           |
+| 📐    | Design – needs design review         |
 
 > **Codex Agents‑of‑Record**  
 >
 > 1. **Update this `docs/AGENTS.md`** whenever a task changes status.  
-> 2. **Append an entry to `docs/log.md`** with the date, commit hash, and a succinct description of the change.
+> 2. **Append an entry to `docs/log.md`** (`YYYY‑MM‑DD · <commit‑hash> · <summary>`) for every status change or merge to **main**.  
 
 ---
 
-## Tasks
+## 📋 Task Board – Persist Quiz Images in AWS S3 (MERN stack)
 
-| ID  | Description                                                                                                  | Owner       | Status | Notes |
-| ----| ------------------------------------------------------------------------------------------------------------- | ----------- | ------ | ----- |
-| T‑1 | Create/write‑able **uploads** directory on server start to eliminate `ENOTDIR` error                          | backend     | 🟢     | Add startup script or runtime check |
-| T‑2 | Commit `.gitkeep` (or similar) so `uploads/` exists in deployments                                           | backend     | 🟢     | Required for Render / Vercel |
-| T‑3 | Verify static route `app.use('/uploads', express.static('uploads'))` serves images correctly                  | backend     | 🟢     | Already present in codebase |
-| T‑4 | Update **PUT** route to delete old image when a new one is uploaded                                           | backend     | 🔴     | Prevent orphaned files |
-| T‑5 | Update **DELETE** question route to remove associated image file                                              | backend     | 🔴     | File‑system hygiene |
-| T‑6 | Extend instructor UI: question‑creation form supports image upload via `<input type="file" …>`                | frontend    | 🔴     | Use `FormData`, show preview |
-| T‑7 | Extend question‑edit dialog to allow replacing / removing an existing image                                   | frontend    | 🔴     | Handle PATCH / PUT |
-| T‑8 | Render quiz‑question image for students (`<img src="/uploads/…">`)                                            | frontend    | 🟢     | Basic display already implemented |
-| T‑9 | MVP enlarge: wrap image in `<a target="_blank">` to open full‑size in new tab                                 | frontend    | 🔴     | Quick win |
-| T‑10| Enhanced UX: modal “lightbox” overlay to enlarge image in‑place                                              | frontend    | 🔴     | React state + CSS `.image-modal` |
-| T‑11| Add reusable `.image-modal` CSS (centering, backdrop, close affordance)                                       | frontend    | 🔴     |  |
-| T‑12| End‑to‑end tests: upload → display → enlarge flow works on desktop & mobile                                   | QA          | 🔴     | Cypress / Playwright |
-| T‑13| Update developer docs & README sections covering image‑upload feature                                         | documentation| 🔴     | Explain folder, endpoints, modal usage |
+| ID  | Description / Acceptance Criteria                                                                                                   | File(s) / Location(s)                                   | Owner | Status |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ----- | ------ |
+| T‑1 | **Audit current quiz upload flow** – identify exact route/controller using Multer disk storage (`uploads/` folder). Create inline TODO markers. | `server/routes/quizzes.js` or `controllers/quizQuestionsController.js` | backend | 🟢 |
+| T‑2 | **Add / verify env vars** – ensure `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `CLOUD_FRONT_URL` are in `.env.example` and Render dashboard. | `.env.example`, Render settings                         | DevOps | 🟢 |
+| T‑3 | **Create S3 util** – reusable `uploadBufferToS3(buffer, key, mime)` that returns the absolute 🖼️ URL (CloudFront if available). Include unit test. | `server/utils/s3.js`, `tests/s3.test.js`                | backend | 🟢 |
+| T‑4 | **Switch Multer to memory storage** for quiz image uploads (`storage: multer.memoryStorage()`). Remove local `uploads/` write.       | Quiz upload route file                                   | backend | 🟢 |
+| T‑5 | **Refactor quiz create / update** – after Multer, call `uploadBufferToS3` and save `imageUrl` (full URL) in Mongo `QuizQuestion.image`. Remove `req.file.filename`. | Same as T‑4                                             | backend | 🟢 |
+| T‑6 | **Remove Express static `/uploads` middleware** (no longer needed). Ensure other modules not dependent on it.                        | `server.js`                                             | backend | 🟢 |
+| T‑7 | **Migration script** – iterate existing questions, read file from local `/uploads` (if exists), push to S3, update `image` field to new URL. Skip 404s. | `scripts/migrateQuizImagesToS3.js`                      | backend | 🟢 |
+| T‑8 | **Front‑end editor** (`QuizQuestionForm.tsx`) – use `imageUrl` returned by API. Show preview from S3. No assumption of `/uploads/`.  | `client/src/components/quiz/QuizQuestionForm.tsx`       | frontend | 🟢 |
+| T‑9 | **Front‑end player** (`TakeQuiz.tsx`) – load `question.image` as absolute URL. Remove local path concatenation logic.                 | `client/src/pages/TakeQuiz.tsx`                         | frontend | 🟢 |
 
----
+| T‑10| **Image remove flow** – on “Remove Image” click, backend deletes S3 object (`deleteObject`) & nulls `image` in DB. Front‑end updates state. | Route: `DELETE /api/questions/:id/image`                | full‑stack | 🟢 |
+| T‑11| **Permissions / IAM** – policy allows `s3:PutObject`, `s3:DeleteObject`, `s3:GetObject` on bucket path `quiz‑images/*`.               | AWS console / Terraform                                 | DevOps | 🔴 |
+| T‑12| **E2E Cypress tests** – ① upload image ➜ persists after page reload ② image visible next day via mocked container restart.            | `cypress/e2e/quizImage.spec.js`                         | QA    | 🔴 |
+| T‑13| **Remove obsolete `/uploads` directory** from repo; add `.gitkeep` only if other modules still rely; update `.gitignore`.             | root                                                    | backend | 🟢 |
+| T‑14| **Docs update** – README + API docs with new `imageUrl` behaviour, env vars, migration instructions.                                 | `docs/api.md`, `README.md`                              | docs  | 🟢 |
 
-### Next Steps
-
-1. **Create the `uploads/` folder** locally and in CI environments.  
-2. Mark *T‑1* through *T‑3* as 🟢 once verified, then begin front‑end tasks.  
-3. Each commit that changes a task’s status **must** update this board **and** append a short entry to `docs/log.md` (date + commit hash + summary).  
+| T‑15| **Code review & merge** – open PR, satisfy lint/tests, squash‑merge to `main`.                                                       | GitHub PR                                               | maint | 🔴 |
 
 ---
 
+### Implementation Notes (for Codex)
+
+- **Multer → memory:**  
+
+  ```js
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 }});
