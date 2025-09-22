@@ -1,6 +1,6 @@
 // student-evaluation-app/client/src/App.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
@@ -44,22 +44,28 @@ import TrainingVehiclesPage from './components/Inventory/TrainingVehiclesPage';
 import InventoryReportsPage from './components/Inventory/InventoryReportsPage';
 
 const App = () => {
-  const [user, setUser] = useState(null);
-
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
+    const storedToken = localStorage.getItem('token');
     const storedUserId = localStorage.getItem('userId');
     const storedRole = localStorage.getItem('role');
     const storedFirstName = localStorage.getItem('firstName');
     const storedLastName = localStorage.getItem('lastName');
-    if (storedUserId && storedRole) {
-      setUser({
+    const storedUsername = localStorage.getItem('username');
+
+    const sanitize = (value) => (value && value !== 'undefined' ? value : '');
+
+    if (storedToken && storedUserId && storedRole) {
+      return {
         _id: storedUserId,
         role: storedRole,
-        firstName: storedFirstName,
-        lastName: storedLastName,
-      });
+        username: sanitize(storedUsername),
+        firstName: sanitize(storedFirstName),
+        lastName: sanitize(storedLastName),
+      };
     }
-  }, []);
+
+    return null;
+  });
 
   return (
     <Router>
@@ -362,3 +368,8 @@ const App = () => {
 };
 
 export default App;
+
+
+
+
+

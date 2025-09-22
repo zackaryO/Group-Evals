@@ -22,6 +22,7 @@ const Login = ({ setUser }) => {
         localStorage.setItem('token', res.data.token);
         localStorage.setItem('userId', res.data.user._id);
         localStorage.setItem('role', res.data.user.role);
+        localStorage.setItem('username', res.data.user.username.toLowerCase());
         // Store firstName and lastName
         localStorage.setItem('firstName', res.data.user.firstName);
         localStorage.setItem('lastName', res.data.user.lastName);
@@ -62,3 +63,7 @@ const Login = ({ setUser }) => {
 };
 
 export default Login;
+
+
+
+

@@ -21,6 +21,11 @@ import './Navbar.css';
 
 const handleLogout = () => {
   localStorage.removeItem('token');
+  localStorage.removeItem('userId');
+  localStorage.removeItem('role');
+  localStorage.removeItem('username');
+  localStorage.removeItem('firstName');
+  localStorage.removeItem('lastName');
   window.location.href = '/login';
 };
 
@@ -111,3 +116,5 @@ const Navbar = ({ user }) => (
 );
 
 export default Navbar;
+
+
