@@ -12,7 +12,19 @@ const MissedQuestions = () => {
   useEffect(() => {
     const fetchGrades = async () => {
       try {
-        const response = await axios.get(`${URL}/api/grades/`);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setMessage('Authentication token missing. Please log in again.');
+          return;
+        }
+
+        const config = {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+
+        const response = await axios.get(`${URL}/api/grades/`, config);
         console.log('Grades fetched for Missed Questions:', response.data);
 
         const allMissedQuestions = new Map();
@@ -46,7 +58,11 @@ const MissedQuestions = () => {
 
         setMissedQuestions(Array.from(allMissedQuestions.values()));
       } catch (error) {
-        setMessage('Error fetching missed questions: ' + error.message);
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          setMessage('You are not authorized to view missed questions.');
+        } else {
+          setMessage('Error fetching missed questions: ' + error.message);
+        }
       } finally {
         setLoading(false);
       }
