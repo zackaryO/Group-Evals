@@ -25,7 +25,7 @@
  *      - **Now includes an "Expected Quantity" field** in the create/edit Tool form.
  */
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import axios from 'axios';
 import URL from '../../backEndURL';
 import './LoanerToolboxesPage.css';
@@ -579,7 +579,7 @@ const LoanerToolboxesPage = () => {
    * While dragging, recalc the left column width.
    * @param {Event} e
    */
-  const handleDragMove = (e) => {
+  const handleDragMove = useCallback((e) => {
     if (!isDragging || !containerRef.current) return;
 
     const clientX = e.type.includes('touch')
@@ -594,7 +594,7 @@ const LoanerToolboxesPage = () => {
     if (newInWidth < 5) newInWidth = 5;
     if (newInWidth > 95) newInWidth = 95;
     setInWidth(newInWidth);
-  };
+  }, [isDragging]);
 
   /**
    * Stop dragging on mouse/touch up.
@@ -622,7 +622,7 @@ const LoanerToolboxesPage = () => {
       window.removeEventListener('mouseup', handleDragEnd);
       window.removeEventListener('touchend', handleDragEnd);
     };
-  }, [isDragging]);
+  }, [isDragging, handleDragMove]);
 
   // --------------------- RENDER ---------------------
   return (

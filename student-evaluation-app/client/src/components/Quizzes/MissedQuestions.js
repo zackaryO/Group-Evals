@@ -138,7 +138,7 @@ const MissedQuestions = () => {
     }
 
     const lines = normalized.split('\n');
-    const optionStartIndex = lines.findIndex((line) => /^[A-Da-d][\).]\s*/.test(line.trim()));
+    const optionStartIndex = lines.findIndex((line) => /^[A-Da-d][).]\s*/.test(line.trim()));
 
     if (optionStartIndex === -1) {
       return { prompt: normalized, options: [] };
@@ -152,7 +152,7 @@ const MissedQuestions = () => {
       .map((line) => line.trim())
       .filter((line) => line !== '')
       .map((line) => {
-        const match = line.match(/^([A-Da-d])[\).]?\s*(.*)$/);
+        const match = line.match(/^([A-Da-d])[).]?\s*(.*)$/);
         if (match) {
           return {
             label: match[1].toUpperCase(),

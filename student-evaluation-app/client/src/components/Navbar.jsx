@@ -12,9 +12,7 @@ import {
   faTasks,
   faChalkboardTeacher,
   faQuestionCircle,
-  faClipboardList,
   faFolderOpen,
-  faUsers,
   faTools,  // added for Tools icon
 } from '@fortawesome/free-solid-svg-icons';
 import './Navbar.css';
