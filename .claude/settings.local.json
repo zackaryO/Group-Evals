@@ -5,7 +5,11 @@
       "Bash(findstr:*)",
       "Bash(powershell -Command:*)",
       "Bash(npm ls:*)",
-      "Bash(npm audit:*)"
+      "Bash(npm audit:*)",
+      "Bash(python:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npm view:*)",
+      "Bash(npm pack:*)"
     ]
   }
 }
