@@ -128,8 +128,9 @@ router.put('/:userId', authenticateToken, authorizeRoles('admin', 'instructor'),
 
     // If password field is not blank, update it
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await bcrypt.hash(password.trim(), 10);
       user.password = hashedPassword;
+      console.log(`Password updated for user "${user.username}" (ID: ${userId})`);
     }
 
     // If you have cohorts to manage, handle them similarly:

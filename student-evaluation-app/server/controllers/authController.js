@@ -26,14 +26,17 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   const { username, password } = req.body;
   try {
-    const user = await User.findOne({ username });
-    // const user = await User.findOne({ cohort, username });
+    const trimmedUsername = username.trim().toLowerCase();
+    const trimmedPassword = password.trim();
+    const user = await User.findOne({ username: trimmedUsername });
     if (!user) {
+      console.log(`Login failed: no user found for username "${trimmedUsername}"`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(trimmedPassword, user.password);
     if (!isPasswordValid) {
+      console.log(`Login failed: wrong password for username "${username}"`);
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
