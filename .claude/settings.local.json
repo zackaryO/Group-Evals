@@ -10,7 +10,16 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(npm view:*)",
       "Bash(npm pack:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(xargs grep -l \"print\\\\|export\\\\|pdf\\\\|PDF\")",
+      "Bash(npx --yes react-scripts build)",
+      "Bash(npx react-scripts build)",
+      "Bash(node -e \"const m = require\\(''multer''\\); console.log\\(''memoryStorage:'', typeof m.memoryStorage\\); console.log\\(''diskStorage:'', typeof m.diskStorage\\); const u = m\\({ storage: m.memoryStorage\\(\\) }\\); console.log\\(''single:'', typeof u.single\\); console.log\\(''array:'', typeof u.array\\); console.log\\(''fields:'', typeof u.fields\\); console.log\\(''none:'', typeof u.none\\); console.log\\(''Multer 2.x basic API is compatible''\\)\")",
+      "Bash(timeout 10 node index.js)",
+      "Bash(ls \"c:/Users/zotte/OneDrive/Documents/GitHub/Group-Evals/student-evaluation-app/server/\"*.js)",
+      "Bash(timeout 10 node server.js)",
+      "Bash(PORT=5099 timeout 5 node -e \":*)",
+      "Bash(node -e \":*)"
     ]
   }
 }

@@ -1,3 +1,4 @@
+/* ===== Page layout: controls (left) + preview (right) ===== */
 .resume-builder-page {
   display: grid;
   grid-template-columns: minmax(320px, 1fr) minmax(320px, 900px);
@@ -5,27 +6,51 @@
   padding: 18px;
   color: #e6edf3;
   background: #0d1117;
-  min-height: calc(100vh - 70px);
+  height: calc(100vh - 70px);
+  overflow: hidden;
 }
 
+/* ===== Controls panel ===== */
 .resume-builder-controls {
   background: #161b22;
   border: 1px solid #30363d;
   border-radius: 10px;
   padding: 16px;
+  overflow-y: auto;
 }
 
-.resume-builder-controls h1,
-.resume-builder-controls h2 {
+.resume-builder-controls h1 {
   color: #f0f6fc;
+  margin: 0 0 12px;
 }
 
+/* ---- Form section fieldsets ---- */
+.form-section {
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 0 0 12px;
+}
+
+.form-section legend {
+  color: #58a6ff;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 0 6px;
+}
+
+.form-section > textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ---- Inputs ---- */
 .resume-builder-controls label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
-  font-size: 14px;
+  gap: 4px;
+  margin-bottom: 8px;
+  font-size: 13px;
 }
 
 .resume-builder-controls input,
@@ -35,13 +60,15 @@
   border: 1px solid #30363d;
   color: #e6edf3;
   border-radius: 6px;
-  padding: 8px;
+  padding: 6px 8px;
+  font-size: 13px;
 }
 
+/* ---- Grid helpers ---- */
 .grid-two {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .inline-controls {
@@ -50,6 +77,109 @@
   gap: 8px;
 }
 
+.range-bounds {
+  font-size: 11px;
+  color: #8b949e;
+}
+
+/* ---- Setting rows (slider + number) ---- */
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.setting-label {
+  flex-shrink: 0;
+  font-size: 13px;
+  min-width: 110px;
+}
+
+.setting-slider {
+  flex: 1;
+  min-width: 0;
+}
+
+.setting-slider input[type="range"] {
+  width: 100%;
+  accent-color: #58a6ff;
+}
+
+.setting-number {
+  width: 56px !important;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.setting-unit {
+  font-size: 12px;
+  color: #8b949e;
+  flex-shrink: 0;
+}
+
+.setting-bounds {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #8b949e;
+  margin-bottom: 10px;
+  padding-left: 110px;
+}
+
+.setting-bounds input {
+  width: 48px !important;
+  padding: 2px 4px !important;
+  font-size: 11px !important;
+  text-align: center;
+}
+
+.resume-builder-controls input[type="range"] {
+  width: 100%;
+  accent-color: #58a6ff;
+}
+
+/* ---- Entry cards (education / work) ---- */
+.entry-card {
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 10px;
+  margin-bottom: 8px;
+  background: #0d1117;
+}
+
+.entry-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btn-remove {
+  background: #da3633;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.btn-add {
+  background: #238636;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+/* ---- Action buttons ---- */
 .action-row {
   display: flex;
   gap: 10px;
@@ -61,12 +191,16 @@
   border-radius: 6px;
   background: #21262d;
   color: #e6edf3;
-  padding: 8px 12px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
 }
 
+/* ---- Fit indicator ---- */
 .fit-indicator {
-  margin-top: 12px;
+  margin-top: 10px;
   font-weight: 600;
+  font-size: 13px;
 }
 
 .fit-indicator.fits {
@@ -77,20 +211,25 @@
   color: #f85149;
 }
 
+/* ===== Resume preview shell ===== */
 .resume-preview-shell {
   overflow: auto;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  padding: 8px;
 }
 
+/* ===== Resume page (the actual resume) ===== */
 .resume-page {
-  width: 816px;
-  min-height: 1056px;
+  box-sizing: border-box;
+  width: 816px;       /* 8.5in at 96 DPI */
+  min-height: 1056px; /* 11in at 96 DPI */
   max-height: 1056px;
   background: white;
   color: #111;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-  padding: 40px;
+  padding: 48px;      /* ~0.5in margins */
   overflow: hidden;
   font-family: var(--resume-font-family);
   font-size: var(--resume-font-size);
@@ -102,69 +241,141 @@
   overflow: visible;
 }
 
+/* ---- Header ---- */
 .resume-header {
+  position: relative;
   text-align: center;
   margin-bottom: var(--resume-section-spacing);
+  padding-bottom: 2px;
 }
 
-.logo-placeholder {
-  width: 60px;
-  height: 60px;
-  border-radius: 999px;
-  border: 1px solid #666;
-  margin: 0 auto 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
+.resume-logo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 220px;
+  height: auto;
 }
 
+.resume-page h1 {
+  font-size: 26px;
+  margin: 0 0 2px;
+  color: #111;
+}
+
+.contact-line {
+  margin: 2px 0 4px;
+  font-size: 11px;
+  color: #333;
+}
+
+.contact-line a {
+  color: #1a73e8;
+  text-decoration: underline;
+}
+
+.title-line {
+  font-weight: bold;
+  text-decoration: underline;
+  font-size: 13px;
+  margin: 0;
+  color: #111;
+}
+
+/* ---- Sections ---- */
 .resume-page section {
   margin-bottom: var(--resume-section-spacing);
 }
 
 .resume-page h3 {
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 4px;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  border-bottom: 1px solid #444;
+  padding-bottom: 2px;
+  margin: 0 0 4px;
   break-after: avoid;
 }
 
 .resume-page p {
-  margin: 0;
-  margin-bottom: var(--resume-paragraph-spacing);
+  margin: 0 0 var(--resume-paragraph-spacing);
 }
 
+/* ---- Bullet lists ---- */
 .resume-page ul {
   margin: 0;
-  padding-left: 16px;
+  padding-left: 18px;
 }
 
 .resume-page li {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   break-inside: avoid;
 }
 
 .two-col-list {
   columns: 2;
-  column-gap: 28px;
+  column-gap: 24px;
 }
 
-.single-col-list {
-  columns: 1;
+/* ---- Structured entries (education / work) ---- */
+.structured-entry {
+  margin-bottom: var(--resume-paragraph-spacing);
+  break-inside: avoid;
 }
 
+.se-title {
+  font-weight: bold;
+  font-size: inherit;
+}
+
+.se-institution {
+  color: #2e7d6f;
+  font-style: italic;
+  font-size: inherit;
+}
+
+.se-meta {
+  display: flex;
+  gap: 24px;
+  font-size: 0.92em;
+  color: #444;
+  margin: 1px 0 2px;
+}
+
+.se-details {
+  margin: 2px 0 0;
+  padding-left: 18px;
+}
+
+.se-details li {
+  margin-bottom: 1px;
+}
+
+/* ===== Responsive ===== */
 @media (max-width: 1280px) {
   .resume-builder-page {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
+  }
+
+  .resume-builder-controls {
+    max-height: none;
   }
 }
 
+/* ===== Print ===== */
 @media print {
+  /* Remove page margin so browser has no space for headers/footers */
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  /* Hide everything except the resume */
   .resume-builder-controls,
-  nav {
+  nav,
+  body > footer {
     display: none !important;
   }
 
@@ -172,6 +383,12 @@
     display: block;
     padding: 0;
     background: white;
+    height: auto;
+    overflow: visible;
+  }
+
+  .resume-preview-shell {
+    padding: 0;
   }
 
   .resume-page {
@@ -181,10 +398,15 @@
     min-height: 0;
     max-height: unset;
     overflow: visible;
+    padding: 0.5in;
+    box-sizing: border-box;
   }
 
-  @page {
-    size: letter;
-    margin: 0.5in;
+  .resume-page a {
+    color: #1a73e8 !important;
+  }
+
+  .se-institution {
+    color: #2e7d6f !important;
   }
 }
