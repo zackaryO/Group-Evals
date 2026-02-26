@@ -32,6 +32,7 @@ import CreateCohort from './components/Cohorts/CreateCohort';
 import ManageCohorts from './components/Cohorts/ManageCohorts';
 import AssignStudents from './components/Cohorts/AssignStudents';
 import ManageUsers from './components/Instructor/ManageUsers';
+import ResumeBuilder from './components/Instructor/ResumeBuilder';
 
 // NEW: Import Inventory Pages
 import ToolsPage from './components/Inventory/ToolsPage';
@@ -288,6 +289,16 @@ const App = () => {
             </PrivateRoute>
           }
         />
+
+        <Route
+          path="/resume-builder"
+          element={
+            <InstructorRoute user={user}>
+              <ResumeBuilder />
+            </InstructorRoute>
+          }
+        />
+
         <Route
           path="/manage-users"
           element={

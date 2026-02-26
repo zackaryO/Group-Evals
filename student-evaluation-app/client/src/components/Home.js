@@ -82,6 +82,9 @@ const Home = ({ user }) => {
               <Link to="/eval-gradebook" className="home-button">
                 Eval Gradebook
               </Link>
+              <Link to="/resume-builder" className="home-button">
+                Resume Builder
+              </Link>
             </div>
           </div>
         )}
