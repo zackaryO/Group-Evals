@@ -19,7 +19,8 @@
       "Bash(ls \"c:/Users/zotte/OneDrive/Documents/GitHub/Group-Evals/student-evaluation-app/server/\"*.js)",
       "Bash(timeout 10 node server.js)",
       "Bash(PORT=5099 timeout 5 node -e \":*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(timeout 15 npx react-scripts start)"
     ]
   }
 }
