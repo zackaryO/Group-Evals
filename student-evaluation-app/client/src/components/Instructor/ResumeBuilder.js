@@ -103,11 +103,8 @@ const fontOptions = [
   { label: 'Times New Roman', value: '"Times New Roman", serif' },
 ];
 
-const parseList = (text) =>
-  text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean);
+const parseList = (text) => text.split('\n');
+const cleanList = (arr) => arr.map((s) => s.trim()).filter(Boolean);
 
 const ResumeBuilder = () => {
   const [data, setData] = useState(defaultData);
@@ -605,11 +602,11 @@ const ResumeBuilder = () => {
           )}
 
           {/* ---- Certifications ---- */}
-          {data.certifications.length > 0 && (
+          {cleanList(data.certifications).length > 0 && (
             <section>
               <h3>Certifications</h3>
               <ul className="two-col-list">
-                {data.certifications.map((item, i) => (
+                {cleanList(data.certifications).map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
               </ul>
@@ -617,11 +614,11 @@ const ResumeBuilder = () => {
           )}
 
           {/* ---- Skills ---- */}
-          {data.skills.length > 0 && (
+          {cleanList(data.skills).length > 0 && (
             <section>
               <h3>Skills</h3>
               <ul className="two-col-list">
-                {data.skills.map((item, i) => (
+                {cleanList(data.skills).map((item, i) => (
                   <li key={i}>{item}</li>
                 ))}
               </ul>
@@ -647,9 +644,9 @@ const ResumeBuilder = () => {
                       {entry.location && <span className="se-location">{entry.location}</span>}
                     </div>
                   )}
-                  {entry.details.length > 0 && (
+                  {cleanList(entry.details).length > 0 && (
                     <ul className="se-details">
-                      {entry.details.map((d, j) => (
+                      {cleanList(entry.details).map((d, j) => (
                         <li key={j}>{d}</li>
                       ))}
                     </ul>
@@ -678,9 +675,9 @@ const ResumeBuilder = () => {
                       {entry.location && <span className="se-location">{entry.location}</span>}
                     </div>
                   )}
-                  {entry.details.length > 0 && (
+                  {cleanList(entry.details).length > 0 && (
                     <ul className="se-details">
-                      {entry.details.map((d, j) => (
+                      {cleanList(entry.details).map((d, j) => (
                         <li key={j}>{d}</li>
                       ))}
                     </ul>
