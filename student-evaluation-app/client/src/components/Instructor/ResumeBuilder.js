@@ -8,34 +8,55 @@ const emptyEducation = { title: '', institution: '', startDate: '', endDate: '',
 const emptyWork = { title: '', company: '', startDate: '', endDate: '', location: '', details: [] };
 
 const defaultData = {
-  fullName: 'Jordan Applicant',
-  email: 'jordan@applicant.com',
+  fullName: 'MB Drive JC Applicant',
+  email: 'Theo@applicant.com',
   phone: '(555) 010-2200',
-  title: 'Automotive Technician',
+  title: 'MB Drive JC Graduate',
   professionalSummary:
-    'Graduating automotive technology student with strong diagnostics, customer service, and shop safety fundamentals. Seeking an entry-level technician role with growth opportunities.',
+    'Graduating automotive technology student with strong diagnostics, customer service, and shop safety fundamentals. Seeking to build real-world proficiency in a professional automotive environment while demonstrating a passion for precision work and continuous learning.',
   certifications: [
-    'ASE Entry-Level: Engine Repair',
-    'ASE Entry-Level: Brakes',
+    'Mercedes-Benz DRIVE Certificate of Completion',
     'EPA 609 Refrigerant Certification',
-    'OSHA 10-Hour Safety',
+    'S/P2 Automotive Service Safety.',
+    'S/P2 Automotive Service Pollution Prevention',
+    'Pro-Cut Level 1 (on-car brake lathe)',
+                    
   ],
   skills: [
+    'Technical writing (RO documentation)',
+    'Competent with Diagnostic Strategy 1 (DS1)',
+    'Proficient in DVOM usage',
+    'Proficient in Mercedes-Benz systems: WIS, DWD, StarTek NG, etc.',
+    'Customer service and communication',
+    'Electrical/Electronic diagnosis and repair',
     'Brake inspection and service',
     'Electrical testing with DVOM',
     'Routine maintenance and documentation',
     'Scan tool diagnostics',
     'Customer communication',
     'Team collaboration',
+    'Maintence and repair of automotive systems (A/B Services)',
+    'Pre-delivery inspection (PDI)',
   ],
   education: [
+      {
+      title: 'Mercedes-Benz DRIVE JC Certificate of Completion',
+      institution: 'LETC, Clearfield Job Corps',
+      startDate: 'January 2026',
+      endDate: 'Expected July 2026',
+      location: 'Clearfield, UT',
+details: ['Completed full ASE Education Foundation Automotive Service Technician (AST) task list and 15 Mercedes-Benz instructor-led courses in an 18-week, factory-aligned program',
+  'Earned High Voltage Qualification for Plug-In Hybrid Electric Vehicles, including manual power-down procedures',
+  'Trained hands-on with factory systems including WIS, XENTRY Diagnosis, StarTek NG, DWD, and Tips Reader',
+  'Practiced vehicle protection protocols, proper lifting procedures, and responsible tool use on every task'],
+    },
     {
-      title: 'A.A.S. Automotive Technology',
-      institution: 'Metro Technical College',
+      title: 'Maintenance and Light Repair (MLR)',
+      institution: 'LETC, Clearfield Job Corps',
       startDate: 'August 2024',
       endDate: 'Expected 2026',
-      location: 'Austin, TX',
-      details: ['Relevant Coursework: Engine Performance, Steering/Suspension, Automotive Electrical'],
+      location: 'Clearfield, UT',
+      details: ['Relevant Coursework: Engine Performance, Steering/Suspension, Automotive Electrical, ACDelco e-Learning Modules.'],
     },
   ],
   workExperience: [
@@ -57,7 +78,7 @@ const defaultData = {
     },
   ],
   toolsAndTechnology:
-    'Mitchell1 / ALLDATA, OBD-II Scan Tools, Torque Wrenches, Battery Analyzer, Tire Mount and Balance Machines.',
+    'Mitchell (ShopKey Pro) / ALLDATA, XENTRY Diagnosis Scan Tool, Digital Torque Wrenches, Battery Analyzer, Tire Mount and Balance Machines.',
 };
 
 const defaultSettings = {
