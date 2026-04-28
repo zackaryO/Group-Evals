@@ -46,6 +46,11 @@ const MissedQuestions = () => {
         const quizzesMap = new Map();
 
         response.data.forEach((grade) => {
+          // Skip submissions whose student has been deleted from the system —
+          // populate returns null for orphaned references and we don't want
+          // those counted in the totals.
+          if (!grade.student) return;
+
           const quizId = grade.quiz?._id || `unknown-${grade._id}`;
           const quizTitle = grade.quiz?.title || 'Quiz Title Missing';
 
