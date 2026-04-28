@@ -83,7 +83,9 @@ function fuzzyAnswerMatch(a, b, threshold = 0.9) {
  *   4. Recompute the submission's score from the updated answers.
  */
 async function regradeQuestionSubmissions(question, oldOptions = []) {
-  if (question.questionType !== 'multiple-choice') return;
+  // Only skip for explicitly open-ended questions; older docs may have an undefined
+  // questionType field (predates the schema default) and should still be auto-graded.
+  if (question.questionType === 'open-ended') return;
 
   const newOptions = question.options || [];
   const optionMap = new Map();
@@ -329,9 +331,9 @@ router.post('/:quizId/question/:questionId/regrade', async (req, res) => {
     if (!question) {
       return res.status(404).json({ message: 'Question not found' });
     }
-    if (question.questionType !== 'multiple-choice') {
+    if (question.questionType === 'open-ended') {
       return res.status(400).json({
-        message: 'Only multiple-choice questions support automatic re-grading.',
+        message: 'Open-ended questions are not auto-graded.',
       });
     }
     // Pass current options as "old" so no remap fires; the trim + fuzzy fallback do the work.
