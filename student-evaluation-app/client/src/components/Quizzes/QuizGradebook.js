@@ -11,6 +11,21 @@ const QuizGradebook = ({ user }) => {
   const [selectedQuizId, setSelectedQuizId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [deletedQuizId, setDeletedQuizId] = useState(null);
+  const [zoomedImage, setZoomedImage] = useState(null);
+
+  useEffect(() => {
+    if (!zoomedImage) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setZoomedImage(null);
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [zoomedImage]);
 
   useEffect(() => {
     const fetchGrades = async () => {
@@ -117,13 +132,34 @@ const QuizGradebook = ({ user }) => {
                           <h4>Incorrect Answers:</h4>
                           {quiz.answers
                             .filter(answer => !answer.isCorrect)
-                            .map((answer, index) => (
-                              <div key={index} className="answer-detail">
-                                <p><strong>Question:</strong> {answer.question?.questionText || "Question text missing"}</p>
-                                <p><strong>Your Answer:</strong> {answer.selectedAnswer}</p>
-                                <p><strong>Correct Answer:</strong> {answer.question?.correctAnswer || "Correct answer missing"}</p>
-                              </div>
-                            ))}
+                            .map((answer, index) => {
+                              const imageSrc = answer.question?.image;
+                              return (
+                                <div key={index} className="answer-detail">
+                                  <div className="answer-detail-text">
+                                    <p><strong>Question:</strong> {answer.question?.questionText || "Question text missing"}</p>
+                                    <p><strong>Your Answer:</strong> {answer.selectedAnswer}</p>
+                                    <p><strong>Correct Answer:</strong> {answer.question?.correctAnswer || "Correct answer missing"}</p>
+                                  </div>
+                                  {imageSrc && (
+                                    <button
+                                      type="button"
+                                      className="answer-detail-image-btn"
+                                      onClick={() => setZoomedImage(imageSrc)}
+                                      aria-label="Open question image at full size"
+                                    >
+                                      <img
+                                        src={imageSrc}
+                                        alt="Question reference"
+                                        className="answer-detail-image"
+                                        loading="lazy"
+                                      />
+                                      <span className="answer-detail-image-hint">Click to enlarge</span>
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
                           {quiz.answers.filter(answer => !answer.isCorrect).length === 0 && (
                             <p>All answers were correct!</p>
                           )}
@@ -138,6 +174,30 @@ const QuizGradebook = ({ user }) => {
         </div>
       ) : (
         <p>No grades available.</p>
+      )}
+      {zoomedImage && (
+        <div
+          className="image-zoom-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Question image preview"
+          onClick={() => setZoomedImage(null)}
+        >
+          <button
+            type="button"
+            className="image-zoom-close"
+            onClick={() => setZoomedImage(null)}
+            aria-label="Close image preview"
+          >
+            ×
+          </button>
+          <img
+            src={zoomedImage}
+            alt="Question reference enlarged"
+            className="image-zoom-image"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </div>
   );

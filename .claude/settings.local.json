@@ -20,7 +20,16 @@
       "Bash(timeout 10 node server.js)",
       "Bash(PORT=5099 timeout 5 node -e \":*)",
       "Bash(node -e \":*)",
-      "Bash(timeout 15 npx react-scripts start)"
+      "Bash(timeout 15 npx react-scripts start)",
+      "PowerShell($ErrorActionPreference = 'SilentlyContinue'; Get-Command mongod -ErrorAction SilentlyContinue | Select-Object -First 1; \\(Get-ChildItem 'C:\\\\Program Files\\\\MongoDB' -ErrorAction SilentlyContinue\\).Name; \\(Get-ChildItem 'C:\\\\Program Files \\(x86\\)\\\\MongoDB' -ErrorAction SilentlyContinue\\).Name; Test-Path 'C:\\\\Program Files\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'; Test-Path 'C:\\\\Program Files \\(x86\\)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'; Test-Path 'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe'; Test-Path 'C:\\\\Program Files \\(x86\\)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe')",
+      "Bash(npm -v)",
+      "Bash(node scripts/portfolio-capture.js)",
+      "Bash(awk '{print $5, $9}')",
+      "Bash(sort -k2)",
+      "Bash(node -e \"const sharp=require\\('C:/Users/zotte/OneDrive/Documents/GitHub/Group-Evals/student-evaluation-app/server/node_modules/sharp'\\);const fs=require\\('fs'\\);const path='C:/Users/zotte/OneDrive/Documents/GitHub/Git-Portfolio/assets/images/screenshots/_raw_group-evals';\\(async\\(\\)=>{for\\(const f of fs.readdirSync\\(path\\).filter\\(n=>n.endsWith\\('.png'\\)\\)\\){const m=await sharp\\(path+'/'+f\\).metadata\\(\\);console.log\\(f,m.width+'x'+m.height\\);}}\\)\\(\\);\")",
+      "Bash(node scripts/portfolio-capture-student.js)",
+      "Bash(node -e \"const sharp=require\\('C:/Users/zotte/OneDrive/Documents/GitHub/Group-Evals/student-evaluation-app/server/node_modules/sharp'\\);const fs=require\\('fs'\\);const dir='C:/Users/zotte/OneDrive/Documents/GitHub/Git-Portfolio/assets/images/screenshots';\\(async\\(\\)=>{for\\(const f of fs.readdirSync\\(dir\\).filter\\(n=>n.endsWith\\('.png'\\)\\)\\){const m=await sharp\\(dir+'/'+f\\).metadata\\(\\);console.log\\(f,m.width+'x'+m.height\\);}}\\)\\(\\);\")",
+      "Bash(node scripts/portfolio-format.js)"
     ]
   }
 }

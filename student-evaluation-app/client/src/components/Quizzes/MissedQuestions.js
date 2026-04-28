@@ -9,6 +9,21 @@ const MissedQuestions = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [activeQuizId, setActiveQuizId] = useState(null);
+  const [zoomedImage, setZoomedImage] = useState(null);
+
+  useEffect(() => {
+    if (!zoomedImage) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setZoomedImage(null);
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [zoomedImage]);
 
   useEffect(() => {
     const fetchGrades = async () => {
@@ -55,6 +70,7 @@ const MissedQuestions = () => {
               const questionId = answer.question?._id || answer._id || `${quizId}-unknown`;
               const questionText = answer.question?.questionText || 'Question text missing';
               const correctAnswer = answer.question?.correctAnswer || 'Correct answer missing';
+              const image = answer.question?.image || null;
               const selectedAnswer =
                 typeof answer.selectedAnswer === 'string' && answer.selectedAnswer.trim() !== ''
                   ? answer.selectedAnswer
@@ -65,6 +81,7 @@ const MissedQuestions = () => {
                   questionId,
                   questionText,
                   correctAnswer,
+                  image,
                   incorrectAnswers: new Map(),
                   missedCount: 0,
                 });
@@ -204,34 +221,55 @@ const MissedQuestions = () => {
                 <ul className="missed-questions-list">
                   {quiz.questions.map((question) => {
                     const { prompt, options } = parseQuestionContent(question.questionText);
+                    const imageSrc = question.image;
                     return (
                       <li key={question.questionId} className="question-item">
-                        <div className="question-prompt-block">
-                          <p>
-                            <strong>Question:</strong>
-                          </p>
-                          <div className="question-prompt">{formatText(prompt)}</div>
-                        </div>
-                        {options.length > 0 && (
-                          <div className="question-options-block">
-                            <p>
-                              <strong>Choices:</strong>
-                            </p>
-                            <ul className="question-options">
-                              {options.map((option, idx) => (
-                                <li key={idx} className="question-option-item">
-                                  {option.label && <span className="option-label">{option.label}.</span>}
-                                  <span className="option-text">{formatText(option.text)}</span>
-                                </li>
-                              ))}
-                            </ul>
+                        <div className={`question-body${imageSrc ? ' question-body--with-image' : ''}`}>
+                          <div className="question-text-column">
+                            <div className="question-prompt-block">
+                              <p>
+                                <strong>Question:</strong>
+                              </p>
+                              <div className="question-prompt">{formatText(prompt)}</div>
+                            </div>
+                            {options.length > 0 && (
+                              <div className="question-options-block">
+                                <p>
+                                  <strong>Choices:</strong>
+                                </p>
+                                <ul className="question-options">
+                                  {options.map((option, idx) => (
+                                    <li key={idx} className="question-option-item">
+                                      {option.label && <span className="option-label">{option.label}.</span>}
+                                      <span className="option-text">{formatText(option.text)}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            <div className="question-correct-answer">
+                              <p>
+                                <strong>Correct Answer:</strong>
+                              </p>
+                              <div className="correct-answer">{formatText(question.correctAnswer)}</div>
+                            </div>
                           </div>
-                        )}
-                        <div className="question-correct-answer">
-                          <p>
-                            <strong>Correct Answer:</strong>
-                          </p>
-                          <div className="correct-answer">{formatText(question.correctAnswer)}</div>
+                          {imageSrc && (
+                            <button
+                              type="button"
+                              className="question-image-btn"
+                              onClick={() => setZoomedImage(imageSrc)}
+                              aria-label="Open question image at full size"
+                            >
+                              <img
+                                src={imageSrc}
+                                alt="Question reference"
+                                className="question-image"
+                                loading="lazy"
+                              />
+                              <span className="question-image-hint">Click to enlarge</span>
+                            </button>
+                          )}
                         </div>
                         <p>
                           <strong>Missed by:</strong> {question.missedCount}{' '}
@@ -257,6 +295,30 @@ const MissedQuestions = () => {
         </ul>
       ) : (
         <p>No missed questions available.</p>
+      )}
+      {zoomedImage && (
+        <div
+          className="image-zoom-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Question image preview"
+          onClick={() => setZoomedImage(null)}
+        >
+          <button
+            type="button"
+            className="image-zoom-close"
+            onClick={() => setZoomedImage(null)}
+            aria-label="Close image preview"
+          >
+            ×
+          </button>
+          <img
+            src={zoomedImage}
+            alt="Question reference enlarged"
+            className="image-zoom-image"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </div>
   );

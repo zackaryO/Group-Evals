@@ -27,7 +27,7 @@ const getGrades = async (req, res) => {
       .populate({
         path: 'answers.question',
         model: 'QuizQuestion', // Ensure this matches the model name
-        select: 'questionText correctAnswer', // Include fields you need
+        select: 'questionText correctAnswer image', // Include fields you need
       });
 
     console.log('Grades Fetched:', grades); // Log the grades fetched from the database

@@ -113,17 +113,23 @@ const TakeQuiz = ({ user }) => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        const token = localStorage.getItem('token');
+        const config = {
+          signal: controller.signal,
+          headers: { Authorization: `Bearer ${token}` },
+        };
+
         /* 1. Published quizzes */
         const { data: quizData } = await axios.get(
           `${URL}/api/quizzes/published`,
-          { signal: controller.signal },
+          config,
         );
         setQuizzes(quizData);
 
         /* 2. Student's previous submissions */
         const { data: submissions } = await axios.get(
           `${URL}/api/grades/${user._id}`,
-          { signal: controller.signal },
+          config,
         );
         const submissionMap = submissions.reduce((acc, sub) => {
           acc[sub.quiz._id] = sub;
@@ -178,9 +184,11 @@ const TakeQuiz = ({ user }) => {
 
     setIsLoading(true);
     try {
+      const token = localStorage.getItem('token');
       const { data } = await axios.post(
         `${URL}/api/quizzes/${selectedQuiz._id}/submit`,
         { answers, studentId: user._id },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setScore(data.score);
       setMessage('Quiz submitted successfully!');
