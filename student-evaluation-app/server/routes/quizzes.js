@@ -162,6 +162,15 @@ router.put('/:quizId/question/:questionId', upload.single('questionImage'), asyn
       options = JSON.parse(req.body.options);
     }
 
+    // Capture pre-update state so we can re-grade past submissions when grading-relevant
+    // fields change (typo fixes, option rewording, swapped correct answer, etc.).
+    const previousQuestion = await QuizQuestion.findById(req.params.questionId);
+    if (!previousQuestion) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+    const oldOptions = previousQuestion.options || [];
+    const oldCorrectAnswer = previousQuestion.correctAnswer;
+
     // If a new file is uploaded, push to S3 and store URL
     let imagePath;
     if (req.file) {
@@ -194,6 +203,60 @@ router.put('/:quizId/question/:questionId', upload.single('questionImage'), asyn
     if (!question) {
       return res.status(404).json({ message: 'Question not found' });
     }
+
+    // Re-grade past submissions if anything that affects grading changed.
+    // When an option's text is edited (e.g. typo fix), map the old text the user originally
+    // selected to the new text by index so their stored answer survives the rewrite. Then
+    // recompute isCorrect against the current correctAnswer and recompute the submission score.
+    const optionsChanged =
+      oldOptions.length !== options.length ||
+      oldOptions.some((opt, idx) => opt !== options[idx]);
+    const correctAnswerChanged = oldCorrectAnswer !== correctAnswer;
+
+    if ((optionsChanged || correctAnswerChanged) && question.questionType === 'multiple-choice') {
+      const optionMap = new Map();
+      if (oldOptions.length === options.length) {
+        oldOptions.forEach((oldOpt, idx) => {
+          const newOpt = options[idx];
+          if (oldOpt != null && newOpt != null && oldOpt !== newOpt) {
+            optionMap.set(oldOpt, newOpt);
+          }
+        });
+      }
+
+      const norm = (v) => String(v ?? '').trim();
+      const submissions = await QuizSubmission.find({ 'answers.question': question._id });
+
+      for (const submission of submissions) {
+        let changed = false;
+        submission.answers.forEach((answer) => {
+          if (String(answer.question) !== String(question._id)) return;
+
+          if (optionMap.has(answer.selectedAnswer)) {
+            answer.selectedAnswer = optionMap.get(answer.selectedAnswer);
+            changed = true;
+          }
+
+          const newIsCorrect = norm(answer.selectedAnswer) === norm(question.correctAnswer);
+          if (answer.isCorrect !== newIsCorrect) {
+            answer.isCorrect = newIsCorrect;
+            changed = true;
+          }
+        });
+
+        if (submission.answers.length > 0) {
+          const correctCount = submission.answers.filter((a) => a.isCorrect).length;
+          const newScore = (correctCount / submission.answers.length) * 100;
+          if (submission.score !== newScore) {
+            submission.score = newScore;
+            changed = true;
+          }
+        }
+
+        if (changed) await submission.save();
+      }
+    }
+
     res.json(question);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -318,9 +381,11 @@ router.post('/:quizId/submit', async (req, res) => {
       const selectedAnswer = answers[question._id];
       let isCorrect = false;
 
-      // For multiple-choice questions, check if selected answer is correct
+      // For multiple-choice questions, check if selected answer is correct.
+      // Trim both sides so trailing/leading whitespace differences don't mark a right answer wrong.
       if (question.questionType === 'multiple-choice') {
-        isCorrect = selectedAnswer === question.correctAnswer;
+        isCorrect =
+          String(selectedAnswer ?? '').trim() === String(question.correctAnswer ?? '').trim();
         if (isCorrect) correctAnswers++;
       }
       answerArray.push({

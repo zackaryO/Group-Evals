@@ -78,8 +78,22 @@ const EvaluationForm = ({ user }) => {
       try {
         const token = localStorage.getItem('token');
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const res = await axios.get(`${URL}/api/users/students`, config);
-        setPresenters(res.data);
+        const [studentsRes, evalsRes] = await Promise.all([
+          axios.get(`${URL}/api/users/students`, config),
+          axios.get(`${URL}/api/evaluations`, config),
+        ]);
+
+        // Hide the logged-in user (no self-evals) and anyone they have already evaluated.
+        const alreadyEvaluatedIds = new Set(
+          (evalsRes.data || [])
+            .filter((ev) => ev.evaluator && String(ev.evaluator._id) === String(user?._id))
+            .map((ev) => ev.presenter && String(ev.presenter._id))
+            .filter(Boolean)
+        );
+        const filtered = (studentsRes.data || []).filter(
+          (p) => String(p._id) !== String(user?._id) && !alreadyEvaluatedIds.has(String(p._id))
+        );
+        setPresenters(filtered);
       } catch (err) {
         console.error('Error fetching presenters:', err);
         setErrorMessage('Error fetching presenters');
@@ -122,6 +136,9 @@ const EvaluationForm = ({ user }) => {
       await axios.post(`${URL}/api/evaluations/submit`, evaluationBody, config);
       setSuccessMessage('Evaluation submitted successfully!');
 
+      // Drop the just-evaluated presenter from the dropdown so they can't be picked again.
+      setPresenters((prev) => prev.filter((p) => String(p._id) !== String(presenterId)));
+
       // Manually reset form fields
       setPresenterId('');
       setComments('');
@@ -137,13 +154,13 @@ const EvaluationForm = ({ user }) => {
       setTimeout(() => {
         setSuccessMessage('');
       }, 3000);
-      
+
       // We do NOT call window.location.reload() or navigate
       // to avoid losing 'user' state and forcing a login page load.
 
     } catch (err) {
       console.error('Error submitting evaluation:', err);
-      setErrorMessage('Error submitting evaluation');
+      setErrorMessage(err.response?.data?.message || 'Error submitting evaluation');
     }
   };
 

@@ -14,6 +14,24 @@ const submitEvaluation = async (req, res) => {
   } = req.body;
 
   try {
+    if (!presenterId || !evaluatorId) {
+      return res.status(400).json({ message: 'presenterId and evaluatorId are required' });
+    }
+
+    if (String(presenterId) === String(evaluatorId)) {
+      return res.status(400).json({ message: 'You cannot evaluate yourself.' });
+    }
+
+    const existing = await Evaluation.findOne({
+      evaluator: evaluatorId,
+      presenter: presenterId,
+    });
+    if (existing) {
+      return res.status(409).json({
+        message: 'You have already submitted an evaluation for this presenter.',
+      });
+    }
+
     const evaluation = new Evaluation({
       presenter: presenterId,
       evaluator: evaluatorId,
