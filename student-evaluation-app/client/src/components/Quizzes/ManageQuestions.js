@@ -122,6 +122,23 @@ const ManageQuestions = () => {
     }
   };
 
+  const handleRegrade = async (questionId) => {
+    try {
+      const res = await axios.post(
+        `${URL}/api/quizzes/${quizId}/question/${questionId}/regrade`,
+        {},
+        { headers: { Authorization: `Bearer ${getAuthToken()}` } }
+      );
+      setMessage(res.data?.message || 'Re-grade complete.');
+    } catch (err) {
+      setMessage(
+        err.response?.data?.message
+          ? `Error: ${err.response.data.message}`
+          : `Error re-grading: ${err.message}`
+      );
+    }
+  };
+
   // ───────────────────────────────────────── Image picker
   const handleImageChange = (e) => {
     if (e.target.files?.[0]) setQuestionImage(e.target.files[0]);
@@ -211,6 +228,7 @@ const ManageQuestions = () => {
 
               <div className="question-actions">
                 <button onClick={() => handleEdit(q)}>Edit</button>
+                <button onClick={() => handleRegrade(q._id)}>Re-grade</button>
                 <button onClick={() => handleDelete(q._id)}>Delete</button>
               </div>
             </div>

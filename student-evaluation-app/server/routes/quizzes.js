@@ -30,6 +30,109 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
+// ───────────────────────────────────────── Grading helpers
+const normalizeAnswer = (v) => String(v ?? '').trim();
+
+// Levenshtein distance — used for forgiving comparison of past selectedAnswers
+// against a corrected correctAnswer (e.g. typo fixes like "speacial" → "special").
+function levenshtein(a, b) {
+  const s1 = String(a ?? '');
+  const s2 = String(b ?? '');
+  const m = s1.length;
+  const n = s2.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  let prev = new Array(n + 1);
+  let curr = new Array(n + 1);
+  for (let j = 0; j <= n; j++) prev[j] = j;
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = s1[i - 1] === s2[j - 1] ? 0 : 1;
+      curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[n];
+}
+
+// Considers two answers "the same" if they differ by no more than ~10% of the longer string.
+// This is conservative enough to ignore distinct multiple-choice options ("U0130" vs "U0140",
+// "point X" vs "point Y") while catching single-letter typos in long answer strings.
+function fuzzyAnswerMatch(a, b, threshold = 0.9) {
+  const s1 = normalizeAnswer(a);
+  const s2 = normalizeAnswer(b);
+  if (s1 === s2) return true;
+  const longer = Math.max(s1.length, s2.length);
+  if (longer === 0) return true;
+  return (longer - levenshtein(s1, s2)) / longer >= threshold;
+}
+
+/**
+ * Re-grade every QuizSubmission that references a given question, after the
+ * question's options/correctAnswer have been edited.
+ *
+ * Strategy, in order:
+ *   1. If the option text the user originally selected got rewritten in place
+ *      (same index, different text), remap the stored selectedAnswer to the
+ *      new option text.
+ *   2. Mark isCorrect = true if selectedAnswer === correctAnswer (trimmed).
+ *   3. Otherwise, mark isCorrect = true if the two are within ~10% edit distance
+ *      (rescues users penalised by an instructor's typo correction even when
+ *      the option text itself wasn't part of the diff).
+ *   4. Recompute the submission's score from the updated answers.
+ */
+async function regradeQuestionSubmissions(question, oldOptions = []) {
+  if (question.questionType !== 'multiple-choice') return;
+
+  const newOptions = question.options || [];
+  const optionMap = new Map();
+  if (Array.isArray(oldOptions) && oldOptions.length === newOptions.length) {
+    oldOptions.forEach((oldOpt, idx) => {
+      const newOpt = newOptions[idx];
+      if (oldOpt != null && newOpt != null && oldOpt !== newOpt) {
+        optionMap.set(oldOpt, newOpt);
+      }
+    });
+  }
+
+  const submissions = await QuizSubmission.find({ 'answers.question': question._id });
+
+  for (const submission of submissions) {
+    let changed = false;
+    submission.answers.forEach((answer) => {
+      if (String(answer.question) !== String(question._id)) return;
+
+      if (optionMap.has(answer.selectedAnswer)) {
+        answer.selectedAnswer = optionMap.get(answer.selectedAnswer);
+        changed = true;
+      }
+
+      let newIsCorrect =
+        normalizeAnswer(answer.selectedAnswer) === normalizeAnswer(question.correctAnswer);
+      if (!newIsCorrect) {
+        newIsCorrect = fuzzyAnswerMatch(answer.selectedAnswer, question.correctAnswer);
+      }
+
+      if (answer.isCorrect !== newIsCorrect) {
+        answer.isCorrect = newIsCorrect;
+        changed = true;
+      }
+    });
+
+    if (submission.answers.length > 0) {
+      const correctCount = submission.answers.filter((a) => a.isCorrect).length;
+      const newScore = (correctCount / submission.answers.length) * 100;
+      if (submission.score !== newScore) {
+        submission.score = newScore;
+        changed = true;
+      }
+    }
+
+    if (changed) await submission.save();
+  }
+}
+
 /**
  * @route POST /api/quizzes/create
  * @desc Create a new quiz
@@ -169,7 +272,6 @@ router.put('/:quizId/question/:questionId', upload.single('questionImage'), asyn
       return res.status(404).json({ message: 'Question not found' });
     }
     const oldOptions = previousQuestion.options || [];
-    const oldCorrectAnswer = previousQuestion.correctAnswer;
 
     // If a new file is uploaded, push to S3 and store URL
     let imagePath;
@@ -204,60 +306,37 @@ router.put('/:quizId/question/:questionId', upload.single('questionImage'), asyn
       return res.status(404).json({ message: 'Question not found' });
     }
 
-    // Re-grade past submissions if anything that affects grading changed.
-    // When an option's text is edited (e.g. typo fix), map the old text the user originally
-    // selected to the new text by index so their stored answer survives the rewrite. Then
-    // recompute isCorrect against the current correctAnswer and recompute the submission score.
-    const optionsChanged =
-      oldOptions.length !== options.length ||
-      oldOptions.some((opt, idx) => opt !== options[idx]);
-    const correctAnswerChanged = oldCorrectAnswer !== correctAnswer;
-
-    if ((optionsChanged || correctAnswerChanged) && question.questionType === 'multiple-choice') {
-      const optionMap = new Map();
-      if (oldOptions.length === options.length) {
-        oldOptions.forEach((oldOpt, idx) => {
-          const newOpt = options[idx];
-          if (oldOpt != null && newOpt != null && oldOpt !== newOpt) {
-            optionMap.set(oldOpt, newOpt);
-          }
-        });
-      }
-
-      const norm = (v) => String(v ?? '').trim();
-      const submissions = await QuizSubmission.find({ 'answers.question': question._id });
-
-      for (const submission of submissions) {
-        let changed = false;
-        submission.answers.forEach((answer) => {
-          if (String(answer.question) !== String(question._id)) return;
-
-          if (optionMap.has(answer.selectedAnswer)) {
-            answer.selectedAnswer = optionMap.get(answer.selectedAnswer);
-            changed = true;
-          }
-
-          const newIsCorrect = norm(answer.selectedAnswer) === norm(question.correctAnswer);
-          if (answer.isCorrect !== newIsCorrect) {
-            answer.isCorrect = newIsCorrect;
-            changed = true;
-          }
-        });
-
-        if (submission.answers.length > 0) {
-          const correctCount = submission.answers.filter((a) => a.isCorrect).length;
-          const newScore = (correctCount / submission.answers.length) * 100;
-          if (submission.score !== newScore) {
-            submission.score = newScore;
-            changed = true;
-          }
-        }
-
-        if (changed) await submission.save();
-      }
-    }
+    // Always re-grade past submissions for this question. The helper applies an option
+    // remap (when option text changed in place), then exact-trim comparison, then a fuzzy
+    // fallback so a typo correction in correctAnswer rescues the previously-penalised users.
+    await regradeQuestionSubmissions(question, oldOptions);
 
     res.json(question);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
+ * @route POST /api/quizzes/:quizId/question/:questionId/regrade
+ * @desc Re-grade past submissions for a question without editing it.
+ *       Applies the same fuzzy-tolerant logic used by the PUT route — useful
+ *       when a typo was already fixed before the auto-regrade existed.
+ */
+router.post('/:quizId/question/:questionId/regrade', async (req, res) => {
+  try {
+    const question = await QuizQuestion.findById(req.params.questionId);
+    if (!question) {
+      return res.status(404).json({ message: 'Question not found' });
+    }
+    if (question.questionType !== 'multiple-choice') {
+      return res.status(400).json({
+        message: 'Only multiple-choice questions support automatic re-grading.',
+      });
+    }
+    // Pass current options as "old" so no remap fires; the trim + fuzzy fallback do the work.
+    await regradeQuestionSubmissions(question, question.options || []);
+    res.json({ message: 'Re-grade complete.' });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -382,10 +461,9 @@ router.post('/:quizId/submit', async (req, res) => {
       let isCorrect = false;
 
       // For multiple-choice questions, check if selected answer is correct.
-      // Trim both sides so trailing/leading whitespace differences don't mark a right answer wrong.
+      // Uses the shared normalizer so whitespace differences don't mark a right answer wrong.
       if (question.questionType === 'multiple-choice') {
-        isCorrect =
-          String(selectedAnswer ?? '').trim() === String(question.correctAnswer ?? '').trim();
+        isCorrect = normalizeAnswer(selectedAnswer) === normalizeAnswer(question.correctAnswer);
         if (isCorrect) correctAnswers++;
       }
       answerArray.push({
