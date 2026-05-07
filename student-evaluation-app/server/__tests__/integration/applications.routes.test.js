@@ -109,6 +109,32 @@ describe('GET /api/job-search/applications  with pay redaction', () => {
   });
 });
 
+describe('Shared dealer-info propagation', () => {
+  test('editing dealer fields on one student\'s app updates the master AND every other linked app', async () => {
+    const { token: a } = await makeUser({ role: 'student' });
+    const { token: b } = await makeUser({ role: 'student' });
+    // Both students apply to the same dealer (same name → same linked Dealership)
+    const ra = await createApp(a, { dealerName: 'MB of Farmington' });
+    const rb = await createApp(b, { dealerName: 'MB of Farmington' });
+    expect(String(ra.body.linkedDealership._id || ra.body.linkedDealership))
+      .toBe(String(rb.body.linkedDealership._id || rb.body.linkedDealership));
+
+    // Student A edits the dealer's address on their application
+    await request(app)
+      .put(`/api/job-search/applications/${ra.body._id}`)
+      .set('Authorization', `Bearer ${a}`)
+      .send({ dealerAddress: '123 Main St', dealerCity: 'Farmington', dealerState: 'NM' });
+
+    // Student B re-fetches their application — the address should be there now
+    const refreshedB = await request(app)
+      .get(`/api/job-search/applications/${rb.body._id}`)
+      .set('Authorization', `Bearer ${b}`);
+    expect(refreshedB.body.dealerAddress).toBe('123 Main St');
+    expect(refreshedB.body.dealerCity).toBe('Farmington');
+    expect(refreshedB.body.dealerState).toBe('NM');
+  });
+});
+
 describe('PUT /api/job-search/applications/:id', () => {
   test('owner can edit', async () => {
     const { token } = await makeUser({ role: 'student' });

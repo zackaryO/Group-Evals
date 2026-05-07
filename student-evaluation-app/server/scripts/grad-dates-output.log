@@ -1,0 +1,19 @@
+set-graduation-dates: starting (pid 38248, node v22.16.0)
+log file at C:\Users\zotte\OneDrive\Documents\GitHub\Group-Evals\student-evaluation-app\server\scripts\grad-dates-output.log
+loaded env from C:\Users\zotte\OneDrive\Documents\GitHub\Group-Evals\student-evaluation-app\server\.env
+MONGODB_URI is present
+DRY_RUN=false
+Target graduation date: 2026-06-26T00:00:00.000Z
+Connecting to MongoDB...
+Connected to database: test
+----------------------------------------------
+Found 7 student user(s).
+  ~ test (67afa4a3e127576ac607685d): updated (none) -> 2026-06-26
+  ~ Gavin L (698a0736833392953ab6aa1e): updated (none) -> 2026-06-26
+  ~ Andy F (698a084e833392953ab6aa26): updated (none) -> 2026-06-26
+  ~ Elliott L (698a08a1833392953ab6aa29): updated (none) -> 2026-06-26
+  ~ Mitchell E (698a08f6833392953ab6aa2c): updated (none) -> 2026-06-26
+  ~ Jhony R (698a1425831a607b39c028d5): updated (none) -> 2026-06-26
+  ~ Carlos L (69efcc6b26782f203f7fb956): updated (none) -> 2026-06-26
+----------------------------------------------
+COMPLETE: 0 created, 7 updated, 0 unchanged.

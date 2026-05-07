@@ -50,8 +50,25 @@ function decorateApplication(app, viewer) {
   };
 }
 
+// When linkedDealership is populated (i.e. it's an object, not just an
+// ObjectId), the master Dealership is the canonical source of truth for
+// dealer info. Override the application's denormalized snapshot so every
+// student linked to the same dealer sees the same name/address/etc., even
+// if their snapshot was taken before another student updated the master.
+function preferMasterDealerFields(app) {
+  if (!app || !app.linkedDealership || typeof app.linkedDealership !== 'object') return app;
+  const d = app.linkedDealership;
+  if (d.name != null) app.dealerName = d.name;
+  if (d.city != null) app.dealerCity = d.city;
+  if (d.state != null) app.dealerState = d.state;
+  if (d.address != null) app.dealerAddress = d.address;
+  if (d.website != null) app.dealerWebsite = d.website;
+  if (d.mainPhone != null) app.dealerMainPhone = d.mainPhone;
+  return app;
+}
+
 function shapeApplication(app, viewer) {
-  return decorateApplication(redactApplication(viewer, app), viewer);
+  return decorateApplication(redactApplication(viewer, preferMasterDealerFields(app)), viewer);
 }
 
 // Find or create the JobSearch container for a student. Uses upsert so two
@@ -315,8 +332,11 @@ router.put('/applications/:id', authenticateToken, async (req, res) => {
       });
       if (dealer) app.linkedDealership = dealer._id;
     }
-    // Propagate dealer-info edits to the shared Dealership so corrections
-    // any student notices benefit everyone using that dealer.
+    // Propagate dealer-info edits to the shared Dealership AND to every
+    // other application's denormalized snapshot. Without the snapshot
+    // propagation, students whose applications were created before the edit
+    // would still see stale info on the panel form (which reads denormalized
+    // fields when the populate path isn't followed).
     const dealerFieldsTouched = Object.keys(DEALER_FIELD_MAP).some((k) => req.body[k] !== undefined);
     if (dealerFieldsTouched && app.linkedDealership) {
       const dealer = await Dealership.findById(app.linkedDealership);
@@ -326,6 +346,20 @@ router.put('/applications/:id', authenticateToken, async (req, res) => {
         });
         dealer.updatedBy = req.user.id;
         await dealer.save();
+
+        // Mirror the same touched fields onto every DealerApplication linked
+        // to this dealer so their snapshots stay in sync. Skip the current
+        // app — it will be saved below by `app.save()`.
+        const snapshotUpdate = {};
+        Object.keys(DEALER_FIELD_MAP).forEach((appKey) => {
+          if (req.body[appKey] !== undefined) snapshotUpdate[appKey] = req.body[appKey];
+        });
+        if (Object.keys(snapshotUpdate).length) {
+          await DealerApplication.updateMany(
+            { linkedDealership: dealer._id, _id: { $ne: app._id } },
+            { $set: snapshotUpdate }
+          );
+        }
       }
     }
     await app.save();
