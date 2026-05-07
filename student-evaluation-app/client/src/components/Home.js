@@ -54,6 +54,21 @@ const Home = ({ user }) => {
           </div>
         </div>
 
+        {/* JOB SEARCH CARD (everyone sees this) */}
+        {user && (
+          <div className="home-card">
+            <h2>Job Search</h2>
+            <div className="button-list">
+              <Link to="/job-search" className="home-button">
+                My Job Search
+              </Link>
+              <Link to="/job-search/board" className="home-button">
+                Class Board
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* GRADEBOOKS CARD */}
         <div className="home-card">
           <h2>Gradebooks</h2>

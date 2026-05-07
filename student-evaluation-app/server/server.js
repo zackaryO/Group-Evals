@@ -37,6 +37,10 @@ const facilityNeedRoutes = require('./routes/facilityNeedRoutes');
 const trainingVehicleRoutes = require('./routes/trainingVehicleRoutes');
 const reportRoutes = require('./routes/reportRoutes'); // If you have a separate route for PDF reports
 
+// NEW: Job Search tracker routes
+const dealershipRoutes = require('./routes/dealerships');
+const jobSearchRoutes = require('./routes/jobSearch');
+
 // Verify environment variables
 // console.log('> MONGODB_URI:', process.env.MONGODB_URI || 'MISSING');
 // console.log('> JWT_SECRET:', process.env.JWT_SECRET ? 'AVAILABLE' : 'MISSING');
@@ -102,6 +106,10 @@ app.use('/api/training-vehicles', trainingVehicleRoutes);
 
 // If you have a separate route for PDF reports:
 app.use('/api/reports', reportRoutes);
+
+// NEW: Job Search tracker
+app.use('/api/dealerships', dealershipRoutes);
+app.use('/api/job-search', jobSearchRoutes);
 
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI;

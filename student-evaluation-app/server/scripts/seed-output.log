@@ -1,0 +1,50 @@
+seed-dealer-data: script starting (pid 27748, node v22.16.0)
+seed-dealer-data: log file at C:\Users\zotte\OneDrive\Documents\GitHub\Group-Evals\student-evaluation-app\server\scripts\seed-output.log
+seed-dealer-data: loaded env from C:\Users\zotte\OneDrive\Documents\GitHub\Group-Evals\student-evaluation-app\server\.env
+seed-dealer-data: MONGODB_URI is present
+seed-dealer-data: DRY_RUN=false
+Connecting to MongoDB...
+Connected to database: test
+
+Existing dealers in DB: 0
+  (none)
+
+Migrating 2 orphaned application(s) into master Dealership records...
+  - app 69fcbb911568f96da805c80e: CREATED dealer "Mercedes-Benz of Salt Lake City" (renamed from "Mercedes-Benz Of Salt Lake")
+  - app 69fcc2c28b29699956cf1614: CREATED dealer "Mercedes Benz of Indianapolis"
+
+----------------------------------------------
+
+→ Mitchell E: matched Mitchell E (698a08f6833392953ab6aa2c)
+   ✓ Mercedes-Benz of South Bay (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Long Beach (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of West Covina (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Monterey (new dealer, new application, +1 contact, cover letter logged)
+
+→ Andy F: matched Andy F (698a084e833392953ab6aa26)
+   ✓ Mercedes-Benz of Carlsbad (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of St. Charles (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Salt Lake City (existing dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of El Cajon (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Farmington (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of San Diego (new dealer, new application, +1 contact, cover letter logged)
+
+→ Elliott L: matched Elliott L (698a08a1833392953ab6aa29)
+   ✓ Mercedes-Benz of San Antonio (new dealer, new application, +2 contacts, cover letter logged)
+   ✓ Mercedes-Benz of Selma (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Sugar Land (new dealer, new application, +3 contacts, cover letter logged)
+   ✓ Mercedes-Benz of Farmington (existing dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Buckhead (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Boerne (new dealer, new application, +1 contact, cover letter logged)
+
+→ Jhony R: matched Jhony R (698a1425831a607b39c028d5)
+   ✓ Mercedes-Benz Van Center – Warner (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Long Beach (existing dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Salt Lake City (existing dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of Anchorage (new dealer, new application, +1 contact, cover letter logged)
+   ✓ Mercedes-Benz of New Orleans (new dealer, new application, +1 contact, cover letter logged)
+
+→ Carlos L: matched Carlos L (69efcc6b26782f203f7fb956)
+   ✓ Garaje Isla Verde (new dealer, new application, +1 contact, cover letter logged)
+----------------------------------------------
+SEED COMPLETE -- 5 student(s) processed, 0 skipped.

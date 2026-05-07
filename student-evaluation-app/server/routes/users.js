@@ -19,6 +19,11 @@ const User = require('../models/User');
 const QuizSubmission = require('../models/QuizSubmission');
 const Evaluation = require('../models/Evaluation');
 const Grade = require('../models/Grade');
+// NOTE: Job-search data (JobSearch, DealerApplication, Communication, master
+// Dealership records the student created) is intentionally NOT cascaded on
+// user delete. Per project decision, dealer-related history is preserved when
+// a student is removed so the shared dealer directory and their job-search
+// trail remain available for future cohorts and instructor reference.
 
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
@@ -174,6 +179,9 @@ router.delete('/:userId', authenticateToken, authorizeRoles('admin', 'instructor
 
     // Remove all grades referencing this user as a 'student'
     await Grade.deleteMany({ student: user._id });
+
+    // Job-search data (JobSearch / DealerApplication / Communication / shared
+    // Dealership records this user created) is preserved by design.
 
     // Finally, remove the user itself
     await User.deleteOne({ _id: userId });

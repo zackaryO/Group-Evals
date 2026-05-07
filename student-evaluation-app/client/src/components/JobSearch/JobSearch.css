@@ -1,0 +1,510 @@
+/* JobSearch.css — shared mobile-first styles for the job-search tracker. */
+
+.js-page {
+  padding: 12px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .js-page { padding: 20px; }
+}
+
+/* ---------- Stats strip (top of student dashboard) ---------- */
+.js-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.js-stat-card {
+  background: #f3f4f6;
+  border-radius: 10px;
+  padding: 10px 12px;
+  text-align: center;
+  min-height: 70px;
+}
+
+.js-stat-label { font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
+.js-stat-value { font-size: 22px; font-weight: 700; color: #111827; line-height: 1.2; }
+.js-stat-warn { color: #b45309; }
+.js-stat-ok { color: #047857; }
+
+@media (min-width: 768px) {
+  .js-stats { gap: 14px; }
+  .js-stat-card { padding: 14px 16px; }
+  .js-stat-value { font-size: 28px; }
+}
+
+/* ---------- Action bar (Add dealer, Active count chip) ---------- */
+.js-actionbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.js-actionbar .btn { min-height: 44px; }
+.js-callout {
+  font-size: 13px;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 8px 12px;
+  border-radius: 8px;
+  flex: 1 1 100%;
+}
+@media (min-width: 768px) { .js-callout { flex: 1; } }
+
+.js-pay-note {
+  font-size: 12px;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+/* ---------- Application list (priority cards) ---------- */
+.js-app-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.js-app-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 6px 10px;
+  cursor: pointer;
+  transition: box-shadow 120ms ease;
+}
+.js-app-card:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+.js-app-card.is-stagnant { border-color: #f59e0b; background: #fffbeb; }
+.js-app-card.is-archived { opacity: 0.65; border-style: dashed; }
+
+.js-priority-badge {
+  width: 36px; height: 36px;
+  background: #1f2937; color: #fff;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  grid-row: 1 / 3;
+}
+.js-app-card.is-stagnant .js-priority-badge { background: #d97706; }
+
+.js-app-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #111827;
+  word-break: break-word;
+}
+.js-app-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+.js-app-status-row {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+}
+.js-status-pill {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  white-space: nowrap;
+}
+.js-status-pill.warn { background: #fef3c7; color: #92400e; }
+.js-status-pill.ok { background: #d1fae5; color: #065f46; }
+.js-status-pill.muted { background: #f3f4f6; color: #4b5563; }
+
+.js-app-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.js-app-actions .btn { padding: 4px 10px; font-size: 13px; min-height: 36px; }
+
+/* Up/down buttons — primary on mobile, complement on desktop */
+.js-reorder-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  color: #1f2937;          /* explicit so the arrow glyph is visible */
+  width: 40px;
+  height: 36px;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.js-reorder-btn:hover:not(:disabled) {
+  background: #e5e7eb;
+  border-color: #9ca3af;
+}
+.js-reorder-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.js-followup {
+  font-size: 13px;
+  color: #92400e;
+  background: #fffbeb;
+  border-left: 3px solid #f59e0b;
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-top: 4px;
+  grid-column: 1 / -1;
+}
+.js-followup.high { color: #991b1b; background: #fee2e2; border-left-color: #dc2626; }
+
+/* ---------- Detail panel (slides in from right on desktop, full screen on mobile) ---------- */
+.js-panel-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1040;
+}
+.js-panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: 100%;
+  background: #fff;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: -2px 0 12px rgba(0,0,0,0.1);
+}
+@media (min-width: 992px) {
+  .js-panel { width: 720px; max-width: 75vw; }
+}
+.js-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.js-panel-header h3 {
+  margin: 0;
+  font-size: 17px;
+  flex: 1;
+  word-break: break-word;
+}
+.js-panel-close {
+  background: none;
+  border: 0;
+  font-size: 22px;
+  width: 40px; height: 40px;
+  cursor: pointer;
+  color: #6b7280;
+}
+.js-panel-tabs {
+  display: flex;
+  overflow-x: auto;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+.js-panel-tab {
+  flex: 1 0 auto;
+  background: none;
+  border: 0;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  min-height: 44px;
+}
+.js-panel-tab.active {
+  color: #111827;
+  border-bottom-color: #1f2937;
+  background: #fff;
+}
+.js-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+}
+
+/* ---------- Forms ---------- */
+.js-form-row {
+  margin-bottom: 12px;
+}
+.js-form-row label {
+  display: block;
+  font-size: 13px;
+  color: #374151;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.js-form-row input[type=text],
+.js-form-row input[type=tel],
+.js-form-row input[type=email],
+.js-form-row input[type=number],
+.js-form-row input[type=date],
+.js-form-row input[type=url],
+.js-form-row select,
+.js-form-row textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px; /* >=16px stops iOS Safari from zooming on focus */
+  background: #fff;
+  min-height: 44px;
+}
+.js-form-row textarea {
+  min-height: 88px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.js-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 768px) {
+  .js-form-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .js-form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+}
+
+.js-yn-buttons {
+  display: flex;
+  gap: 6px;
+}
+.js-yn-buttons button {
+  flex: 1;
+  padding: 9px 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #1f2937;        /* explicit so the label is visible when not active */
+  font-weight: 600;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 44px;
+}
+.js-yn-buttons button:hover:not(:disabled):not(.active) {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+.js-yn-buttons button.active {
+  background: #1f2937;
+  color: #fff;
+  border-color: #1f2937;
+}
+.js-yn-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------- Communication timeline ---------- */
+.js-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-left: 2px solid #e5e7eb;
+  padding-left: 14px;
+  margin-left: 6px;
+}
+.js-timeline-item {
+  position: relative;
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.js-timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -22px;
+  top: 14px;
+  width: 12px; height: 12px;
+  background: #6b7280;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+.js-timeline-item.offer::before { background: #059669; }
+.js-timeline-item.interview::before { background: #2563eb; }
+.js-timeline-item.rejection::before { background: #dc2626; }
+.js-timeline-when { font-size: 12px; color: #6b7280; margin-bottom: 2px; }
+.js-timeline-type { font-weight: 600; font-size: 14px; color: #111827; }
+.js-timeline-summary { font-size: 14px; color: #374151; margin-top: 4px; white-space: pre-wrap; }
+.js-timeline-actions { margin-top: 6px; display: flex; gap: 8px; }
+.js-timeline-actions button { font-size: 12px; padding: 4px 8px; min-height: 32px; }
+
+/* ---------- Class board ---------- */
+.js-board-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.js-board-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.js-board-table th,
+.js-board-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+.js-board-table th {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #4b5563;
+  background: #f9fafb;
+  cursor: pointer;
+  user-select: none;
+}
+.js-board-table tr:hover td { background: #f9fafb; }
+.js-board-redacted { color: #9ca3af; font-style: italic; font-size: 12px; }
+
+/* Mobile: replace table with stacked cards */
+.js-board-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.js-board-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+}
+.js-board-card .name { font-weight: 600; font-size: 16px; grid-column: 1 / -1; }
+.js-board-card .meta { font-size: 12px; color: #6b7280; grid-column: 1 / -1; }
+.js-board-card .stat { font-size: 13px; }
+
+.js-show-mobile { display: block; }
+.js-show-desktop { display: none; }
+@media (min-width: 768px) {
+  .js-show-mobile { display: none; }
+  .js-show-desktop { display: block; }
+}
+
+/* Generic small button */
+.js-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  min-height: 44px;
+  text-decoration: none;
+}
+.js-btn:hover { background: #f3f4f6; }
+.js-btn.primary {
+  background: #1f2937;
+  color: #fff;
+  border-color: #1f2937;
+}
+.js-btn.primary:hover { background: #111827; }
+
+/* Dirty state — when there are unsaved changes the Save button changes
+   color to bright orange and dances (gentle scale + shadow pulse) so the
+   user can't miss it. Respects prefers-reduced-motion. */
+.js-btn.primary.js-btn-dance {
+  background: #f97316;
+  border-color: #f97316;
+  color: #fff;
+  animation: js-save-dance 1.2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6);
+}
+.js-btn.primary.js-btn-dance:hover {
+  background: #ea580c;
+  border-color: #ea580c;
+}
+@keyframes js-save-dance {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(249, 115, 22, 0.55); }
+  50%  { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(249, 115, 22, 0);    }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(249, 115, 22, 0);    }
+}
+@media (prefers-reduced-motion: reduce) {
+  .js-btn.primary.js-btn-dance { animation: none; }
+}
+.js-btn.danger {
+  background: #fff;
+  color: #b91c1c;
+  border-color: #fca5a5;
+}
+.js-btn.danger:hover { background: #fef2f2; }
+.js-btn.sm { padding: 4px 10px; font-size: 13px; min-height: 36px; }
+
+.js-loading, .js-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 30px 12px;
+}
+
+/* Section header inside the panel body */
+.js-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin: 16px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.js-section-title:first-child { margin-top: 0; }
+
+/* Staff-impersonation banner — sticks to the top of the dashboard or panel
+   when an instructor is viewing/editing a student's record. */
+.js-staff-banner {
+  background: #1e3a8a;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.js-staff-banner strong { font-weight: 700; }
+.js-staff-banner .js-btn {
+  background: #fff;
+  color: #1e3a8a;
+  border: 0;
+  padding: 6px 12px;
+  min-height: 36px;
+  font-size: 13px;
+  margin-left: auto;
+}
+.js-staff-banner .js-btn:hover { background: #dbeafe; }
+
+/* Inline panel banner variant */
+.js-panel-staff-banner {
+  background: #1e3a8a;
+  color: #fff;
+  padding: 8px 12px;
+  font-size: 13px;
+  text-align: center;
+}

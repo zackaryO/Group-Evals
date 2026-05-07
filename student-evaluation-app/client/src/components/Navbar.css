@@ -3,41 +3,125 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #333;
-  padding: 10px 20px;
+  background-color: #1f2937;
+  padding: 8px 20px;
+  position: relative;
+  z-index: 50;
 }
 
 .navbar-list {
   list-style: none;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   margin: 0;
   padding: 0;
+  gap: 4px;
 }
 
 .navbar-item {
-  margin: 0 15px;
+  margin: 0;
+  position: relative;
 }
 
 .navbar-link {
   color: white;
   text-decoration: none;
-  font-size: 16px;
-  display: flex;
+  font-size: 15px;
+  display: inline-flex;
   align-items: center;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: transparent;
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
 }
 
-.navbar-link:hover {
-  color: #ddd;
+.navbar-link:hover,
+.navbar-link:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
 }
 
 .navbar-link svg {
   margin-right: 8px;
 }
 
+/* Dropdown ----------------------------------------------------------------- */
+.navbar-dropdown-toggle .navbar-chevron {
+  margin-right: 0;
+  margin-left: 6px;
+  font-size: 11px;
+  transition: transform 120ms ease;
+}
+.navbar-dropdown-toggle.is-open .navbar-chevron {
+  transform: rotate(180deg);
+}
+.navbar-dropdown-toggle.is-open {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.navbar-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
+  min-width: 220px;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  z-index: 100;
+}
+
+.navbar-dropdown-link {
+  display: block;
+  padding: 10px 16px;
+  color: #1f2937;
+  text-decoration: none;
+  font-size: 15px;
+  white-space: nowrap;
+}
+.navbar-dropdown-link:hover,
+.navbar-dropdown-link:focus-visible {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* User info on the right -------------------------------------------------- */
 .navbar-user-info {
   color: white;
-  font-size: 16px;
+  font-size: 14px;
   margin-left: auto;
   display: flex;
   align-items: center;
+  opacity: 0.85;
+}
+
+/* Mobile: dropdowns become full-width below their toggle so they don't get
+   clipped by the viewport edge. The navbar itself stays a single horizontal
+   row that wraps as needed. */
+@media (max-width: 640px) {
+  .navbar {
+    padding: 6px 10px;
+  }
+  .navbar-link {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  .navbar-dropdown-menu {
+    left: 0;
+    right: auto;
+    min-width: 200px;
+  }
+  .navbar-user-info {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 4px;
+    font-size: 12px;
+  }
 }

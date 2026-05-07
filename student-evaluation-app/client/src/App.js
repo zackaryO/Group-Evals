@@ -44,6 +44,10 @@ import FacilityNeedsPage from './components/Inventory/FacilityNeedsPage';
 import TrainingVehiclesPage from './components/Inventory/TrainingVehiclesPage';
 import InventoryReportsPage from './components/Inventory/InventoryReportsPage';
 
+// NEW: Job Search tracker pages
+import MyJobSearch from './components/JobSearch/MyJobSearch';
+import ClassBoard from './components/JobSearch/ClassBoard';
+
 const App = () => {
   const [user, setUser] = useState(() => {
     const storedToken = localStorage.getItem('token');
@@ -370,6 +374,33 @@ const App = () => {
           element={
             <InstructorRoute user={user}>
               <InventoryReportsPage />
+            </InstructorRoute>
+          }
+        />
+
+        {/* Job Search tracker — students manage their own; everyone sees the board */}
+        <Route
+          path="/job-search"
+          element={
+            <PrivateRoute user={user}>
+              <MyJobSearch user={user} />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/job-search/board"
+          element={
+            <PrivateRoute user={user}>
+              <ClassBoard user={user} />
+            </PrivateRoute>
+          }
+        />
+        {/* Staff drill-in: same MyJobSearch component, with a banner */}
+        <Route
+          path="/job-search/student/:studentId"
+          element={
+            <InstructorRoute user={user}>
+              <MyJobSearch user={user} />
             </InstructorRoute>
           }
         />
