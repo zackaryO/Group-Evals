@@ -60,7 +60,13 @@
       "PowerShell(Push-Location student-evaluation-app\\\\client; $env:CI='true'; .\\\\node_modules\\\\.bin\\\\react-scripts test --watchAll=false src/components/JobSearch/__tests__/MyJobSearch.test.js 2>&1 | Select-String '●|✓|✗|expect' | Select-Object -First 20; Pop-Location)",
       "PowerShell(Push-Location student-evaluation-app\\\\client; $env:CI='true'; $env:NODE_OPTIONS='--openssl-legacy-provider'; .\\\\node_modules\\\\.bin\\\\react-scripts build 2>&1 | Select-Object -Last 15; Pop-Location)",
       "PowerShell(Push-Location student-evaluation-app\\\\client; $env:CI='true'; .\\\\node_modules\\\\.bin\\\\react-scripts test --watchAll=false src/components/JobSearch 2>&1 | Select-String 'Tests:|FAIL|PASS' | Select-Object -Last 8; Pop-Location)",
-      "PowerShell(Push-Location student-evaluation-app\\\\client; $env:CI='true'; $env:NODE_OPTIONS='--openssl-legacy-provider'; .\\\\node_modules\\\\.bin\\\\react-scripts build 2>&1 | Select-Object -Last 10; Pop-Location)"
+      "PowerShell(Push-Location student-evaluation-app\\\\client; $env:CI='true'; $env:NODE_OPTIONS='--openssl-legacy-provider'; .\\\\node_modules\\\\.bin\\\\react-scripts build 2>&1 | Select-Object -Last 10; Pop-Location)",
+      "PowerShell(git -C \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" status)",
+      "PowerShell(git -C \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" log --oneline -10)",
+      "PowerShell(\"---\")",
+      "PowerShell(git -C \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" show --stat bae5425 -- student-evaluation-app/server/package.json)",
+      "PowerShell(git -C \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" show bae5425 -- student-evaluation-app/server/package.json)",
+      "PowerShell(git -C \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" show 6c2a4fe:student-evaluation-app/server/package.json)"
     ]
   }
 }
