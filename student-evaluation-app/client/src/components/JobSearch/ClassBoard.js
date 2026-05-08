@@ -124,17 +124,30 @@ const ClassBoard = ({ user }) => {
 
   // ---- Cell renderers ------------------------------------------------------
 
-  // "Engaged" count cell — dealers where the student is in active two-way
-  // contact (email exchange, phone, in-person, interview, offer, …). Zero
-  // with at least one cover letter aged >6 days is a red flag (no
-  // engagement after a week of waiting).
+  // "Engaged" count cell — dealers where the dealer has actually responded
+  // (email reply, in-person/virtual meeting, interview, offer, rejection).
+  //   - count > 0 → green positive badge (good progress, easy to scan for)
+  //   - count = 0 with cover letter sent 6+ days ago → red flag
+  //   - count = 0 otherwise → plain text
   const renderPastSending = (row) => {
-    const isRed = row.zeroPastSendingPast6Days && row.pastSendingCount === 0;
-    return (
-      <span className={isRed ? 'js-board-flag-red' : ''} title={isRed ? 'Zero engaged dealers after 6+ days since sending the cover letter' : 'Dealers where two-way contact has happened (email exchange, phone, interview, etc.)'}>
-        {row.pastSendingCount}
-      </span>
-    );
+    if (row.pastSendingCount > 0) {
+      return (
+        <span
+          className="js-board-flag-positive"
+          title={`${row.pastSendingCount} dealer${row.pastSendingCount === 1 ? '' : 's'} engaged in real two-way contact (email reply, meeting, interview, etc.)`}
+        >
+          ✓ {row.pastSendingCount}
+        </span>
+      );
+    }
+    if (row.zeroPastSendingPast6Days) {
+      return (
+        <span className="js-board-flag-red" title="Zero engaged dealers after 6+ days since sending the cover letter">
+          0
+        </span>
+      );
+    }
+    return <span>0</span>;
   };
 
   // Yes/No pill for "official offer received."

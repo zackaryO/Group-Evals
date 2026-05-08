@@ -619,6 +619,22 @@
   font-weight: 700;
 }
 
+/* Positive badge — student has at least one dealer engaged in real two-way
+   contact. Light-green pill with a check, easy to scan against the muted
+   zeros around it. */
+.js-board-flag-positive {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #d1fae5;
+  color: #065f46;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+  border: 1px solid #6ee7b7;
+}
+
 /* Critical-tier flag — louder than .js-board-flag-red. Used when the student
    hasn't even taken the critical first step (sending the cover letter /
    resume) on one or more dealers. */
