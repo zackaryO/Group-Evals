@@ -67,7 +67,7 @@ async function seed() {
 
   const cohort = await Cohort.create({
     name: 'Spring 2026 Cohort',
-    startDate: new Date('2026-01-15'),
+    gradDate: new Date('2026-01-15'),
     isActive: true,
   });
 

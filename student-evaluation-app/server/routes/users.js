@@ -16,6 +16,7 @@ const router = express.Router();
 
 // Models imported to allow us to remove associated data
 const User = require('../models/User');
+const Cohort = require('../models/Cohort');
 const QuizSubmission = require('../models/QuizSubmission');
 const Evaluation = require('../models/Evaluation');
 const Grade = require('../models/Grade');
@@ -33,8 +34,7 @@ const { authenticateToken, authorizeRoles } = require('../middleware/authMiddlew
  */
 router.get('/', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
   try {
-    // You can also do a .populate('cohort', 'name') if you have cohorts
-    const users = await User.find();
+    const users = await User.find().populate('cohort', 'name isActive');
     res.json(users);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -48,7 +48,7 @@ router.get('/', authenticateToken, authorizeRoles('admin', 'instructor'), async 
  */
 router.get('/students', authenticateToken, authorizeRoles('admin', 'instructor', 'student'), async (req, res) => {
   try {
-    const students = await User.find({ role: 'student' });
+    const students = await User.find({ role: 'student' }).populate('cohort', 'name isActive');
     res.json(students);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -196,7 +196,8 @@ router.delete('/:userId', authenticateToken, authorizeRoles('admin', 'instructor
 
 /**
  * PUT /api/users/:id/assign-cohort
- * Example route to assign a cohort to a student (if you use cohorts in your app).
+ * Assign (or unassign with cohortId=null/'') a cohort to a student. Keeps the
+ * Cohort.students array in sync on both the previous and new cohort.
  * Only accessible by 'admin' or 'instructor'.
  */
 router.put('/:id/assign-cohort', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
@@ -206,9 +207,33 @@ router.put('/:id/assign-cohort', authenticateToken, authorizeRoles('admin', 'ins
     if (!user || user.role !== 'student') {
       return res.status(404).json({ message: 'Student not found' });
     }
-    user.cohort = cohortId;
+    const newCohortId = cohortId || null;
+    if (user.cohort && String(user.cohort) !== String(newCohortId)) {
+      await Cohort.findByIdAndUpdate(user.cohort, { $pull: { students: user._id } });
+    }
+    if (newCohortId) {
+      await Cohort.findByIdAndUpdate(newCohortId, { $addToSet: { students: user._id } });
+    }
+    user.cohort = newCohortId;
     await user.save();
     res.json({ message: 'Cohort assigned to student successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/**
+ * PUT /api/users/:id/active
+ * Toggle a user's isActive flag. Inactive students still log in and use the
+ * app, but instructor views render them greyed out.
+ */
+router.put('/:id/active', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    user.isActive = !!req.body.isActive;
+    await user.save();
+    res.json({ _id: user._id, isActive: user.isActive });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

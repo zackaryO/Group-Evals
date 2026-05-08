@@ -51,7 +51,7 @@ async function seed() {
   const QuizSubmission = require(path.join(SERVER_DIR, 'models', 'QuizSubmission'));
   const EvaluationArea = require(path.join(SERVER_DIR, 'models', 'EvaluationArea'));
 
-  const cohort = await Cohort.create({ name: 'Spring 2026 Cohort', startDate: new Date('2026-01-15'), isActive: true });
+  const cohort = await Cohort.create({ name: 'Spring 2026 Cohort', gradDate: new Date('2026-01-15'), isActive: true });
   const hash = (pw) => bcrypt.hash(pw, 10);
   const instructor = await User.create({
     username: 'instructor', password: await hash('demo'), role: 'instructor',

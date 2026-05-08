@@ -5,7 +5,7 @@ import URL from '../../backEndURL';
 
 const CreateCohort = ({ user }) => {
   const [name, setName] = useState('');
-  const [startDate, setStartDate] = useState('');
+  const [gradDate, setGradDate] = useState('');
   const [message, setMessage] = useState('');
 
   const handleCreateCohort = async (e) => {
@@ -13,11 +13,11 @@ const CreateCohort = ({ user }) => {
     try {
       const response = await axios.post(`${URL}/api/cohorts`, {
         name,
-        startDate,
+        gradDate,
       });
       setMessage(`Cohort "${response.data.name}" created successfully!`);
       setName('');
-      setStartDate('');
+      setGradDate('');
     } catch (error) {
       setMessage('Error creating cohort: ' + error.message);
     }
@@ -38,11 +38,11 @@ const CreateCohort = ({ user }) => {
           />
         </label>
         <label>
-          Start Date:
+          Grad Date:
           <input
             type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            value={gradDate}
+            onChange={(e) => setGradDate(e.target.value)}
             required
           />
         </label>

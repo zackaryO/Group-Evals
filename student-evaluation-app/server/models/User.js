@@ -11,6 +11,7 @@ const UserSchema = new mongoose.Schema({
   subject: { type: String },
   cohort: { type: mongoose.Schema.Types.ObjectId, ref: 'Cohort', default: null },
   courses: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Course' }],
+  isActive: { type: Boolean, default: true },
 });
 
 module.exports = mongoose.model('User', UserSchema);

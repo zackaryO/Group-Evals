@@ -1,6 +1,13 @@
-// ClassBoard — public summary table of every student's job search progress.
-// Pay-related fields (latestOfferAmount, highestStartingWage) are server-side
-// redacted for non-self / non-staff viewers and rendered as "Hidden" here.
+// ClassBoard — instructor-focused summary of every student's job-search progress.
+// Answers questions like:
+//   - How many dealerships has each student selected?
+//   - Has each dealership got at least one named contact w/ email?
+//   - How many of the dealerships have had cover letter / resume sent?
+//   - How many have progressed PAST sending? (zero past 6 days = red)
+//   - Any official offer received yet?
+//   - Does this student need a follow-up nudge? (green 7–13d, yellow 14d+)
+//
+// Pay-related fields are server-redacted for non-self / non-staff viewers.
 //
 // Mobile (< 768px): vertical stack of cards.
 // Desktop (>= 768px): sortable HTML table.
@@ -13,14 +20,13 @@ import './JobSearch.css';
 const SORTABLE_COLS = [
   { key: 'studentName', label: 'Student' },
   { key: 'cohort', label: 'Cohort' },
-  { key: 'activeCount', label: 'Active' },
-  { key: 'stagnantCount', label: 'Stagnant' },
-  { key: 'parkedCount', label: 'Parked' },
-  { key: 'latestEventAt', label: 'Last activity' },
-  { key: 'nextStepType', label: 'Next step' },
+  { key: 'dealerCount', label: 'Dealers' },
+  { key: 'dealersWithContact', label: 'Contacts (name + email)' },
+  { key: 'coverLetterSentCount', label: 'Resume / cover sent' },
+  { key: 'pastSendingCount', label: 'Engaged' },
+  { key: 'hasOffer', label: 'Offer?' },
+  { key: 'followUpUrgency', label: 'Nudge' },
 ];
-
-const labelize = (s) => (s ? String(s).replace(/_/g, ' ') : '—');
 
 const ClassBoard = ({ user }) => {
   const navigate = useNavigate();
@@ -30,6 +36,8 @@ const ClassBoard = ({ user }) => {
   const [filterText, setFilterText] = useState('');
   const [sortKey, setSortKey] = useState('studentName');
   const [sortDir, setSortDir] = useState('asc');
+  // 'all' | 'active' | 'inactive' | <cohortId>
+  const [cohortFilter, setCohortFilter] = useState('all');
 
   const goToStudent = (studentId) => {
     if (!isStaff) return;
@@ -58,24 +66,47 @@ const ClassBoard = ({ user }) => {
     return () => { cancelled = true; };
   }, []);
 
-  const sorted = useMemo(() => {
-    const copy = [...board];
-    copy.sort((a, b) => {
-      const av = a[sortKey];
-      const bv = b[sortKey];
-      // null/undefined sort to bottom regardless of direction
-      if (av == null && bv == null) return 0;
-      if (av == null) return 1;
-      if (bv == null) return -1;
-      if (typeof av === 'number' && typeof bv === 'number') {
-        return sortDir === 'asc' ? av - bv : bv - av;
+  // Unique cohorts referenced by board rows, for the dropdown.
+  const cohortOptions = useMemo(() => {
+    const seen = new Map();
+    board.forEach((r) => {
+      if (r.cohortId) {
+        seen.set(String(r.cohortId), { _id: r.cohortId, name: r.cohort, isActive: r.cohortActive !== false });
       }
-      const sa = String(av).toLowerCase();
-      const sb = String(bv).toLowerCase();
-      if (sa < sb) return sortDir === 'asc' ? -1 : 1;
-      if (sa > sb) return sortDir === 'asc' ? 1 : -1;
-      return 0;
     });
+    return Array.from(seen.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  }, [board]);
+
+  const isRowInactive = (r) => r.studentActive === false || r.cohortActive === false;
+
+  // Sort comparator that knows how to compare boolean / null-aware.
+  const cmp = (av, bv, dir) => {
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    if (typeof av === 'number' && typeof bv === 'number') {
+      return dir === 'asc' ? av - bv : bv - av;
+    }
+    if (typeof av === 'boolean' && typeof bv === 'boolean') {
+      return dir === 'asc' ? Number(av) - Number(bv) : Number(bv) - Number(av);
+    }
+    const sa = String(av).toLowerCase();
+    const sb = String(bv).toLowerCase();
+    if (sa < sb) return dir === 'asc' ? -1 : 1;
+    if (sa > sb) return dir === 'asc' ? 1 : -1;
+    return 0;
+  };
+
+  const sorted = useMemo(() => {
+    let copy = [...board];
+    if (cohortFilter !== 'all') {
+      copy = copy.filter((r) => {
+        if (cohortFilter === 'active') return !isRowInactive(r);
+        if (cohortFilter === 'inactive') return isRowInactive(r);
+        return String(r.cohortId || '') === String(cohortFilter);
+      });
+    }
+    copy.sort((a, b) => cmp(a[sortKey], b[sortKey], sortDir));
     if (filterText.trim()) {
       const q = filterText.trim().toLowerCase();
       return copy.filter((r) =>
@@ -84,38 +115,115 @@ const ClassBoard = ({ user }) => {
       );
     }
     return copy;
-  }, [board, sortKey, sortDir, filterText]);
+  }, [board, sortKey, sortDir, filterText, cohortFilter]);
 
   const onSort = (key) => {
     if (sortKey === key) setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
     else { setSortKey(key); setSortDir('asc'); }
   };
 
-  const renderPay = (entry, key) => {
-    const value = entry[key];
-    if (value === null || value === undefined) {
-      const ownerOrStaff = user && (user.role === 'instructor' || user.role === 'admin' || String(user._id) === String(entry.studentId));
-      return ownerOrStaff ? '—' : <span className="js-board-redacted">Hidden</span>;
+  // ---- Cell renderers ------------------------------------------------------
+
+  // "Engaged" count cell — dealers where the student is in active two-way
+  // contact (email exchange, phone, in-person, interview, offer, …). Zero
+  // with at least one cover letter aged >6 days is a red flag (no
+  // engagement after a week of waiting).
+  const renderPastSending = (row) => {
+    const isRed = row.zeroPastSendingPast6Days && row.pastSendingCount === 0;
+    return (
+      <span className={isRed ? 'js-board-flag-red' : ''} title={isRed ? 'Zero engaged dealers after 6+ days since sending the cover letter' : 'Dealers where two-way contact has happened (email exchange, phone, interview, etc.)'}>
+        {row.pastSendingCount}
+      </span>
+    );
+  };
+
+  // Yes/No pill for "official offer received."
+  const renderOffer = (row) => (
+    <span className={row.hasOffer ? 'js-board-pill ok' : 'js-board-pill muted'}>
+      {row.hasOffer ? 'Yes' : 'No'}
+    </span>
+  );
+
+  // Nudge cell. We deliberately suppress 'wait' on the board (per spec):
+  // the board is for outstanding tasks only.
+  const renderNudge = (row) => {
+    const u = row.followUpUrgency;
+    if (!u || u === 'wait') return <span style={{ color: '#9ca3af' }}>—</span>;
+    if (u === 'demand') {
+      return <span className="js-nudge-chip demand">Follow up now</span>;
     }
-    return `$${Number(value).toLocaleString()}`;
+    return <span className="js-nudge-chip encourage">Time to follow up</span>;
+  };
+
+  const renderContacts = (row) => {
+    const total = row.dealerCount;
+    const ok = row.dealersWithContact;
+    const incomplete = total > 0 && ok < total;
+    return (
+      <span className={incomplete ? 'js-board-flag-red' : ''} title={incomplete ? 'Some dealers are missing a name + email contact' : ''}>
+        {ok} / {total}
+      </span>
+    );
+  };
+
+  const renderCoverLetters = (row) => {
+    const total = row.dealerCount;
+    const ok = row.coverLetterSentCount;
+    const missing = Math.max(0, total - ok);
+    if (missing > 0) {
+      return (
+        <span className="js-board-flag-critical" title={`${missing} dealer${missing === 1 ? '' : 's'} still need the cover letter / resume sent — critical first step`}>
+          ⚠ {ok} / {total} ({missing} missing)
+        </span>
+      );
+    }
+    return <span>{ok} / {total}</span>;
+  };
+
+  // Whole-row tint. "Missing cover letters" outranks every other tier — the
+  // student hasn't taken the critical first step on at least one dealer, so
+  // the row glows bright red regardless of the follow-up nudge state.
+  const rowNudgeClass = (row) => {
+    if (row.dealerCount > 0 && row.coverLetterSentCount < row.dealerCount) return 'js-row-missing';
+    const u = row.followUpUrgency;
+    if (!u || u === 'wait') return '';
+    return u === 'demand' ? 'js-row-demand' : 'js-row-encourage';
   };
 
   return (
     <div className="js-page">
       <h2 style={{ marginTop: 0 }}>Class job-search board</h2>
       <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>
-        Pay info (offers and wages) is hidden for everyone except the student who owns the row and instructors.
+        Pay info is hidden for everyone except the student who owns the row and instructors.{' '}
+        <strong style={{ color: '#b91c1c' }}>Bright red row</strong> = student has at least one dealer where the
+        cover letter / resume hasn't been sent yet (critical first step).{' '}
+        <strong>Yellow</strong> = 14+ days since send without follow-up.{' '}
+        <strong>Green</strong> = 7–13 days (good time to follow up).
       </div>
 
       <div className="js-board-filters">
         <input
           type="text"
-          className=""
           placeholder="Filter by name or cohort"
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
           style={{ flex: 1, padding: 10, border: '1px solid #d1d5db', borderRadius: 8, minHeight: 44, fontSize: 16 }}
         />
+        <select
+          value={cohortFilter}
+          onChange={(e) => setCohortFilter(e.target.value)}
+          style={{ padding: 10, border: '1px solid #d1d5db', borderRadius: 8, minHeight: 44, fontSize: 14 }}
+          aria-label="Cohort filter"
+        >
+          <option value="all">All cohorts</option>
+          <option value="active">Active only</option>
+          <option value="inactive">Inactive only</option>
+          {cohortOptions.map((c) => (
+            <option key={c._id} value={c._id}>
+              {c.name}{c.isActive === false ? ' (inactive)' : ''}
+            </option>
+          ))}
+        </select>
         <span style={{ fontSize: 13, color: '#4b5563' }}>{sorted.length} students</span>
       </div>
 
@@ -128,24 +236,34 @@ const ClassBoard = ({ user }) => {
           {/* Mobile: cards */}
           <div className="js-show-mobile">
             <div className="js-board-cards">
-              {sorted.map((row) => (
-                <div key={row.studentId} className="js-board-card">
-                  <div className="name">{studentNameLink(row)}</div>
-                  <div className="meta">{row.cohort || '— no cohort —'}</div>
-                  <div className="stat"><strong>{row.activeCount}</strong> active</div>
-                  <div className="stat">{row.stagnantCount} stagnant · {row.parkedCount} parked</div>
-                  <div className="stat" style={{ gridColumn: '1 / -1' }}>
-                    Last: {row.latestEventType ? labelize(row.latestEventType) : '—'}
-                    {row.latestEventAt ? ` (${new Date(row.latestEventAt).toLocaleDateString()})` : ''}
+              {sorted.map((row) => {
+                const inactive = isRowInactive(row);
+                const tint = rowNudgeClass(row);
+                return (
+                <div
+                  key={row.studentId}
+                  className={`js-board-card ${tint}`}
+                  style={inactive ? { opacity: 0.55, color: '#6b7280' } : undefined}
+                >
+                  <div className="name">
+                    {studentNameLink(row)}
+                    {inactive ? <span style={{ marginLeft: 6, fontSize: 11, color: '#9ca3af' }}>(inactive)</span> : null}
                   </div>
-                  <div className="stat" style={{ gridColumn: '1 / -1' }}>
-                    Next: {labelize(row.nextStepType)}
+                  <div className="meta">
+                    {row.cohort || '— no cohort —'}
+                    {row.cohortActive === false ? ' (inactive)' : ''}
                   </div>
+                  <div className="stat"><strong>{row.dealerCount}</strong> dealers</div>
+                  <div className="stat">Contacts: {renderContacts(row)}</div>
+                  <div className="stat">Resume / cover sent: {renderCoverLetters(row)}</div>
+                  <div className="stat">Past sending: {renderPastSending(row)}</div>
+                  <div className="stat">Offer received: {renderOffer(row)}</div>
                   <div className="stat" style={{ gridColumn: '1 / -1' }}>
-                    Latest offer: {renderPay(row, 'latestOfferAmount')} · Highest wage: {renderPay(row, 'highestStartingWage')}
+                    Nudge: {renderNudge(row)}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -159,27 +277,32 @@ const ClassBoard = ({ user }) => {
                       {col.label} {sortKey === col.key ? (sortDir === 'asc' ? '▲' : '▼') : ''}
                     </th>
                   ))}
-                  <th>Latest offer</th>
-                  <th>Highest wage</th>
                 </tr>
               </thead>
               <tbody>
-                {sorted.map((row) => (
-                  <tr key={row.studentId}>
-                    <td>{studentNameLink(row)}</td>
-                    <td>{row.cohort || '—'}</td>
-                    <td>{row.activeCount}</td>
-                    <td>{row.stagnantCount}</td>
-                    <td>{row.parkedCount}</td>
+                {sorted.map((row) => {
+                  const inactive = isRowInactive(row);
+                  const tint = rowNudgeClass(row);
+                  const rowStyle = inactive ? { opacity: 0.55, color: '#6b7280' } : undefined;
+                  return (
+                  <tr key={row.studentId} className={tint} style={rowStyle}>
                     <td>
-                      {row.latestEventType ? labelize(row.latestEventType) : '—'}
-                      {row.latestEventAt ? <div style={{ fontSize: 11, color: '#6b7280' }}>{new Date(row.latestEventAt).toLocaleDateString()}</div> : null}
+                      {studentNameLink(row)}
+                      {inactive ? ' (inactive)' : ''}
                     </td>
-                    <td>{labelize(row.nextStepType)}</td>
-                    <td>{renderPay(row, 'latestOfferAmount')}</td>
-                    <td>{renderPay(row, 'highestStartingWage')}</td>
+                    <td>
+                      {row.cohort || '—'}
+                      {row.cohortActive === false ? ' (inactive)' : ''}
+                    </td>
+                    <td>{row.dealerCount}</td>
+                    <td>{renderContacts(row)}</td>
+                    <td>{renderCoverLetters(row)}</td>
+                    <td>{renderPastSending(row)}</td>
+                    <td>{renderOffer(row)}</td>
+                    <td>{renderNudge(row)}</td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

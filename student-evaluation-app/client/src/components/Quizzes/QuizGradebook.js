@@ -12,6 +12,10 @@ const QuizGradebook = ({ user }) => {
   const [loading, setLoading] = useState(true);
   const [deletedQuizId, setDeletedQuizId] = useState(null);
   const [zoomedImage, setZoomedImage] = useState(null);
+  // Instructor-only filter / sort state. Students see only their own grades.
+  const [cohortFilter, setCohortFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
+  const isInstructor = user.role === 'instructor' || user.role === 'admin';
 
   useEffect(() => {
     if (!zoomedImage) return undefined;
@@ -99,7 +103,66 @@ const QuizGradebook = ({ user }) => {
     return <p>Loading...</p>;
   }
 
-  const groupedGrades = groupByStudent(grades);
+  // Build cohort dropdown choices from the data on screen.
+  const cohortOptions = (() => {
+    const seen = new Map();
+    grades.forEach((g) => {
+      const c = g.student && g.student.cohort;
+      if (c && c._id) seen.set(String(c._id), c);
+    });
+    return Array.from(seen.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  })();
+
+  const studentMatchesFilter = (student) => {
+    if (!isInstructor || cohortFilter === 'all') return true;
+    const cohort = student && student.cohort;
+    const cohortActive = cohort ? cohort.isActive !== false : true;
+    const studentActive = student ? student.isActive !== false : true;
+    if (cohortFilter === 'active') return cohortActive && studentActive;
+    if (cohortFilter === 'inactive') return !cohortActive || !studentActive;
+    return cohort && String(cohort._id) === String(cohortFilter);
+  };
+
+  const filteredGrades = grades.filter((g) => studentMatchesFilter(g.student));
+  const groupedGrades = groupByStudent(filteredGrades);
+
+  const sortedStudentIds = (() => {
+    const ids = Object.keys(groupedGrades);
+    if (!isInstructor) return ids;
+    if (sortBy === 'cohort') {
+      ids.sort((a, b) => {
+        const ac = groupedGrades[a].student?.cohort?.name || '';
+        const bc = groupedGrades[b].student?.cohort?.name || '';
+        if (ac === bc) {
+          const an = `${groupedGrades[a].student?.lastName || ''}${groupedGrades[a].student?.firstName || ''}`;
+          const bn = `${groupedGrades[b].student?.lastName || ''}${groupedGrades[b].student?.firstName || ''}`;
+          return an.localeCompare(bn);
+        }
+        return ac.localeCompare(bc);
+      });
+    } else if (sortBy === 'avg') {
+      const avg = (sid) => {
+        const qz = groupedGrades[sid].quizzes;
+        if (!qz.length) return 0;
+        return qz.reduce((sum, q) => sum + (q.score || 0), 0) / qz.length;
+      };
+      ids.sort((a, b) => avg(b) - avg(a));
+    } else {
+      ids.sort((a, b) => {
+        const an = `${groupedGrades[a].student?.lastName || ''}${groupedGrades[a].student?.firstName || ''}`;
+        const bn = `${groupedGrades[b].student?.lastName || ''}${groupedGrades[b].student?.firstName || ''}`;
+        return an.localeCompare(bn);
+      });
+    }
+    return ids;
+  })();
+
+  const isStudentInactive = (student) => {
+    if (!student) return false;
+    const studentInactive = student.isActive === false;
+    const cohortInactive = student.cohort && student.cohort.isActive === false;
+    return studentInactive || cohortInactive;
+  };
 
   return (
     <div className="quiz-gradebook-container">
@@ -110,14 +173,51 @@ const QuizGradebook = ({ user }) => {
           View All Missed Questions
         </Link>
       )}
-      {grades.length > 0 ? (
+      {isInstructor && (
+        <div className="quiz-gradebook-filters" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', margin: '12px 0' }}>
+          <label style={{ fontSize: 13 }}>
+            Cohort:&nbsp;
+            <select value={cohortFilter} onChange={(e) => setCohortFilter(e.target.value)}>
+              <option value="all">All</option>
+              <option value="active">Active only</option>
+              <option value="inactive">Inactive only</option>
+              {cohortOptions.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}{c.isActive === false ? ' (inactive)' : ''}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ fontSize: 13 }}>
+            Sort:&nbsp;
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="name">Name</option>
+              <option value="cohort">Cohort</option>
+              <option value="avg">Average score</option>
+            </select>
+          </label>
+        </div>
+      )}
+      {sortedStudentIds.length > 0 ? (
         <div className="student-grades">
-          {Object.keys(groupedGrades).map((studentId) => {
+          {sortedStudentIds.map((studentId) => {
             const studentData = groupedGrades[studentId].student;
+            const inactive = isStudentInactive(studentData);
+            const inactiveStyle = inactive ? { opacity: 0.55, color: '#6b7280' } : undefined;
             return (
-              <div key={studentId} className={`student-grade ${deletedQuizId === studentId ? 'fade-out' : ''}`}>
-                <h3>{studentData.firstName} {studentData.lastName}</h3>
-                <p>Username: {studentData.username}</p>
+              <div
+                key={studentId}
+                className={`student-grade ${deletedQuizId === studentId ? 'fade-out' : ''}`}
+                style={inactiveStyle}
+              >
+                <h3>
+                  {studentData.firstName} {studentData.lastName}
+                  {inactive ? ' (inactive)' : ''}
+                </h3>
+                <p>
+                  Username: {studentData.username}
+                  {studentData.cohort?.name ? ` · Cohort: ${studentData.cohort.name}` : ''}
+                </p>
                 <div className="quiz-list">
                   {groupedGrades[studentId].quizzes.map((quiz) => (
                     <div key={quiz._id} className={`quiz-item ${deletedQuizId === quiz._id ? 'deleted' : ''}`}>

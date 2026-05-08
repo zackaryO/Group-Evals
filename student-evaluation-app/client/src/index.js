@@ -2,6 +2,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import './authInterceptor'; // installs the global 401 → force-logout interceptor
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 

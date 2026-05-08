@@ -29,9 +29,85 @@ function studentDisplayName(s) {
   return full || s.username || 'this student';
 }
 
+// Single source of truth for "has the cover letter / resume been sent?"
+// — the highlighted yes/no toggle in the modal AND any logged
+// 'cover_letter_sent' or 'application_submitted' communication both count.
+export const isCoverLetterSent = (app) =>
+  !!(app && (
+    app.applicationSubmitted
+    || app.lastEventType === 'cover_letter_sent'
+    || app.lastEventType === 'application_submitted'
+  ));
+
+// "Engagement" = the dealer has actually responded or a confirmed two-way
+// event has taken place. A phone call alone doesn't qualify (could be a
+// voicemail / unanswered / informational inquiry); same for student-initiated
+// emails or texts where there's no guarantee of a reply. Only events where
+// the dealer's participation is explicit count here.
+const ENGAGEMENT_TYPES = new Set([
+  'email_received',
+  'virtual_meeting',
+  'in_person',
+  'interview',
+  'offer_received',
+  'rejection',
+]);
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+// Client-side mirror of the server's followUpUrgency util. Computing here
+// (with lastEventAt as a fallback anchor) means we get a consistent tier
+// for every app regardless of whether the server has the new
+// applicationSubmittedAt populated yet — same color/text rules for every
+// dealer in the same state.
+//
+// Returns one of:
+//   'missing'    — cover letter has NOT been sent (critical first step)
+//   'engaged'    — dealer has confirmed two-way contact (email reply, in-person
+//                  visit, virtual meeting, interview, offer, or rejection).
+//                  A phone call, student-sent email, text, or "other" event
+//                  alone does NOT qualify — those could be voicemails,
+//                  unanswered messages, or informational inquiries.
+//   'wait'       — within 6 days of the most recent student action
+//   'encourage'  — 7–13 days since the most recent student action
+//   'demand'     — 14+ days since the most recent student action, no reply
+//   null         — parked, or no longer pursuing
+export const computeFollowUpUrgency = (app, now = Date.now()) => {
+  if (!app || app.archivedAsStagnant) return null;
+  if (app.stillInterested === false) return null;
+
+  if (!isCoverLetterSent(app)) return 'missing';
+
+  // 'engaged' requires confirmed dealer participation. Ambiguous events
+  // (phone, text, email_sent, other) don't count — the student may simply
+  // have left a voicemail or sent a message that was never read.
+  if (app.lastEventType && ENGAGEMENT_TYPES.has(app.lastEventType)) {
+    return 'engaged';
+  }
+
+  // Anchor the nudge clock to the most recent student action — either the
+  // cover-letter send-date or any subsequent follow-up attempt (phone,
+  // text, email_sent). That way a student who called yesterday gets a
+  // fresh "wait" tier even if they sent the cover letter 3 weeks ago, and
+  // they haven't been talked to / replied to yet.
+  const submittedMs = app.applicationSubmittedAt
+    ? new Date(app.applicationSubmittedAt).getTime() : null;
+  const lastMs = app.lastEventAt ? new Date(app.lastEventAt).getTime() : null;
+  let anchorMs = submittedMs;
+  if (lastMs != null && (anchorMs == null || lastMs > anchorMs)) anchorMs = lastMs;
+  if (anchorMs == null || Number.isNaN(anchorMs)) return 'wait';
+
+  const days = Math.floor((now - anchorMs) / MS_PER_DAY);
+  if (days < 0) return 'wait';
+  if (days <= 6) return 'wait';
+  if (days <= 13) return 'encourage';
+  return 'demand';
+};
+
+// Single status row. The cover-letter / resume status is conveyed by the
+// color-coded follow-up banner below — so it is intentionally NOT a pill
+// here, to avoid redundant "Resume / cover sent" badges per the spec.
 const StatusPills = ({ app }) => (
   <div className="js-app-status-row">
-    {app.applicationSubmitted && <span className="js-status-pill ok">Application sent</span>}
     {app.hasPostedJob === 'Y' && <span className="js-status-pill">Has posted job</span>}
     {app.benefits?.mentorship?.offered && <span className="js-status-pill">Mentorship</span>}
     {app.benefits?.relocation?.offered === 'Y' && <span className="js-status-pill">Relocation</span>}
@@ -40,6 +116,30 @@ const StatusPills = ({ app }) => (
     {app.stillInterested === false && <span className="js-status-pill muted">Not pursuing</span>}
   </div>
 );
+
+// Banner shown on each dealer card based on days since cover letter / resume
+// was sent. Spec: 'missing' = "send the cover letter / resume" (bright red,
+// critical first step); 0–6d = "don't follow up yet" (light red); 7–13d =
+// "good time to follow up" (green); 14d+ = "follow up now" (yellow). This
+// banner IS the cover-letter-sent indicator — no separate pill.
+const FollowUpBanner = ({ app }) => {
+  const u = computeFollowUpUrgency(app);
+  if (!u) return null;
+  const text = u === 'missing'
+    ? "Cover letter / resume not yet sent, this is the critical first step."
+    : u === 'engaged'
+      ? "Active conversation in progress, keep the dialogue going."
+      : u === 'wait'
+        ? "Resume / cover sent, give them about a week before following up."
+        : u === 'encourage'
+          ? "It's been a week, a friendly check-in could keep things moving."
+          : "It's been two weeks, follow up now to keep this lead alive.";
+  return (
+    <div className={`js-followup-tier ${u}`} aria-label={`Follow-up status: ${u}`}>
+      {text}
+    </div>
+  );
+};
 
 const ApplicationCard = ({
   app,
@@ -52,10 +152,12 @@ const ApplicationCard = ({
   onDelete,
   canEdit,
 }) => {
+  const urgency = computeFollowUpUrgency(app);
   const className = [
     'js-app-card',
     app.isStagnant ? 'is-stagnant' : '',
     app.archivedAsStagnant ? 'is-archived' : '',
+    urgency ? `urgency-${urgency}` : '',
   ].filter(Boolean).join(' ');
 
   const lastEventLabel = app.lastEventType && app.lastEventType !== 'none'
@@ -71,6 +173,7 @@ const ApplicationCard = ({
         {[app.dealerCity, app.dealerState].filter(Boolean).join(', ') || '—'} · {lastEventLabel}
       </div>
       <StatusPills app={app} />
+      <FollowUpBanner app={app} />
       {app.followupSuggestion && (
         <div className={`js-followup ${app.followupUrgency === 'high' ? 'high' : ''}`}>
           ↻ {app.followupSuggestion}

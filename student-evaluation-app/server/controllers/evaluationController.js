@@ -68,9 +68,13 @@ const submitEvaluation = async (req, res) => {
 const getEvaluations = async (req, res) => {
   try {
     const evaluations = await Evaluation.find()
-      .populate('presenter', 'firstName lastName')
+      .populate({
+        path: 'presenter',
+        select: 'firstName lastName isActive cohort',
+        populate: { path: 'cohort', select: 'name isActive' },
+      })
       .populate('evaluator', 'firstName lastName')
-      .populate('cohort', 'name')
+      .populate('cohort', 'name isActive')
       .populate('course', 'title');
 
     res.status(200).json(evaluations);

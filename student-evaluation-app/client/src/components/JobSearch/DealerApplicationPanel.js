@@ -13,6 +13,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import api from './jobSearchApi';
 import YnButtons from './YnButtons';
+import { isCoverLetterSent } from './MyJobSearch';
 
 const TABS = ['Overview', 'Contacts', 'Communications', 'Benefits', 'Notes'];
 
@@ -55,6 +56,66 @@ const labelize = (s) => (s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUp
 
 const OverviewTab = ({ app, onPatch, canEdit }) => (
   <div>
+    {/* Highlighted milestone toggle. Compact single-row layout: the send-date
+        is the anchor for every follow-up nudge timer, so it stays prominent
+        without dominating the form's vertical real estate. The "Yes" state
+        also reflects logged 'cover_letter_sent' / 'application_submitted'
+        communications, keeping the toggle in sync with the card pill. */}
+    {(() => {
+      const sent = isCoverLetterSent(app);
+      // Display-only date for "Sent <date>" — prefer the explicit
+      // applicationSubmittedAt; fall back to lastEventAt when the toggle
+      // is implied by a cover_letter_sent communication.
+      const sentAt = app.applicationSubmittedAt || (sent ? app.lastEventAt : null);
+      // The "No" radio is active only when the user has explicitly said no
+      // (applicationSubmitted === false AND no implicit-send signal).
+      const noActive = !sent && app.applicationSubmitted === false;
+      // Click handlers — clicking Yes stamps the current local time as the
+      // send-date if there isn't one yet, so the follow-up nudge clock can
+      // start ticking immediately (no save round-trip required to display
+      // "Sent <today>"). Clicking No clears the timestamp.
+      const onYes = () => {
+        const patch = { applicationSubmitted: true };
+        if (!app.applicationSubmittedAt) patch.applicationSubmittedAt = new Date().toISOString();
+        onPatch(patch);
+      };
+      const onNo = () => onPatch({ applicationSubmitted: false, applicationSubmittedAt: null });
+      return (
+        <div className="js-cover-letter-prompt" role="group" aria-labelledby="cl-prompt-label">
+          <div className="js-cover-letter-prompt-label" id="cl-prompt-label">
+            Cover letter &amp; resume sent?
+          </div>
+          <div className="js-cover-letter-prompt-radios">
+            <label className={`js-cover-letter-radio ${sent ? 'active' : ''}`}>
+              <input
+                type="radio"
+                name={`cover-letter-sent-${app._id}`}
+                checked={sent}
+                onChange={onYes}
+                disabled={!canEdit}
+              />
+              <span>Yes</span>
+            </label>
+            <label className={`js-cover-letter-radio ${noActive ? 'active' : ''}`}>
+              <input
+                type="radio"
+                name={`cover-letter-sent-${app._id}`}
+                checked={noActive}
+                onChange={onNo}
+                disabled={!canEdit}
+              />
+              <span>No</span>
+            </label>
+          </div>
+          {sent && sentAt && (
+            <div className="js-cover-letter-prompt-meta">
+              Sent {new Date(sentAt).toLocaleDateString()}
+            </div>
+          )}
+        </div>
+      );
+    })()}
+
     <div className="js-section-title">Dealership info</div>
     {app.linkedDealership && (
       <div style={{ background: '#eff6ff', color: '#1e3a8a', padding: 8, borderRadius: 6, fontSize: 12, marginBottom: 10 }}>
@@ -128,14 +189,6 @@ const OverviewTab = ({ app, onPatch, canEdit }) => (
           value={app.hasPostedJob || 'unknown'}
           onChange={(v) => onPatch({ hasPostedJob: v })}
           includeUnknown
-        />
-      </div>
-      <div className="js-form-row">
-        <label>Application submitted?</label>
-        <YnButtons
-          value={app.applicationSubmitted ? 'Y' : 'N'}
-          onChange={(v) => onPatch({ applicationSubmitted: v === 'Y' })}
-          options={['Y', 'N']}
         />
       </div>
       <div className="js-form-row">
@@ -657,6 +710,30 @@ const DealerApplicationPanel = ({ applicationId, user, impersonatingStudent, onC
   const [pendingPatch, setPendingPatch] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const bodyRef = React.useRef(null);
+  const [hasMoreBelow, setHasMoreBelow] = useState(false);
+
+  // Track whether there's content below the viewport so we can show a
+  // dancing chevron hint. Re-checks on scroll, resize, tab change, and
+  // app/data updates. The threshold of 4px absorbs sub-pixel scroll math.
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return undefined;
+    const check = () => {
+      const more = el.scrollHeight - (el.scrollTop + el.clientHeight) > 4;
+      setHasMoreBelow(more);
+    };
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    // Re-check after the body content lays out.
+    const t = setTimeout(check, 50);
+    return () => {
+      el.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+      clearTimeout(t);
+    };
+  }, [tab, app, pendingPatch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -839,7 +916,7 @@ const DealerApplicationPanel = ({ applicationId, user, impersonatingStudent, onC
         {error && (
           <div style={{ background: '#fee2e2', color: '#991b1b', padding: 8, fontSize: 14 }}>{error}</div>
         )}
-        <div className="js-panel-body">
+        <div className="js-panel-body" ref={bodyRef}>
           {tab === 'Overview' && <OverviewTab app={app} onPatch={onPatch} canEdit={canEdit} />}
           {tab === 'Contacts' && <ContactsTab app={app} onPatch={onPatch} canEdit={canEdit} />}
           {tab === 'Communications' && (
@@ -862,6 +939,19 @@ const DealerApplicationPanel = ({ applicationId, user, impersonatingStudent, onC
             </div>
           )}
         </div>
+        {hasMoreBelow && (
+          <button
+            type="button"
+            className="js-panel-chevron"
+            aria-label="Scroll down for more"
+            onClick={() => {
+              const el = bodyRef.current;
+              if (el) el.scrollBy({ top: el.clientHeight * 0.8, behavior: 'smooth' });
+            }}
+          >
+            <span aria-hidden="true">⌄</span>
+          </button>
+        )}
       </div>
     </>
   );

@@ -32,21 +32,43 @@ const {
 } = require('../utils/redactPay');
 const { computeStagnation, countActive } = require('../utils/computeStagnation');
 const { followupSuggestion } = require('../utils/followupSuggestion');
+const { followUpUrgency, ENGAGEMENT_TYPES } = require('../utils/followUpUrgency');
 
 const STAFF = ['instructor', 'admin'];
 
 // -------- Helpers ----------------------------------------------------------
 
+// Self-heal for legacy data: prior to the highlighted "cover letter / resume
+// sent" toggle, only an 'application_submitted' communication flipped the
+// applicationSubmitted flag. Apps where the student logged a
+// 'cover_letter_sent' but never toggled the new prompt should still display
+// as Sent and start the follow-up clock from that event. Returns the same
+// object reference if no heal is needed, otherwise a shallow clone with the
+// fields filled in.
+function selfHealCoverLetterSent(app) {
+  if (!app) return app;
+  const milestoneLastType = app.lastEventType === 'cover_letter_sent' || app.lastEventType === 'application_submitted';
+  if (!milestoneLastType || !app.lastEventAt || app.applicationSubmitted) return app;
+  return {
+    ...app,
+    applicationSubmitted: true,
+    applicationSubmittedAt: app.applicationSubmittedAt || app.lastEventAt,
+  };
+}
+
 // Decorate an application object with computed (non-persisted) fields the UI uses.
 function decorateApplication(app, viewer) {
+  app = selfHealCoverLetterSent(app);
   const stagnation = computeStagnation(app);
   const followup = followupSuggestion(app);
+  const urgency = followUpUrgency(app);
   return {
     ...app,
     isStagnant: stagnation.isStagnant,
     daysSinceLastEvent: stagnation.daysSinceLastEvent,
     followupSuggestion: followup ? followup.suggestion : null,
     followupUrgency: followup ? followup.urgency : null,
+    followUpUrgency: urgency,
   };
 }
 
@@ -317,6 +339,17 @@ router.put('/applications/:id', authenticateToken, async (req, res) => {
     APPLICATION_EDITABLE.forEach((k) => {
       if (req.body[k] !== undefined) app[k] = req.body[k];
     });
+    // Auto-manage applicationSubmittedAt whenever the toggle is touched.
+    // We backfill on ANY save where applicationSubmitted is true but no
+    // timestamp exists (catches legacy rows where the flag was set without
+    // a date) and clear it whenever the toggle is set to No.
+    if (req.body.applicationSubmitted !== undefined && req.body.applicationSubmittedAt === undefined) {
+      if (app.applicationSubmitted && !app.applicationSubmittedAt) {
+        app.applicationSubmittedAt = new Date();
+      } else if (!app.applicationSubmitted) {
+        app.applicationSubmittedAt = null;
+      }
+    }
     // Self-heal: if there's still no linkedDealership but a dealerName is set,
     // find or create a shared Dealership. Migrates legacy applications the
     // next time a student edits one.
@@ -467,7 +500,13 @@ router.post('/applications/:id/communications', authenticateToken, async (req, r
     // Roll up: app.lastEvent fields always reflect the most-recent communication.
     app.lastEventType = comm.type;
     app.lastEventAt = comm.occurredAt;
-    if (comm.type === 'application_submitted' && !app.applicationSubmitted) {
+    // Auto-flip the highlighted "cover letter / resume sent" toggle on the
+    // first send-type communication, so the dealer panel and the per-card
+    // status pill stay in sync with the timeline. Both 'cover_letter_sent'
+    // and 'application_submitted' represent the same milestone for the
+    // purpose of the follow-up nudge clock.
+    const isSendMilestone = comm.type === 'application_submitted' || comm.type === 'cover_letter_sent';
+    if (isSendMilestone && !app.applicationSubmitted) {
       app.applicationSubmitted = true;
       app.applicationSubmittedAt = comm.occurredAt;
     }
@@ -543,8 +582,8 @@ router.get('/board', authenticateToken, async (req, res) => {
     const userQuery = { role: 'student' };
     if (req.query.cohort) userQuery.cohort = req.query.cohort;
     const students = await User.find(userQuery)
-      .select('_id firstName lastName username cohort')
-      .populate('cohort', 'name')
+      .select('_id firstName lastName username cohort isActive')
+      .populate('cohort', 'name isActive')
       .lean();
 
     const ids = students.map((s) => s._id);
@@ -559,42 +598,111 @@ router.get('/board', authenticateToken, async (req, res) => {
         studentId: s._id,
         studentName: [s.lastName, s.firstName].filter(Boolean).join(', ') || s.username,
         cohort: s.cohort ? s.cohort.name : null,
+        cohortId: s.cohort ? s.cohort._id : null,
+        cohortActive: s.cohort ? s.cohort.isActive !== false : true,
+        studentActive: s.isActive !== false,
+        // Legacy fields kept so existing consumers / tests don't break.
         activeCount: 0,
         stagnantCount: 0,
         parkedCount: 0,
-        latestEventType: null,
-        latestEventAt: null,
-        nextStepType: null,
+        // Counts the instructor cares about
+        dealerCount: 0,            // total non-parked dealers on the list
+        dealersWithContact: 0,     // dealers with at least one name + email
+        coverLetterSentCount: 0,   // dealers where applicationSubmitted=true
+        pastSendingCount: 0,       // dealers progressed past send (follow-up event after send)
+        // Red flag: at least one cover letter has aged past 6 days but the
+        // student hasn't progressed past send on ANY dealer.
+        zeroPastSendingPast6Days: false,
+        hasOffer: false,           // has at least one offer_received
+        // Aggregate worst-case follow-up nudge across this student's apps.
+        // 'demand' (yellow) trumps 'encourage' (green); 'wait' is suppressed
+        // on the board since it doesn't represent an outstanding task.
+        followUpUrgency: null,
+        // Pay (instructor / self only)
         latestOfferAmount: null,
         highestStartingWage: null,
       })
     );
 
-    apps.forEach((a) => {
+    const URGENCY_RANK = { demand: 2, encourage: 1, wait: 0 };
+    const now = new Date();
+    apps.forEach((rawApp) => {
+      const a = selfHealCoverLetterSent(rawApp);
       const entry = byStudent.get(String(a.student));
       if (!entry) return;
+
+      // Legacy counts (active/stagnant/parked) — kept for backward compat.
       const stag = computeStagnation(a);
-      if (a.archivedAsStagnant) entry.parkedCount += 1;
-      else {
-        if (a.stillInterested !== false) entry.activeCount += 1;
-        if (stag.isStagnant) entry.stagnantCount += 1;
+      if (a.archivedAsStagnant) {
+        entry.parkedCount += 1;
+        return; // parked rows don't roll into the new instructor metrics
       }
-      if (a.lastEventAt && (!entry.latestEventAt || a.lastEventAt > entry.latestEventAt)) {
-        entry.latestEventAt = a.lastEventAt;
-        entry.latestEventType = a.lastEventType;
-        entry.nextStepType = a.nextStepType;
+      if (a.stillInterested !== false) entry.activeCount += 1;
+      if (stag.isStagnant) entry.stagnantCount += 1;
+
+      entry.dealerCount += 1;
+
+      // Has at least one contact with both a name (first or last) and an email?
+      const hasIdContact = (a.contacts || []).some((c) => {
+        const hasName = (c.firstName && c.firstName.trim()) || (c.lastName && c.lastName.trim());
+        const hasEmail = c.email && c.email.trim();
+        return hasName && hasEmail;
+      });
+      if (hasIdContact) entry.dealersWithContact += 1;
+
+      if (a.applicationSubmitted) entry.coverLetterSentCount += 1;
+
+      // "Engaged" = the dealer has actually participated. Counts only
+      // unambiguous dealer-side events (email reply, virtual meeting,
+      // in-person visit, interview, offer, rejection) — a phone call,
+      // student-sent email, text, or "other" event alone could be a
+      // voicemail / unanswered message / informational inquiry and does
+      // not prove the dealer is engaged.
+      if (a.lastEventType && ENGAGEMENT_TYPES.has(a.lastEventType)) {
+        entry.pastSendingCount += 1;
       }
+
+      // Worst-case board urgency for this student. We deliberately ignore
+      // 'wait' here — the board is the instructor's nudge list, and
+      // 0–6-day-old sends aren't yet outstanding.
+      const u = followUpUrgency(a, now);
+      if (u && u !== 'wait') {
+        if (URGENCY_RANK[u] > URGENCY_RANK[entry.followUpUrgency || 'wait']) {
+          entry.followUpUrgency = u;
+        }
+      }
+
       const wage = a.benefits && a.benefits.startingWage;
       if (wage != null && (entry.highestStartingWage == null || wage > entry.highestStartingWage)) {
         entry.highestStartingWage = wage;
       }
     });
 
+    // Second pass for the "zero past-sending past 6 days" red flag.
+    // Set if the student has at least one cover letter > 6 days old yet
+    // they have not progressed past sending on any dealer.
+    byStudent.forEach((entry) => {
+      if (entry.pastSendingCount > 0) return;
+      // any application past 6 days since send?
+      const studentApps = apps
+        .filter((a) => String(a.student) === String(entry.studentId) && !a.archivedAsStagnant)
+        .map(selfHealCoverLetterSent);
+      const sixDaysAgo = now.getTime() - 6 * 24 * 60 * 60 * 1000;
+      const hasAgedSend = studentApps.some(
+        (a) => a.applicationSubmitted && a.applicationSubmittedAt && new Date(a.applicationSubmittedAt).getTime() < sixDaysAgo
+      );
+      if (hasAgedSend) entry.zeroPastSendingPast6Days = true;
+    });
+
     comms.forEach((c) => {
-      if (c.type !== 'offer_received' || c.offerAmount == null) return;
       const entry = byStudent.get(String(c.student));
       if (!entry) return;
-      if (entry.latestOfferAmount == null) entry.latestOfferAmount = c.offerAmount;
+      if (c.type === 'offer_received') {
+        entry.hasOffer = true;
+        if (c.offerAmount != null && entry.latestOfferAmount == null) {
+          entry.latestOfferAmount = c.offerAmount;
+        }
+      }
     });
 
     const board = Array.from(byStudent.values())

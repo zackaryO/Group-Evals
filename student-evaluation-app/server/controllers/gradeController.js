@@ -22,7 +22,11 @@ const getGrades = async (req, res) => {
 
     // Updated: Populate the 'question' field in each answer with its details
     const grades = await QuizSubmission.find(query)
-      .populate('student', 'username firstName lastName')
+      .populate({
+        path: 'student',
+        select: 'username firstName lastName isActive cohort',
+        populate: { path: 'cohort', select: 'name isActive' },
+      })
       .populate('quiz', 'title')
       .populate({
         path: 'answers.question',

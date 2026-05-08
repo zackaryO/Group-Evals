@@ -66,7 +66,19 @@
       "PowerShell(\"---\")",
       "PowerShell(git -C \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" show --stat bae5425 -- student-evaluation-app/server/package.json)",
       "PowerShell(git -C \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" show bae5425 -- student-evaluation-app/server/package.json)",
-      "PowerShell(git -C \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" show 6c2a4fe:student-evaluation-app/server/package.json)"
+      "PowerShell(git -C \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" show 6c2a4fe:student-evaluation-app/server/package.json)",
+      "Bash(node -c controllers/cohortController.js)",
+      "Bash(node -c routes/cohorts.js)",
+      "Bash(node -c routes/users.js)",
+      "Bash(node -c routes/jobSearch.js)",
+      "Bash(node -c controllers/evaluationController.js)",
+      "Bash(npx --no-install babel --presets=@babel/preset-react,@babel/preset-env src/components/Cohorts/ManageCohorts.js --out-file /tmp/x1.js)",
+      "Bash(npx --no-install babel --presets=@babel/preset-react,@babel/preset-env src/components/Evaluation/Gradebook.jsx --out-file /tmp/x2.js)",
+      "Bash(npx --no-install babel --presets=@babel/preset-react,@babel/preset-env src/components/Quizzes/QuizGradebook.js --out-file /tmp/x3.js)",
+      "Bash(npx --no-install babel --presets=@babel/preset-react,@babel/preset-env src/components/JobSearch/ClassBoard.js --out-file /tmp/x4.js)",
+      "Bash(node -c server/models/Cohort.js)",
+      "Bash(node -c server/controllers/cohortController.js)",
+      "Bash(npx react-scripts *)"
     ]
   }
 }

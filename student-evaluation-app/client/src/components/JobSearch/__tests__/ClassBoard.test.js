@@ -1,5 +1,6 @@
-// Renders ClassBoard with mocked API and asserts pay redaction renders as
-// "Hidden" for non-self / non-staff and as the dollar amount for self/staff.
+// Renders ClassBoard with mocked API and asserts the instructor-focused
+// columns: dealer count, named-contact coverage, cover letter sent count,
+// past-sending count, offer Yes/No, and follow-up nudge chips.
 
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
@@ -16,11 +17,35 @@ const renderBoard = (user) =>
     </MemoryRouter>
   );
 
+// Three students:
+//  - On-track: has offer, no nudge
+//  - Encourage: 7-13d follow-up window, partial contacts
+//  - Demand: 14d+ follow-up window, zero past sending
 const ROWS = [
-  // Self row: pay visible
-  { studentId: 'self-1', studentName: 'Smith, J.', cohort: 'July 26', activeCount: 5, stagnantCount: 1, parkedCount: 0, latestEventType: 'phone', latestEventAt: '2026-04-12T00:00:00Z', nextStepType: 'follow_up_email', latestOfferAmount: 48000, highestStartingWage: 22 },
-  // Peer row: pay redacted (server returned null per redactBoardEntry)
-  { studentId: 'peer-1', studentName: 'Doe, A.', cohort: 'July 26', activeCount: 4, stagnantCount: 2, parkedCount: 1, latestEventType: 'application_submitted', latestEventAt: '2026-03-30T00:00:00Z', nextStepType: 'follow_up_phone', latestOfferAmount: null, highestStartingWage: null },
+  {
+    studentId: 'self-1', studentName: 'Smith, J.', cohort: 'July 26',
+    dealerCount: 5, dealersWithContact: 5, coverLetterSentCount: 5,
+    pastSendingCount: 3, zeroPastSendingPast6Days: false,
+    hasOffer: true, followUpUrgency: null,
+    activeCount: 5, stagnantCount: 0, parkedCount: 0,
+    latestOfferAmount: 48000, highestStartingWage: 22,
+  },
+  {
+    studentId: 'peer-1', studentName: 'Doe, A.', cohort: 'July 26',
+    dealerCount: 4, dealersWithContact: 2, coverLetterSentCount: 3,
+    pastSendingCount: 1, zeroPastSendingPast6Days: false,
+    hasOffer: false, followUpUrgency: 'encourage',
+    activeCount: 4, stagnantCount: 0, parkedCount: 0,
+    latestOfferAmount: null, highestStartingWage: null,
+  },
+  {
+    studentId: 'peer-2', studentName: 'Lee, K.', cohort: 'July 26',
+    dealerCount: 3, dealersWithContact: 1, coverLetterSentCount: 2,
+    pastSendingCount: 0, zeroPastSendingPast6Days: true,
+    hasOffer: false, followUpUrgency: 'demand',
+    activeCount: 3, stagnantCount: 1, parkedCount: 0,
+    latestOfferAmount: null, highestStartingWage: null,
+  },
 ];
 
 beforeEach(() => {
@@ -31,25 +56,25 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
-test('renders all rows and shows offer for self, "Hidden" for peer', async () => {
+test('renders every student row', async () => {
   renderBoard({ _id: 'self-1', role: 'student' });
   await waitFor(() => expect(screen.getAllByText('Smith, J.')[0]).toBeInTheDocument());
   expect(screen.getAllByText('Doe, A.')[0]).toBeInTheDocument();
-  // Self's offer renders as $48,000
-  expect(screen.getAllByText('$48,000').length).toBeGreaterThan(0);
-  // Peer's offer renders as "Hidden"
-  expect(screen.getAllByText('Hidden').length).toBeGreaterThan(0);
+  expect(screen.getAllByText('Lee, K.')[0]).toBeInTheDocument();
 });
 
-test('instructor sees both rows\' pay (server returns full values for staff)', async () => {
-  // Staff sees real values for everyone — simulate that the API returns those.
-  api.getBoard.mockResolvedValueOnce([
-    { ...ROWS[0] },
-    { ...ROWS[1], latestOfferAmount: 52000, highestStartingWage: 23 },
-  ]);
+test('shows follow-up nudge chips for encourage and demand tiers', async () => {
   renderBoard({ _id: 'inst-1', role: 'instructor' });
   await waitFor(() => expect(screen.getAllByText('Smith, J.')[0]).toBeInTheDocument());
-  expect(screen.getAllByText('$48,000').length).toBeGreaterThan(0);
-  expect(screen.getAllByText('$52,000').length).toBeGreaterThan(0);
-  expect(screen.queryByText('Hidden')).toBeNull();
+  // Doe (encourage) → "Time to follow up"; Lee (demand) → "Follow up now"
+  expect(screen.getAllByText(/Time to follow up/i).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/Follow up now/i).length).toBeGreaterThan(0);
+});
+
+test('shows offer Yes for students with an offer and No otherwise', async () => {
+  renderBoard({ _id: 'inst-1', role: 'instructor' });
+  await waitFor(() => expect(screen.getAllByText('Smith, J.')[0]).toBeInTheDocument());
+  // Smith hasOffer=true → at least one Yes pill, others render No.
+  expect(screen.getAllByText(/^Yes$/).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/^No$/).length).toBeGreaterThan(0);
 });

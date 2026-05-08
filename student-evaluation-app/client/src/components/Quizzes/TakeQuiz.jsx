@@ -24,7 +24,7 @@
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Dependencies                                                             */
 /* ────────────────────────────────────────────────────────────────────────── */
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
@@ -32,6 +32,26 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBook } from '@fortawesome/free-solid-svg-icons';
 
 import URL from '../../backEndURL';
+
+/**
+ * Decode a JWT's payload without verifying the signature (we only care about
+ * the `exp` claim for the session-expiry banner — the server is the source
+ * of truth for actual auth). Returns `null` on any parse error.
+ */
+function decodeJwtExp(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    // base64url → base64
+    const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const json = JSON.parse(atob(padded));
+    return typeof json.exp === 'number' ? json.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Reusable inline‑style objects                                            */
@@ -103,6 +123,20 @@ const TakeQuiz = ({ user }) => {
   const [message, setMessage]                   = useState('');           // Success / error feedback
   const [isLoading, setIsLoading]               = useState(false);        // Fetch / submit activity
   const [previousSubmissions, setPreviousSubs]  = useState({});           // { [quizId]: submission }
+
+  // Tick once per second so the session-expiry banner can update its
+  // countdown. We only mount the timer while the student is actively
+  // taking a quiz (selectedQuiz set, score not yet posted).
+  const isTakingQuiz = !!selectedQuiz && score === null;
+  const tokenExpMs = useMemo(() => decodeJwtExp(localStorage.getItem('token')), []);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!isTakingQuiz || !tokenExpMs) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isTakingQuiz, tokenExpMs]);
+  const msLeft = tokenExpMs ? tokenExpMs - now : null;
+  const showExpiryWarning = isTakingQuiz && msLeft !== null && msLeft <= 10 * 60 * 1000;
 
   /* ──────────────── Fetch Quizzes & Submissions ──────────────── */
   useEffect(() => {
@@ -304,9 +338,40 @@ const TakeQuiz = ({ user }) => {
   );
 
   /* ──────────────── Main Return ──────────────── */
+  // Format ms → "M:SS" for the expiry banner. Clamps to 0 so we never show
+  // "-1:23" if the timer drifts past expiry before the interceptor fires.
+  const formatRemaining = (ms) => {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const m = Math.floor(totalSec / 60);
+    const s = String(totalSec % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   return (
     <div style={containerStyle}>
       <h2 style={{ textAlign: 'center', color: '#333' }}>Take a Quiz</h2>
+
+      {/* Session-expiry warning. Banner appears in the last 10 minutes of
+          the JWT's lifetime while a quiz is in progress so the student can
+          submit before they're auto-logged-out. */}
+      {showExpiryWarning && (
+        <div
+          role="alert"
+          style={{
+            background: '#fef3c7',
+            color: '#92400e',
+            border: '1px solid #f59e0b',
+            padding: '10px 14px',
+            borderRadius: 8,
+            marginBottom: 14,
+            fontWeight: 600,
+            textAlign: 'center',
+          }}
+        >
+          ⚠ Your session expires in {formatRemaining(msLeft)}. Submit your quiz soon — once the
+          session expires you'll be logged out and any unsubmitted answers will be lost.
+        </div>
+      )}
 
       {/* Global feedback */}
       {message && (

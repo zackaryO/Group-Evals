@@ -17,7 +17,10 @@ const authenticateToken = (req, res, next) => {
   jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
     if (err) {
       console.log('JWT verification failed:', err.message); // Log to see why verification failed
-      return res.sendStatus(403); // Forbidden
+      // 401: token is missing/invalid/expired (auth fail). The client treats
+      // 401 specifically as "log out + redirect to /login"; 403 is reserved
+      // for "authenticated but not authorized for this resource".
+      return res.sendStatus(401);
     }
     console.log('Decoded User:', decoded); // Log decoded information from JWT
     req.user = decoded;
