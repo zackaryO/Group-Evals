@@ -297,9 +297,9 @@ const App = () => {
         <Route
           path="/resume-builder"
           element={
-            <InstructorRoute user={user}>
+            <PrivateRoute user={user}>
               <ResumeBuilder />
-            </InstructorRoute>
+            </PrivateRoute>
           }
         />
 

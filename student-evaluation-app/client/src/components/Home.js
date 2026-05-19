@@ -65,6 +65,9 @@ const Home = ({ user }) => {
               <Link to="/job-search/board" className="home-button">
                 Class Board
               </Link>
+              <Link to="/resume-builder" className="home-button">
+                Resume Builder
+              </Link>
             </div>
           </div>
         )}
@@ -96,9 +99,6 @@ const Home = ({ user }) => {
               </Link>
               <Link to="/eval-gradebook" className="home-button">
                 Eval Gradebook
-              </Link>
-              <Link to="/resume-builder" className="home-button">
-                Resume Builder
               </Link>
             </div>
           </div>

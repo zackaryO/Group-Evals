@@ -19,7 +19,9 @@
     "flatted": "^3.3.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
+    "mammoth": "^1.8.0",
     "nodemon": "^3.1.4",
+    "pdfjs-dist": "^3.11.174",
     "react": "^18.2.0",
     "react-bootstrap": "^2.10.5",
     "react-dom": "^18.2.0",
@@ -36,7 +38,8 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d build",
+    "postinstall": "node scripts/copy-pdf-worker.js"
   },
   "eslintConfig": {
     "extends": [

@@ -102,6 +102,7 @@ const Navbar = ({ user }) => {
     ? [
         { to: '/job-search', label: 'My Job Search' },
         { to: '/job-search/board', label: 'Class Board' },
+        { to: '/resume-builder', label: 'Resume Builder' },
       ]
     : [];
 
@@ -120,7 +121,6 @@ const Navbar = ({ user }) => {
         { to: '/manage-students', label: 'Manage Students' },
         { to: '/manage-cohorts', label: 'Manage Cohorts' },
         { to: '/manage-courses', label: 'Manage Courses' },
-        { to: '/resume-builder', label: 'Resume Builder' },
       ]
     : [];
 
