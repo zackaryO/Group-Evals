@@ -78,7 +78,15 @@
       "Bash(npx --no-install babel --presets=@babel/preset-react,@babel/preset-env src/components/JobSearch/ClassBoard.js --out-file /tmp/x4.js)",
       "Bash(node -c server/models/Cohort.js)",
       "Bash(node -c server/controllers/cohortController.js)",
-      "Bash(npx react-scripts *)"
+      "Bash(npx react-scripts *)",
+      "Bash(NODE_OPTIONS=--openssl-legacy-provider npx --no-install react-scripts build)",
+      "Bash(cp \"/c/Users/zotte/OneDrive/Documents/GitHub/MBDriveJC/public/mbdrivejcLogo.PNG\" student-evaluation-app/client/public/mbdrivejcLogo.png && ls -la student-evaluation-app/client/public/mbdrivejcLogo.png)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\zotte\\OneDrive\\Documents\\GitHub\\MBDriveJC\\public"
     ]
   }
 }
