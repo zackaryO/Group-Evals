@@ -83,7 +83,18 @@
       "Bash(cp \"/c/Users/zotte/OneDrive/Documents/GitHub/MBDriveJC/public/mbdrivejcLogo.PNG\" student-evaluation-app/client/public/mbdrivejcLogo.png && ls -la student-evaluation-app/client/public/mbdrivejcLogo.png)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "PowerShell(npm install --prefix student-evaluation-app/client --no-audit --no-fund 2>&1)",
+      "PowerShell(npm install --prefix student-evaluation-app/client --no-audit --no-fund pdfjs-dist@^4.2.67 jspdf@^4.2.1 flatted@^3.4.2 2>&1)",
+      "PowerShell(npm ls --prefix student-evaluation-app/client pdfjs-dist jspdf flatted tar --all 2>&1)",
+      "PowerShell(Write-Output \"CWD:\"; \\(Get-Location\\).Path; Write-Output \"exists relative:\"; Test-Path \"student-evaluation-app/client/package.json\"; Write-Output \"exists absolute:\"; Test-Path \"C:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\\\\student-evaluation-app\\\\client\\\\package.json\")",
+      "PowerShell(npm install --no-audit --no-fund pdfjs-dist@^4.2.67 jspdf@^4.2.1 flatted@^3.4.2 2>&1)",
+      "PowerShell(npm ls pdfjs-dist jspdf flatted tar --all 2>&1)",
+      "PowerShell(npm ls tar --all 2>&1)",
+      "PowerShell($env:CI = \"true\"; npm run build 2>&1 | Select-Object -Last 60)",
+      "PowerShell(npm audit --omit=dev 2>&1)",
+      "PowerShell(npm ls pdfjs-dist jspdf flatted --all 2>&1)",
+      "PowerShell(npm ls tar 2>&1)"
     ],
     "additionalDirectories": [
       "C:\\Users\\zotte\\OneDrive\\Documents\\GitHub\\MBDriveJC\\public"

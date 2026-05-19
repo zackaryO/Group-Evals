@@ -305,13 +305,14 @@ export const parseResumeText = (text) => {
 /* Extracts plain text from a PDF, AND returns any embedded JSON we put in
    the PDF's Keywords metadata at export time. */
 export const extractFromPdf = async (file) => {
-  const pdfjs = await import('pdfjs-dist/legacy/build/pdf');
-  // Point at the pdf.worker.min.js copy in /public so CRA's dev server can
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  // Point at the pdf.worker.min.mjs copy in /public so CRA's dev server can
   // serve it as a static asset. This also prevents webpack from auto-bundling
   // pdfjs's internal worker as a chunk (which 404s under the SPA fallback).
   // The file is kept in sync by the "postinstall" script in package.json.
+  // pdfjs-dist v4+ ships the worker as an ESM module (.mjs).
   try {
-    pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL || ''}/pdf.worker.min.js`;
+    pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL || ''}/pdf.worker.min.mjs`;
   } catch { /* ignore */ }
 
   const buf = await file.arrayBuffer();
