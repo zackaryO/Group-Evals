@@ -29,9 +29,30 @@ import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBook } from '@fortawesome/free-solid-svg-icons';
+import { faBook, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
 import URL from '../../backEndURL';
+
+/** Passing threshold (percent). At or above this counts as a pass. */
+const PASS_THRESHOLD = 80;
+
+/**
+ * Derive a quiz's display status from the student's prior submission.
+ * @param {Object|undefined} submission The student's submission for this quiz.
+ * @returns {'not-taken'|'passed'|'needs-work'}
+ */
+function quizStatus(submission) {
+  if (!submission) return 'not-taken';
+  return (submission.score ?? 0) >= PASS_THRESHOLD ? 'passed' : 'needs-work';
+}
+
+/** Format a due date as a short, friendly string (or null when absent). */
+function formatDueDate(value) {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 /**
  * Decode a JWT's payload without verifying the signature (we only care about
@@ -64,13 +85,6 @@ const containerStyle = {
   borderRadius: '8px',
 };
 
-const cardStyle = {
-  marginTop: '20px',
-  padding: '10px',
-  backgroundColor: '#e7f5ff',
-  borderRadius: '8px',
-};
-
 const primaryButtonStyle = {
   padding: '10px 20px',
   backgroundColor: '#007bff',
@@ -82,24 +96,304 @@ const primaryButtonStyle = {
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /**
- * <ScoreCard /> – tiny helper component
- * -------------------------------------
- * Renders the student’s quiz score rounded to **one decimal place**.
+ * <ScoreCard /> – the post-submission result panel.
+ * -------------------------------------------------
+ * Colored by pass/fail (≥80% green, otherwise red) with high-contrast text,
+ * a link to review missed questions, and a link back to the quiz list.
  *
- * @param   {number} score Raw score, e.g. 92.666
- * @returns {JSX.Element}
+ * @param {number}   score  Raw score, e.g. 92.666
+ * @param {Function} onBack Returns the student to the quiz-selection view.
  */
-const ScoreCard = ({ score }) => (
-  <div style={cardStyle}>
-    <h3>Your&nbsp;Score:&nbsp;{Number.isFinite(score) ? score.toFixed(1) : '0.0'}%</h3>
-    <Link to="/quiz-gradebook" className="navbar-link">
-      <FontAwesomeIcon icon={faBook} />&nbsp;See&nbsp;Missed&nbsp;Questions 
-    </Link>
-  </div>
-);
+const ScoreCard = ({ score, onBack }) => {
+  const safeScore = Number.isFinite(score) ? score : 0;
+  const passed = safeScore >= 80;
+  const accent = passed ? '#16a34a' : '#dc2626';
+  const tint = passed ? '#f0fdf4' : '#fef2f2';
+
+  // Explicit overrides so the app-wide `button { max-width:150px; background;
+  // color:white }` rule can't bleed into these controls.
+  const linkBtn = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 18px',
+    borderRadius: 8,
+    fontWeight: 700,
+    fontSize: '0.92rem',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    maxWidth: 'none',
+    margin: 0,
+    boxSizing: 'border-box',
+  };
+
+  return (
+    <div
+      style={{
+        marginTop: 20,
+        padding: '26px 20px',
+        background: tint,
+        border: `1px solid ${accent}40`,
+        borderTop: `6px solid ${accent}`,
+        borderRadius: 12,
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: accent }}>
+        {passed ? '✓ Passed' : '✕ Below Passing'}
+      </div>
+      <div style={{ fontSize: '2.8rem', fontWeight: 800, color: accent, lineHeight: 1.1, margin: '6px 0 2px' }}>
+        {safeScore.toFixed(1)}%
+      </div>
+      <p style={{ color: '#475569', margin: '0 0 20px', fontSize: '0.95rem' }}>
+        {passed
+          ? 'Great work — you passed this quiz.'
+          : 'You scored below the 80% passing mark. Review the questions you missed, then try again.'}
+      </p>
+
+      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+        <Link to="/quiz-gradebook" style={{ ...linkBtn, background: accent, color: '#fff', border: `1px solid ${accent}` }}>
+          <FontAwesomeIcon icon={faBook} /> See Missed Questions
+        </Link>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{ ...linkBtn, background: '#fff', color: '#334155', border: '1px solid #cbd5e1' }}
+        >
+          ← Back to quizzes
+        </button>
+      </div>
+    </div>
+  );
+};
 
 ScoreCard.propTypes = {
   score: PropTypes.number.isRequired,
+  onBack: PropTypes.func.isRequired,
+};
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * <ScrollChevron /> – a bouncing down-chevron hinting at off-screen content.
+ * -------------------------------------------------------------------------
+ * Fixed to the bottom-center of the viewport, it appears only while the page
+ * is scrollable and the student isn't already at the bottom. Clicking it
+ * scrolls the next screenful into view. A ResizeObserver keeps it in sync as
+ * cards load / the view changes.
+ */
+const ScrollChevron = () => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const check = () => {
+      const doc = document.documentElement;
+      const scrollable = doc.scrollHeight - window.innerHeight;
+      const atBottom = window.scrollY >= scrollable - 48;
+      setVisible(scrollable > 80 && !atBottom);
+    };
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(check) : null;
+    if (ro) ro.observe(document.body);
+    return () => {
+      window.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+      if (ro) ro.disconnect();
+    };
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <>
+      <style>{`@keyframes tq-bounce {
+        0%, 100% { transform: translateX(-50%) translateY(0); }
+        50%      { transform: translateX(-50%) translateY(9px); }
+      }`}</style>
+      <button
+        type="button"
+        aria-label="Scroll down for more quizzes"
+        onClick={() => window.scrollBy({ top: Math.round(window.innerHeight * 0.8), behavior: 'smooth' })}
+        style={{
+          position: 'fixed',
+          left: '50%',
+          bottom: 18,
+          transform: 'translateX(-50%)',
+          animation: 'tq-bounce 1.4s ease-in-out infinite',
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          border: 'none',
+          margin: 0,
+          maxWidth: 'none',
+          background: 'rgba(15, 23, 42, 0.82)',
+          color: '#fff',
+          fontSize: '1.1rem',
+          cursor: 'pointer',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.25)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <FontAwesomeIcon icon={faChevronDown} />
+      </button>
+    </>
+  );
+};
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/* Status → color palette. Kept as inline-style values (not a CSS class) so   */
+/* the colors render regardless of global button styling / stylesheet load.   */
+const STATUS_PALETTE = {
+  // not-taken uses an attention-grabbing amber (not a calm blue) and a
+  // persistent tinted fill so "still to do" quizzes visibly stand out from
+  // the completed ones. needs-work is red to flag a below-passing score.
+  'not-taken':  { accent: '#ea580c', tint: '#fff7ed', pill: 'NOT COMPLETED', label: 'To Do' },
+  passed:       { accent: '#16a34a', tint: '#f0fdf4', pill: 'PASSED', label: 'Passed' },
+  'needs-work': { accent: '#dc2626', tint: '#fef2f2', pill: 'BELOW 80%', label: 'Needs Work' },
+};
+
+/**
+ * <QuizCard /> – a single selectable quiz, color-coded by status.
+ * ---------------------------------------------------------------
+ * • not-taken  → blue   left border + "!" badge
+ * • passed     → green  left border + ✓ score badge
+ * • needs-work → amber  left border + score badge
+ *
+ * Renders as a real <button> so it's keyboard-accessible and focusable.
+ * Styling is inline (matching this file's convention) so it can't be clobbered
+ * by app-wide button rules. Locked single-attempt quizzes are dimmed.
+ */
+const QuizCard = ({ quiz, submission, status, disabled, onSelect }) => {
+  const [hover, setHover] = useState(false);
+  const { accent, tint, pill } = STATUS_PALETTE[status];
+  const isNotTaken = status === 'not-taken';
+
+  const questionCount = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
+  const due = formatDueDate(quiz.dueDate);
+  const isOverdue =
+    quiz.dueDate && status === 'not-taken' && new Date(quiz.dueDate).getTime() < Date.now();
+
+  const locked = !quiz.allowMultipleSubmissions && !!submission;
+  const retakeable = quiz.allowMultipleSubmissions && !!submission;
+
+  const score = submission ? Number(submission.score) : null;
+  const scoreLabel = Number.isFinite(score) ? `${score.toFixed(0)}%` : null;
+
+  const cardStyleInline = {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    padding: '14px 16px',
+    // Not-taken quizzes keep a persistent tinted fill so they jump out from
+    // the white "done" cards; others tint only on hover.
+    background: isNotTaken || (hover && !locked) ? tint : '#fff',
+    border: isNotTaken ? `1px solid ${accent}55` : '1px solid #e2e8f0',
+    borderLeft: `6px solid ${accent}`,
+    borderRadius: 10,
+    boxShadow: hover && !locked ? '0 6px 16px rgba(0,0,0,0.12)' : '0 1px 2px rgba(0,0,0,0.05)',
+    transform: hover && !locked ? 'translateY(-2px)' : 'none',
+    transition: 'transform .12s ease, box-shadow .12s ease, background .12s ease',
+    cursor: locked ? 'not-allowed' : 'pointer',
+    textAlign: 'left',
+    width: '100%',
+    // The app has a global `button { max-width:150px; align-self:center;
+    // margin-top:20px }` rule (RegisterUser.css / DefineAreas.css). Those are
+    // separate properties from `width`, so we must reset each one explicitly
+    // or the cards get capped at 150px and won't stretch to equal heights.
+    maxWidth: 'none',
+    alignSelf: 'stretch',
+    margin: 0,
+    boxSizing: 'border-box',
+    font: 'inherit',
+    color: '#1e293b',
+    opacity: locked ? 0.7 : 1,
+  };
+
+  // Status pill (top-right): explicit text, not just a colored dot, so the
+  // state is unambiguous. Score is appended for graded quizzes.
+  const pillText =
+    isNotTaken ? pill
+      : `${pill === 'PASSED' ? '✓ PASSED' : `✕ ${pill}`}${scoreLabel ? ` · ${scoreLabel}` : ''}`;
+
+  // The clear, plain-language status line shown in the card body.
+  const statusLine =
+    isNotTaken ? "You haven't taken this quiz yet"
+      : status === 'passed' ? `Passed — you scored ${scoreLabel}`
+      : `Scored ${scoreLabel} — below the 80% passing mark`;
+
+  // Bottom call-to-action.
+  const action =
+    isNotTaken ? 'Start quiz →'
+      : locked ? 'Completed — single attempt'
+      : retakeable ? 'Retake quiz →'
+      : 'Review answers →';
+
+  const pillStyle = {
+    flexShrink: 0,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    padding: '4px 9px',
+    borderRadius: 999,
+    fontSize: '0.7rem',
+    fontWeight: 800,
+    letterSpacing: '0.03em',
+    lineHeight: 1,
+    color: '#fff',
+    background: accent,
+    whiteSpace: 'nowrap',
+  };
+
+  return (
+    <button
+      type="button"
+      style={cardStyleInline}
+      onClick={() => !disabled && onSelect(quiz)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onFocus={() => setHover(true)}
+      onBlur={() => setHover(false)}
+      disabled={disabled}
+      aria-label={`${quiz.title} — ${statusLine}`}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <span style={{ fontSize: '1.02rem', fontWeight: 700, color: '#1e293b', lineHeight: 1.3 }}>
+          {quiz.title}
+        </span>
+        <span style={pillStyle}>{pillText}</span>
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 10px', fontSize: '0.82rem', color: '#64748b' }}>
+        <span>{questionCount} question{questionCount === 1 ? '' : 's'}</span>
+        {due && (
+          <>
+            <span style={{ color: '#cbd5e1' }}>•</span>
+            <span style={isOverdue ? { color: '#dc2626', fontWeight: 600 } : undefined}>
+              {isOverdue ? 'Overdue ' : 'Due '}{due}
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* Plain-language status so the student knows exactly what to do. */}
+      <div style={{ fontSize: '0.84rem', fontWeight: 600, color: accent }}>{statusLine}</div>
+
+      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: accent, marginTop: 2 }}>{action}</div>
+    </button>
+  );
+};
+
+QuizCard.propTypes = {
+  quiz: PropTypes.object.isRequired,
+  submission: PropTypes.object,
+  status: PropTypes.oneOf(['not-taken', 'passed', 'needs-work']).isRequired,
+  disabled: PropTypes.bool,
+  onSelect: PropTypes.func.isRequired,
 };
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -191,6 +485,13 @@ const TakeQuiz = ({ user }) => {
     setMessage('');
   };
 
+  // Return to the "Take a Quiz / Select a Quiz" list view from the result panel.
+  const handleBackToList = () => {
+    setSelectedQuiz(null);
+    resetStateForNewQuiz();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleQuizSelect = (quiz) => {
     // Prevent multi‑attempts if not allowed
     if (!quiz.allowMultipleSubmissions && previousSubmissions[quiz._id]) {
@@ -239,24 +540,89 @@ const TakeQuiz = ({ user }) => {
   };
 
   /* ──────────────── Render Blocks ──────────────── */
-  const renderQuizList = () => (
-    <div>
-      <h3>Select a Quiz</h3>
-      <ul style={{ listStyle: 'none', padding: 0 }}>
-        {quizzes.map((quiz) => (
-          <li key={quiz._id} style={{ marginBottom: '15px' }}>
-            <button
-              onClick={() => handleQuizSelect(quiz)}
-              style={primaryButtonStyle}
-              disabled={isLoading}
-            >
-              {quiz.title}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+  // Bucket quizzes by status and sort each bucket so the most actionable
+  // items surface first within their group.
+  //   • To Do (not taken)      → soonest due date first
+  //   • Needs Improvement (<80) → lowest score first
+  //   • Completed (≥80)         → highest score first
+  const groupedQuizzes = useMemo(() => {
+    const buckets = { 'not-taken': [], 'needs-work': [], passed: [] };
+    quizzes.forEach((quiz) => {
+      const submission = previousSubmissions[quiz._id];
+      buckets[quizStatus(submission)].push({ quiz, submission });
+    });
+
+    const dueTime = (q) => (q.dueDate ? new Date(q.dueDate).getTime() : Infinity);
+    buckets['not-taken'].sort((a, b) => dueTime(a.quiz) - dueTime(b.quiz));
+    buckets['needs-work'].sort((a, b) => (a.submission?.score ?? 0) - (b.submission?.score ?? 0));
+    buckets.passed.sort((a, b) => (b.submission?.score ?? 0) - (a.submission?.score ?? 0));
+
+    return buckets;
+  }, [quizzes, previousSubmissions]);
+
+  const QUIZ_GROUPS = [
+    { key: 'not-taken', label: 'To Do' },
+    { key: 'needs-work', label: 'Needs Improvement' },
+    { key: 'passed', label: 'Completed' },
+  ];
+
+  const renderQuizList = () => {
+    const hasAny = quizzes.length > 0;
+    return (
+      <div>
+        <h3>Select a Quiz</h3>
+        {!hasAny && !isLoading && (
+          <p style={{ color: '#94a3b8', fontStyle: 'italic' }}>
+            No published quizzes are available right now.
+          </p>
+        )}
+        {QUIZ_GROUPS.map(({ key, label }) => {
+          const items = groupedQuizzes[key];
+          if (!items.length) return null;
+          return (
+            <section key={key} style={{ marginBottom: 28 }}>
+              <h4
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  margin: '0 0 12px',
+                  fontSize: '0.9rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                  color: '#475569',
+                }}
+              >
+                {label}
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#94a3b8' }}>
+                  {items.length}
+                </span>
+              </h4>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                  gap: 14,
+                }}
+              >
+                {items.map(({ quiz, submission }) => (
+                  <QuizCard
+                    key={quiz._id}
+                    quiz={quiz}
+                    submission={submission}
+                    status={key}
+                    disabled={isLoading}
+                    onSelect={handleQuizSelect}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderQuestion = (question) => (
     <div
@@ -347,8 +713,12 @@ const TakeQuiz = ({ user }) => {
     return `${m}:${s}`;
   };
 
+  // The quiz-selection grid benefits from a wider canvas so cards fill the
+  // viewport; the quiz-taking form stays narrow for readability.
+  const isListView = score === null && !selectedQuiz;
+
   return (
-    <div style={containerStyle}>
+    <div style={{ ...containerStyle, maxWidth: isListView ? 1100 : 800 }}>
       <h2 style={{ textAlign: 'center', color: '#333' }}>Take a Quiz</h2>
 
       {/* Session-expiry warning. Banner appears in the last 10 minutes of
@@ -385,10 +755,13 @@ const TakeQuiz = ({ user }) => {
 
       {/* Score → QuizForm → QuizList cascade */}
       {score !== null
-        ? <ScoreCard score={score} />
+        ? <ScoreCard score={score} onBack={handleBackToList} />
         : selectedQuiz
           ? renderQuizForm()
           : renderQuizList()}
+
+      {/* Bouncing hint that there's more content below the fold. */}
+      <ScrollChevron />
     </div>
   );
 };

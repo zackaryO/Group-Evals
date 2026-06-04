@@ -94,7 +94,9 @@
       "PowerShell($env:CI = \"true\"; npm run build 2>&1 | Select-Object -Last 60)",
       "PowerShell(npm audit --omit=dev 2>&1)",
       "PowerShell(npm ls pdfjs-dist jspdf flatted --all 2>&1)",
-      "PowerShell(npm ls tar 2>&1)"
+      "PowerShell(npm ls tar 2>&1)",
+      "Bash(xargs grep -l \"allowMultipleSubmissions\")",
+      "Bash(xargs grep -l \"grades\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\zotte\\OneDrive\\Documents\\GitHub\\MBDriveJC\\public"
