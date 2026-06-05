@@ -2,38 +2,164 @@
 
 .missed-questions-container {
   width: 100%;
-  margin: auto;
+  max-width: 960px;
+  margin: 0 auto;
   padding: 20px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .missed-questions-container h2 {
   text-align: center;
   color: #333;
+  margin: 0 0 20px;
+}
+
+.missed-questions-message {
+  color: #444;
+  text-align: center;
+}
+
+.missed-questions-empty {
+  color: #777;
+  text-align: center;
+  padding: 32px 0;
+}
+
+/* --- Quiz groups (collapsible) --- */
+.quiz-groups {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quiz-group {
+  background-color: #fff;
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+}
+
+.quiz-group.expanded {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.quiz-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 1.1rem;
+  color: #333;
+  transition: background-color 0.12s ease;
+}
+
+.quiz-toggle:hover {
+  background-color: #f5f7fa;
+}
+
+.quiz-caret {
+  color: #999;
+  font-size: 0.85rem;
+  width: 12px;
+}
+
+.quiz-title {
+  flex: 1;
+  font-weight: 600;
+  color: #007bff;
+}
+
+.quiz-count {
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background-color: #fdecec;
+  color: #c0392b;
+  white-space: nowrap;
 }
 
 .missed-questions-list {
   list-style-type: none;
-  padding: 0;
+  padding: 0 16px 16px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .question-item {
-  margin-bottom: 20px;
-  padding: 10px;
-  background-color: #f0f0f0;
-  border-radius: 5px;
+  padding: 16px;
+  background-color: #f7f7f8;
+  border: 1px solid #ececec;
+  border-radius: 8px;
 }
 
 .question-item p {
-  margin: 10px 0;
+  margin: 8px 0;
   color: #333;
+}
+
+/* --- Parsed question content --- */
+.question-prompt-block,
+.question-options-block,
+.question-correct-answer {
+  margin-bottom: 12px;
+}
+
+.question-prompt {
+  color: #222;
+}
+
+.question-options {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.question-option-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #fff;
+  border: 1px solid #e7e7e7;
+  border-radius: 6px;
+}
+
+.option-label {
+  font-weight: 700;
+  color: #555;
+}
+
+.option-text {
+  min-width: 0;
+}
+
+.correct-answer {
+  padding: 8px 12px;
+  background-color: #e3f6ea;
+  border-left: 4px solid #1e7e44;
+  border-radius: 4px;
+  color: #1e7e44;
+  font-weight: 600;
 }
 
 .incorrect-answers-list {
   list-style-type: disc;
-  padding-left: 20px;
+  padding-left: 22px;
+  margin: 6px 0 0;
 }
 
 .incorrect-answer-item {

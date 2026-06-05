@@ -41,7 +41,6 @@ const MissedQuestions = () => {
         };
 
         const response = await axios.get(`${URL}/api/grades/`, config);
-        console.log('Grades fetched for Missed Questions:', response.data);
 
         const quizzesMap = new Map();
 
@@ -204,19 +203,23 @@ const MissedQuestions = () => {
   return (
     <div className="missed-questions-container">
       <h2>All Missed Questions</h2>
-      {message && <p>{message}</p>}
+      {message && <p className="missed-questions-message">{message}</p>}
       {missedQuestions.length > 0 ? (
         <ul className="quiz-groups">
-          {missedQuestions.map((quiz) => (
+          {missedQuestions.map((quiz) => {
+            const expanded = activeQuizId === quiz.quizId;
+            return (
             <li
               key={quiz.quizId}
-              className={`quiz-group ${activeQuizId === quiz.quizId ? 'expanded' : ''}`}
+              className={`quiz-group ${expanded ? 'expanded' : ''}`}
             >
               <button
                 type="button"
                 className="quiz-toggle"
                 onClick={() => handleQuizToggle(quiz.quizId)}
+                aria-expanded={expanded}
               >
+                <span className="quiz-caret">{expanded ? '▾' : '▸'}</span>
                 <span className="quiz-title">{quiz.quizTitle}</span>
                 <span className="quiz-count">
                   {quiz.totalMissedCount} {quiz.totalMissedCount === 1 ? 'miss' : 'misses'}
@@ -296,10 +299,11 @@ const MissedQuestions = () => {
                 </ul>
               )}
             </li>
-          ))}
+            );
+          })}
         </ul>
       ) : (
-        <p>No missed questions available.</p>
+        <p className="missed-questions-empty">No missed questions available.</p>
       )}
       {zoomedImage && (
         <div

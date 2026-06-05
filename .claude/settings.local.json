@@ -96,7 +96,16 @@
       "PowerShell(npm ls pdfjs-dist jspdf flatted --all 2>&1)",
       "PowerShell(npm ls tar 2>&1)",
       "Bash(xargs grep -l \"allowMultipleSubmissions\")",
-      "Bash(xargs grep -l \"grades\")"
+      "Bash(xargs grep -l \"grades\")",
+      "PowerShell(Get-HotFix)",
+      "PowerShell(Get-WinEvent -FilterHashtable @{LogName='Setup'; Id=2,4} -MaxEvents 25 -ErrorAction SilentlyContinue | Select-Object TimeCreated, Id, @{N='Msg';E={\\($_.Message -split \"`n\"\\)[0]}} | Format-Table -AutoSize -Wrap)",
+      "PowerShell(Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-WindowsUpdateClient/Operational'; Id=19} -MaxEvents 15 -ErrorAction SilentlyContinue | Select-Object TimeCreated, @{N='Update';E={\\($_.Message -split \"`n\"\\)[0]}} | Format-Table -AutoSize -Wrap)",
+      "PowerShell(Get-WinEvent -ListLog 'Microsoft-Windows-WLAN-AutoConfig/Operational' -ErrorAction SilentlyContinue | Out-Null; Get-WinEvent -FilterHashtable @{LogName='Microsoft-Windows-WLAN-AutoConfig/Operational'} -MaxEvents 30 -ErrorAction SilentlyContinue | Group-Object Id | Sort-Object Count -Descending | Select-Object Count, Name, @{N='Sample';E={\\($_.Group[0].Message -split \"`n\"\\)[0]}} | Format-Table -AutoSize -Wrap)",
+      "PowerShell(Get-NetAdapterAdvancedProperty -Name 'Wi-Fi' -ErrorAction SilentlyContinue | Where-Object {$_.DisplayName -match 'Power|Save|Roam|U-APSD|Throughput|Sleep|802.11'} | Select-Object DisplayName, DisplayValue | Format-Table -AutoSize -Wrap)",
+      "PowerShell(try { $s = New-Object -ComObject Microsoft.Update.Session; $h = $s.QueryHistory\\(\"\",0,20\\); $h | Select-Object Date, Title | Sort-Object Date -Descending | Select-Object -First 12 | Format-Table -AutoSize -Wrap } catch { \"COM history failed: $\\($_.Exception.Message\\)\" })",
+      "PowerShell(Get-Process -ErrorAction SilentlyContinue | Where-Object {$_.ProcessName -match 'Killer|Rivet|SmartByte|wiman|kpe|NetworkService'} | Select-Object Name, Id, @{N='CPU\\(s\\)';E={[math]::Round\\($_.CPU,1\\)}}, @{N='RAM\\(MB\\)';E={[math]::Round\\($_.WS/1MB,1\\)}} | Format-Table -AutoSize)",
+      "PowerShell(Start-Process powershell.exe -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"$env:USERPROFILE\\\\disable-killer.ps1\" -Wait; \"Elevated run finished. Reading log:`n\"; Get-Content \"$env:USERPROFILE\\\\killer-disable-log.txt\")",
+      "Bash(npx eslint *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\zotte\\OneDrive\\Documents\\GitHub\\MBDriveJC\\public"
