@@ -218,7 +218,7 @@ const ManageElectricalStudents = ({ user }) => {
             />
           </div>
           <div className="es-field">
-            <label htmlFor="es-last">Last name</label>
+            <label htmlFor="es-last">Last name initial</label>
             <input
               id="es-last"
               className="es-input"

@@ -126,7 +126,9 @@
       "Bash(node scripts/flag-a6-shared.js)",
       "Bash(node --check routes/jobSearch.js)",
       "Bash(node --check routes/dealerships.js)",
-      "Bash(AWS_REGION=us-east-1 AWS_STORAGE_BUCKET_NAME=dummy node -e \"require\\('./routes/quizzes'\\); require\\('./routes/grades'\\); require\\('./routes/jobSearch'\\); require\\('./routes/dealerships'\\); require\\('./controllers/gradeController'\\); console.log\\('server OK'\\);\")"
+      "Bash(AWS_REGION=us-east-1 AWS_STORAGE_BUCKET_NAME=dummy node -e \"require\\('./routes/quizzes'\\); require\\('./routes/grades'\\); require\\('./routes/jobSearch'\\); require\\('./routes/dealerships'\\); require\\('./controllers/gradeController'\\); console.log\\('server OK'\\);\")",
+      "Bash(npx nodemon *)",
+      "Bash(echo \"exit:$?\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\zotte\\OneDrive\\Documents\\GitHub\\MBDriveJC\\public"
