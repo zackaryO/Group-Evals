@@ -2,7 +2,7 @@
 //
 // Single choke point for stripping pay-related fields from API responses.
 // A field is visible only when:
-//   - the requesting user is staff ('instructor' | 'admin'), OR
+//   - the requesting user is staff ('instructor' | 'admin' | 'support_staff'), OR
 //   - the requesting user is the student who owns the record.
 //
 // Pay-restricted fields:
@@ -13,7 +13,7 @@
 // Every route that returns these objects MUST shape its response through these
 // helpers. This is the only place pay-redaction logic should live.
 
-const STAFF_ROLES = new Set(['instructor', 'admin']);
+const STAFF_ROLES = new Set(['instructor', 'admin', 'support_staff']);
 
 function isStaff(viewer) {
   return !!viewer && STAFF_ROLES.has(viewer.role);
