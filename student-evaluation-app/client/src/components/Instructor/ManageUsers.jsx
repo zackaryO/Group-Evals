@@ -291,6 +291,8 @@ const ManageUsers = () => {
             >
               <option value="student">Student</option>
               <option value="instructor">Instructor</option>
+              <option value="electrical_instructor">Electrical Instructor (A6 Prep)</option>
+              <option value="electrical_student">A6 Prep Student</option>
               {/* If your app has an admin role, you can add it here */}
               {/* <option value="admin">Admin</option> */}
             </select>

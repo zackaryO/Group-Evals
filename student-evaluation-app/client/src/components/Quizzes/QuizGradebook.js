@@ -23,7 +23,12 @@ const QuizGradebook = ({ user }) => {
   const [cohortFilter, setCohortFilter] = useState('all');
   const [quizFilter, setQuizFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
-  const isInstructor = user.role === 'instructor' || user.role === 'admin';
+  // Full instructors (instructor/admin) see all students; electrical
+  // instructors get an all-students view too, but the server scopes it to the
+  // electrical students they added. Both are treated as the "instructor view".
+  const isFullInstructorView = user.role === 'instructor' || user.role === 'admin';
+  const isElectricalInstructorView = user.role === 'electrical_instructor';
+  const isInstructor = isFullInstructorView || isElectricalInstructorView;
 
   useEffect(() => {
     if (!zoomedImage) return undefined;
@@ -49,7 +54,7 @@ const QuizGradebook = ({ user }) => {
           },
         };
         let response;
-        if (user.role === 'instructor') {
+        if (isInstructor) {
           response = await axios.get(`${URL}/api/grades/`, config);
         } else {
           response = await axios.get(`${URL}/api/grades/${user._id}`, config);
@@ -64,6 +69,7 @@ const QuizGradebook = ({ user }) => {
     };
 
     fetchGrades();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleDelete = async (submissionId) => {
@@ -221,7 +227,7 @@ const QuizGradebook = ({ user }) => {
     <div className="quiz-gradebook-container">
       <div className="quiz-gradebook-header">
         <h2>Quiz Gradebook</h2>
-        {user.role === 'instructor' && (
+        {isFullInstructorView && (
           <Link to="/missed-questions" className="missed-questions-link">
             View All Missed Questions
           </Link>
@@ -231,7 +237,7 @@ const QuizGradebook = ({ user }) => {
 
       {showToolbar && (
         <div className="quiz-gradebook-filters">
-          {isInstructor && (
+          {isFullInstructorView && (
             <label className="gradebook-field">
               <span className="gradebook-field-label">Cohort</span>
               <select value={cohortFilter} onChange={(e) => setCohortFilter(e.target.value)}>
@@ -259,7 +265,7 @@ const QuizGradebook = ({ user }) => {
             <span className="gradebook-field-label">Sort by</span>
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
               <option value="name">Name</option>
-              {isInstructor && <option value="cohort">Cohort</option>}
+              {isFullInstructorView && <option value="cohort">Cohort</option>}
               <option value="score-desc">Score (high → low)</option>
               <option value="score-asc">Score (low → high)</option>
             </select>
@@ -323,7 +329,7 @@ const QuizGradebook = ({ user }) => {
                           <span className={`score-badge score-badge-${scoreTier(quiz.score)}`}>
                             {quiz.score != null ? `${quiz.score.toFixed(1)}%` : 'N/A'}
                           </span>
-                          {user.role === 'instructor' && (
+                          {isInstructor && (
                             <button
                               type="button"
                               className="quiz-item-delete"

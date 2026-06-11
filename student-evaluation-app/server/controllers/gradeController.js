@@ -13,9 +13,19 @@ const getGrades = async (req, res) => {
     if (studentId) query.student = studentId;
     if (quizId) query.quiz = quizId;
 
-    // Ensure that if a student is requesting grades, they can only see their own
-    if (req.user.role === 'student') {
+    // Scope results by role:
+    //  - student / electrical_student: only their own submissions.
+    //  - electrical_instructor: only submissions by the electrical students
+    //    they added.
+    //  - instructor / admin: everything (no extra restriction).
+    if (req.user.role === 'student' || req.user.role === 'electrical_student') {
       query.student = req.user.id;
+    } else if (req.user.role === 'electrical_instructor') {
+      const roster = await User.find({
+        role: 'electrical_student',
+        addedBy: req.user.id,
+      }).select('_id');
+      query.student = { $in: roster.map((s) => s._id) };
     }
 
     console.log('Grades Query:', query); // Log to see the query being used
@@ -82,10 +92,24 @@ const getOverallGrades = async (req, res) => {
 const deleteGrade = async (req, res) => {
   const { id } = req.params;
   try {
-    const grade = await QuizSubmission.findByIdAndDelete(id);
+    const grade = await QuizSubmission.findById(id).populate('student', 'role addedBy');
     if (!grade) {
       return res.status(404).json({ message: 'Grade not found' });
     }
+
+    // Electrical instructors may only delete scores belonging to the electrical
+    // students they added.
+    if (req.user.role === 'electrical_instructor') {
+      const ownsStudent =
+        grade.student &&
+        grade.student.role === 'electrical_student' &&
+        String(grade.student.addedBy) === String(req.user.id);
+      if (!ownsStudent) {
+        return res.status(403).json({ message: 'Not authorized to delete this score.' });
+      }
+    }
+
+    await grade.deleteOne();
     res.status(200).json({ message: 'Grade deleted successfully' });
   } catch (error) {
     res.status(400).json({ error: error.message });

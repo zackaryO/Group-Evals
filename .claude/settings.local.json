@@ -105,7 +105,25 @@
       "PowerShell(try { $s = New-Object -ComObject Microsoft.Update.Session; $h = $s.QueryHistory\\(\"\",0,20\\); $h | Select-Object Date, Title | Sort-Object Date -Descending | Select-Object -First 12 | Format-Table -AutoSize -Wrap } catch { \"COM history failed: $\\($_.Exception.Message\\)\" })",
       "PowerShell(Get-Process -ErrorAction SilentlyContinue | Where-Object {$_.ProcessName -match 'Killer|Rivet|SmartByte|wiman|kpe|NetworkService'} | Select-Object Name, Id, @{N='CPU\\(s\\)';E={[math]::Round\\($_.CPU,1\\)}}, @{N='RAM\\(MB\\)';E={[math]::Round\\($_.WS/1MB,1\\)}} | Format-Table -AutoSize)",
       "PowerShell(Start-Process powershell.exe -Verb RunAs -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',\"$env:USERPROFILE\\\\disable-killer.ps1\" -Wait; \"Elevated run finished. Reading log:`n\"; Get-Content \"$env:USERPROFILE\\\\killer-disable-log.txt\")",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(node server.js)",
+      "Bash(break)",
+      "Bash(curl -s http://localhost:5000/api/quizzes -o /tmp/quizzes.json -w \"HTTP %{http_code}  bytes=%{size_download}\\\\n\")",
+      "PowerShell(git -C 'c:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals' status --porcelain)",
+      "Bash([ -f \"$f\" ])",
+      "Bash(node --check routes/quizzes.js)",
+      "Bash(node --check routes/users.js)",
+      "Bash(node --check models/User.js)",
+      "Bash(node --check models/Quiz.js)",
+      "Bash(node --check middleware/authMiddleware.js)",
+      "Bash(node --check controllers/gradeController.js)",
+      "Bash(node --check routes/grades.js)",
+      "Bash(npx cross-env *)",
+      "Bash(node -e \"require\\('./middleware/authMiddleware'\\); require\\('./models/User'\\); require\\('./models/Quiz'\\); require\\('./routes/quizzes'\\); require\\('./routes/users'\\); require\\('./routes/grades'\\); require\\('./controllers/gradeController'\\); console.log\\('all server modules load OK'\\);\")",
+      "Bash(AWS_REGION=us-east-1 AWS_STORAGE_BUCKET_NAME=dummy node -e \"require\\('./routes/quizzes'\\); require\\('./routes/users'\\); require\\('./routes/grades'\\); require\\('./controllers/gradeController'\\); console.log\\('all server modules load OK'\\);\")",
+      "PowerShell(Get-NetTCPConnection -LocalPort 5000 -State Listen | ForEach-Object { $p = Get-Process -Id $_.OwningProcess; [PSCustomObject]@{ PID = $p.Id; Name = $p.ProcessName; Path = $p.Path; Started = $p.StartTime } } | Format-List)",
+      "PowerShell(Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime, @{N='Mem\\(MB\\)';E={[math]::Round\\($_.WorkingSet/1MB\\)}} | Sort-Object StartTime | Format-Table -AutoSize)",
+      "Bash(node scripts/flag-a6-shared.js)"
     ],
     "additionalDirectories": [
       "C:\\Users\\zotte\\OneDrive\\Documents\\GitHub\\MBDriveJC\\public"

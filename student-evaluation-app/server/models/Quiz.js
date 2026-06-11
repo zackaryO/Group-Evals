@@ -12,6 +12,16 @@ const QuizSchema = new mongoose.Schema({
   dueDate: { type: Date },
   allowLateSubmissions: { type: Boolean, default: true },
   latePenalty: Number, // Percentage to deduct per day
+  // Admin/full-instructor flag marking this quiz as a shared resource that ANY
+  // electrical instructor may edit and assign to their electrical students
+  // (e.g. "A6 ASE practice 1"). Set via PUT /:quizId/shared-electrical.
+  sharedWithElectrical: { type: Boolean, default: false },
+  // The electrical instructors (or full instructors acting in that capacity)
+  // who have assigned this quiz to their own electrical-student roster. An
+  // electrical student sees a quiz iff the instructor who added them appears
+  // here. This is independent of `isPublished`, which governs the regular
+  // (non-electrical) student view.
+  electricalAssignedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 });
 
 module.exports = mongoose.model('Quiz', QuizSchema);

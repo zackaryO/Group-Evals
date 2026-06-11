@@ -5,9 +5,17 @@ const router = express.Router();
 const Quiz = require('../models/Quiz');
 const QuizQuestion = require('../models/QuizQuestion');
 const QuizSubmission = require('../models/QuizSubmission');
+const User = require('../models/User');
 const multer = require('multer');
 
 const { uploadBufferToS3, deleteFromS3 } = require('../utils/s3');
+const {
+  authenticateToken,
+  authorizeRoles,
+  FULL_INSTRUCTOR_ROLES,
+  INSTRUCTOR_TIER_ROLES,
+  isFullInstructor,
+} = require('../middleware/authMiddleware');
 
 
 /**
@@ -29,6 +37,47 @@ const upload = multer({
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 });
+
+// ───────────────────────────────────────── Quiz permission helpers
+//
+// A full instructor (instructor/admin) may edit/delete/assign any quiz. An
+// electrical instructor may only edit quizzes they own or quizzes flagged
+// `sharedWithElectrical` (the "A6 ASE practice 1" exception), may only delete
+// quizzes they own, and may only assign (to their electrical roster) quizzes
+// they may edit.
+
+const ownsQuiz = (user, quiz) => String(quiz.instructor) === String(user.id);
+
+// Can edit a quiz's questions/settings (owner, shared, or full instructor).
+const canEditQuiz = (user, quiz) =>
+  isFullInstructor(user.role) || ownsQuiz(user, quiz) || !!quiz.sharedWithElectrical;
+
+// Can delete a quiz outright (owner or full instructor only — never shared).
+const canDeleteQuiz = (user, quiz) =>
+  isFullInstructor(user.role) || ownsQuiz(user, quiz);
+
+// Can assign/unassign to the caller's own electrical-student roster (same set
+// of quizzes they may edit: owned + shared).
+const canAssignElectrical = (user, quiz) => canEditQuiz(user, quiz);
+
+/**
+ * Express middleware factory: loads req.params.quizId, 404s if missing, then
+ * runs `check(req.user, quiz)`. On pass, attaches req.quiz and continues; on
+ * fail, returns 403. Use after authenticateToken + authorizeRoles.
+ */
+const requireQuizPermission = (check) => async (req, res, next) => {
+  try {
+    const quiz = await Quiz.findById(req.params.quizId);
+    if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+    if (!check(req.user, quiz)) {
+      return res.status(403).json({ message: 'You are not allowed to modify this quiz.' });
+    }
+    req.quiz = quiz;
+    next();
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
 
 // ───────────────────────────────────────── Grading helpers
 const normalizeAnswer = (v) => String(v ?? '').trim();
@@ -137,12 +186,12 @@ async function regradeQuestionSubmissions(question, oldOptions = []) {
 
 /**
  * @route POST /api/quizzes/create
- * @desc Create a new quiz
+ * @desc Create a new quiz. The owner is always the authenticated user (the
+ *       client-supplied instructorId is ignored for security).
  */
-router.post('/create', async (req, res) => {
+router.post('/create', authenticateToken, authorizeRoles(...INSTRUCTOR_TIER_ROLES), async (req, res) => {
   const {
     title,
-    instructorId,
     allowMultipleSubmissions,
     cohortId,
     courseId,
@@ -153,7 +202,7 @@ router.post('/create', async (req, res) => {
   try {
     const newQuiz = new Quiz({
       title,
-      instructor: instructorId,
+      instructor: req.user.id,
       allowMultipleSubmissions,
       cohort: cohortId,
       course: courseId,
@@ -170,9 +219,9 @@ router.post('/create', async (req, res) => {
 
 /**
  * @route GET /api/quizzes
- * @desc Get all quizzes
+ * @desc Get all quizzes (instructor tier only — used by the quiz manager).
  */
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, authorizeRoles(...INSTRUCTOR_TIER_ROLES), async (req, res) => {
   try {
     const quizzes = await Quiz.find().populate('questions');
     res.json(quizzes);
@@ -183,10 +232,22 @@ router.get('/', async (req, res) => {
 
 /**
  * @route GET /api/quizzes/published
- * @desc Get published quizzes
+ * @desc Get the quizzes the caller is allowed to take.
+ *       - electrical_student: only quizzes the instructor who added them has
+ *         assigned to their roster (electricalAssignedBy contains addedBy).
+ *       - everyone else: all globally published quizzes (existing behavior).
  */
-router.get('/published', async (req, res) => {
+router.get('/published', authenticateToken, async (req, res) => {
   try {
+    if (req.user.role === 'electrical_student') {
+      const me = await User.findById(req.user.id).select('addedBy');
+      if (!me || !me.addedBy) {
+        return res.json([]); // No owning instructor → nothing assigned.
+      }
+      const quizzes = await Quiz.find({ electricalAssignedBy: me.addedBy }).populate('questions');
+      return res.json(quizzes);
+    }
+
     const quizzes = await Quiz.find({ isPublished: true }).populate('questions');
     res.json(quizzes);
   } catch (error) {
@@ -196,9 +257,10 @@ router.get('/published', async (req, res) => {
 
 /**
  * @route PUT /api/quizzes/:quizId/publish
- * @desc Toggle quiz published state
+ * @desc Toggle a quiz's GLOBAL published state (regular-student visibility).
+ *       Full instructors only — electrical instructors use /electrical-assign.
  */
-router.put('/:quizId/publish', async (req, res) => {
+router.put('/:quizId/publish', authenticateToken, authorizeRoles(...FULL_INSTRUCTOR_ROLES), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId);
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
@@ -213,10 +275,67 @@ router.put('/:quizId/publish', async (req, res) => {
 });
 
 /**
+ * @route PUT /api/quizzes/:quizId/electrical-assign
+ * @desc Assign or unassign this quiz to the caller's own electrical-student
+ *       roster. Allowed only for quizzes the caller may edit (owned or shared).
+ *       Body: { assign: boolean } — when omitted, toggles current membership.
+ */
+router.put(
+  '/:quizId/electrical-assign',
+  authenticateToken,
+  authorizeRoles(...INSTRUCTOR_TIER_ROLES),
+  requireQuizPermission(canAssignElectrical),
+  async (req, res) => {
+    try {
+      const quiz = req.quiz;
+      const meId = String(req.user.id);
+      const already = (quiz.electricalAssignedBy || []).some((id) => String(id) === meId);
+      const assign = typeof req.body.assign === 'boolean' ? req.body.assign : !already;
+
+      if (assign && !already) {
+        quiz.electricalAssignedBy.push(req.user.id);
+      } else if (!assign && already) {
+        quiz.electricalAssignedBy = quiz.electricalAssignedBy.filter((id) => String(id) !== meId);
+      }
+      await quiz.save();
+      res.json(quiz);
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+);
+
+/**
+ * @route PUT /api/quizzes/:quizId/shared-electrical
+ * @desc Set whether this quiz is a shared resource any electrical instructor
+ *       may edit/assign (the "A6 ASE practice 1" exception). Full instructors
+ *       only. Body: { sharedWithElectrical: boolean }.
+ */
+router.put('/:quizId/shared-electrical', authenticateToken, authorizeRoles(...FULL_INSTRUCTOR_ROLES), async (req, res) => {
+  try {
+    const quiz = await Quiz.findById(req.params.quizId);
+    if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+
+    quiz.sharedWithElectrical = !!req.body.sharedWithElectrical;
+    await quiz.save();
+
+    res.json(quiz);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+});
+
+/**
  * @route POST /api/quizzes/:quizId/add-question
  * @desc Add a question (with optional image) to a quiz
  */
-router.post('/:quizId/add-question', upload.single('questionImage'), async (req, res) => {
+router.post(
+  '/:quizId/add-question',
+  authenticateToken,
+  authorizeRoles(...INSTRUCTOR_TIER_ROLES),
+  upload.single('questionImage'),
+  requireQuizPermission(canEditQuiz),
+  async (req, res) => {
   try {
     const { questionText, correctAnswer, questionType } = req.body;
 
@@ -257,7 +376,13 @@ router.post('/:quizId/add-question', upload.single('questionImage'), async (req,
  * @route PUT /api/quizzes/:quizId/question/:questionId
  * @desc Update a specific question (with optional new image)
  */
-router.put('/:quizId/question/:questionId', upload.single('questionImage'), async (req, res) => {
+router.put(
+  '/:quizId/question/:questionId',
+  authenticateToken,
+  authorizeRoles(...INSTRUCTOR_TIER_ROLES),
+  upload.single('questionImage'),
+  requireQuizPermission(canEditQuiz),
+  async (req, res) => {
   try {
     const { questionText, correctAnswer, questionType } = req.body;
 
@@ -325,7 +450,12 @@ router.put('/:quizId/question/:questionId', upload.single('questionImage'), asyn
  *       Applies the same fuzzy-tolerant logic used by the PUT route — useful
  *       when a typo was already fixed before the auto-regrade existed.
  */
-router.post('/:quizId/question/:questionId/regrade', async (req, res) => {
+router.post(
+  '/:quizId/question/:questionId/regrade',
+  authenticateToken,
+  authorizeRoles(...INSTRUCTOR_TIER_ROLES),
+  requireQuizPermission(canEditQuiz),
+  async (req, res) => {
   try {
     const question = await QuizQuestion.findById(req.params.questionId);
     if (!question) {
@@ -348,7 +478,12 @@ router.post('/:quizId/question/:questionId/regrade', async (req, res) => {
  * @route DELETE /api/quizzes/:quizId/question/:questionId
  * @desc Delete a specific question from a quiz
  */
-router.delete('/:quizId/question/:questionId', async (req, res) => {
+router.delete(
+  '/:quizId/question/:questionId',
+  authenticateToken,
+  authorizeRoles(...INSTRUCTOR_TIER_ROLES),
+  requireQuizPermission(canEditQuiz),
+  async (req, res) => {
   try {
     const question = await QuizQuestion.findByIdAndDelete(req.params.questionId);
     if (!question) {
@@ -368,11 +503,19 @@ router.delete('/:quizId/question/:questionId', async (req, res) => {
  * @route DELETE /api/questions/:questionId/image
  * @desc Remove an image from a question and delete from S3
  */
-router.delete('/questions/:questionId/image', async (req, res) => {
+router.delete('/questions/:questionId/image', authenticateToken, authorizeRoles(...INSTRUCTOR_TIER_ROLES), async (req, res) => {
   try {
     const question = await QuizQuestion.findById(req.params.questionId);
     if (!question || !question.image) {
       return res.status(404).json({ message: 'Image not found' });
+    }
+
+    // Ownership: derive the owning quiz from the question and apply the same
+    // edit rule as the other question routes.
+    const quiz = await Quiz.findById(question.quiz);
+    if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+    if (!canEditQuiz(req.user, quiz)) {
+      return res.status(403).json({ message: 'You are not allowed to modify this quiz.' });
     }
 
     const key = new URL(question.image).pathname.slice(1);
@@ -392,7 +535,12 @@ router.delete('/questions/:questionId/image', async (req, res) => {
  * @route DELETE /api/quizzes/:quizId
  * @desc Delete a quiz by ID (removes related questions and submissions)
  */
-router.delete('/:quizId', async (req, res) => {
+router.delete(
+  '/:quizId',
+  authenticateToken,
+  authorizeRoles(...INSTRUCTOR_TIER_ROLES),
+  requireQuizPermission(canDeleteQuiz),
+  async (req, res) => {
   try {
     const quiz = await Quiz.findByIdAndDelete(req.params.quizId);
     if (!quiz) {
@@ -410,9 +558,9 @@ router.delete('/:quizId', async (req, res) => {
 
 /**
  * @route GET /api/quizzes/:quizId
- * @desc Get a specific quiz by ID
+ * @desc Get a specific quiz by ID (instructor tier — used by the editor).
  */
-router.get('/:quizId', async (req, res) => {
+router.get('/:quizId', authenticateToken, authorizeRoles(...INSTRUCTOR_TIER_ROLES), async (req, res) => {
   try {
     const quiz = await Quiz.findById(req.params.quizId).populate('questions');
     if (!quiz) {
@@ -428,11 +576,27 @@ router.get('/:quizId', async (req, res) => {
  * @route POST /api/quizzes/:quizId/submit
  * @desc Submit quiz answers and calculate the score
  */
-router.post('/:quizId/submit', async (req, res) => {
+router.post('/:quizId/submit', authenticateToken, async (req, res) => {
   const { answers, studentId } = req.body;
   try {
     const quiz = await Quiz.findById(req.params.quizId).populate('questions');
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+
+    // A student may only submit their own attempt.
+    if (String(req.user.id) !== String(studentId)) {
+      return res.status(403).json({ message: 'You can only submit your own quiz.' });
+    }
+
+    // Electrical students may only submit quizzes assigned to their roster.
+    if (req.user.role === 'electrical_student') {
+      const me = await User.findById(req.user.id).select('addedBy');
+      const assigned =
+        me && me.addedBy &&
+        (quiz.electricalAssignedBy || []).some((id) => String(id) === String(me.addedBy));
+      if (!assigned) {
+        return res.status(403).json({ message: 'This quiz is not assigned to you.' });
+      }
+    }
 
     // Check if the quiz is locked due to due date
     const currentDate = new Date();
@@ -497,7 +661,12 @@ router.post('/:quizId/submit', async (req, res) => {
  * @route PUT /api/quizzes/:quizId/toggle-multiple-submissions
  * @desc Toggle multiple submissions for a quiz
  */
-router.put('/:quizId/toggle-multiple-submissions', async (req, res) => {
+router.put(
+  '/:quizId/toggle-multiple-submissions',
+  authenticateToken,
+  authorizeRoles(...INSTRUCTOR_TIER_ROLES),
+  requireQuizPermission(canEditQuiz),
+  async (req, res) => {
   try {
     const { quizId } = req.params;
     const { allowMultipleSubmissions } = req.body;

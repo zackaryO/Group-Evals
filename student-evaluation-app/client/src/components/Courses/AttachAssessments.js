@@ -13,9 +13,11 @@ const AttachAssessments = () => {
   useEffect(() => {
     const fetchCoursesAndQuizzes = async () => {
       try {
+        const token = localStorage.getItem('token');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
         const [coursesRes, quizzesRes] = await Promise.all([
           axios.get(`${URL}/api/courses`),
-          axios.get(`${URL}/api/quizzes`),
+          axios.get(`${URL}/api/quizzes`, config),
         ]);
         setCourses(coursesRes.data);
         setQuizzes(quizzesRes.data);

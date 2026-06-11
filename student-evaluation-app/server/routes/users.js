@@ -26,7 +26,60 @@ const Grade = require('../models/Grade');
 // a student is removed so the shared dealer directory and their job-search
 // trail remain available for future cohorts and instructor reference.
 
-const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
+const {
+  authenticateToken,
+  authorizeRoles,
+  isFullInstructor,
+} = require('../middleware/authMiddleware');
+
+/**
+ * Load a user the caller is allowed to mutate.
+ *  - Full instructors (instructor/admin): may act on any user.
+ *  - Electrical instructors: may act ONLY on electrical_student users they
+ *    themselves added (addedBy === their id).
+ * Sends the appropriate 404/403 response and returns null on failure; returns
+ * the user document on success.
+ */
+async function loadManageableUser(req, res, userId) {
+  const target = await User.findById(userId);
+  if (!target) {
+    res.status(404).json({ message: 'User not found' });
+    return null;
+  }
+  if (!isFullInstructor(req.user.role)) {
+    // electrical_instructor: roster-scoped.
+    if (target.role !== 'electrical_student' || String(target.addedBy) !== String(req.user.id)) {
+      res.status(403).json({ message: 'Not authorized to manage this user.' });
+      return null;
+    }
+  }
+  return target;
+}
+
+/**
+ * GET /api/users/electrical-students
+ * Returns electrical_student users. Electrical instructors see only the roster
+ * they added; full instructors see all electrical students.
+ */
+router.get(
+  '/electrical-students',
+  authenticateToken,
+  authorizeRoles('admin', 'instructor', 'electrical_instructor'),
+  async (req, res) => {
+    try {
+      const query = { role: 'electrical_student' };
+      if (!isFullInstructor(req.user.role)) {
+        query.addedBy = req.user.id;
+      }
+      const students = await User.find(query)
+        .populate('addedBy', 'username firstName lastName')
+        .sort({ lastName: 1, firstName: 1 });
+      res.json(students);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
+);
 
 /**
  * GET /api/users
@@ -58,17 +111,38 @@ router.get('/students', authenticateToken, authorizeRoles('admin', 'instructor',
 /**
  * POST /api/users/add
  * Creates a new user record.
- * Requires 'username', 'password', 'role' (e.g., student or instructor).
- * Only accessible by 'admin' or 'instructor'.
+ *  - Full instructors (instructor/admin): may create any role. When creating an
+ *    'electrical_student', addedBy defaults to the creator (or an explicit
+ *    body.addedBy electrical instructor).
+ *  - Electrical instructors: may ONLY create 'electrical_student' users, always
+ *    owned by themselves (addedBy = their id); cohort is ignored.
  */
-router.post('/add', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
-  const { username, password, role, teamName, firstName, lastName, subject, cohortId } = req.body;
+router.post('/add', authenticateToken, authorizeRoles('admin', 'instructor', 'electrical_instructor'), async (req, res) => {
+  const { username, password, role, teamName, firstName, lastName, subject, cohortId, addedBy } = req.body;
 
   try {
     // Check if user already exists by username
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
+    }
+
+    // Resolve role / ownership based on the creator's tier.
+    const callerIsFull = isFullInstructor(req.user.role);
+    let effectiveRole = role;
+    let effectiveAddedBy = null;
+    let effectiveCohort = cohortId || null;
+
+    if (!callerIsFull) {
+      // Electrical instructor: locked to creating their own electrical students.
+      effectiveRole = 'electrical_student';
+      effectiveAddedBy = req.user.id;
+      effectiveCohort = null;
+    } else if (effectiveRole === 'electrical_student') {
+      // Full instructor creating an electrical student: tie it to an electrical
+      // instructor (explicit addedBy) or to themselves by default.
+      effectiveAddedBy = addedBy || req.user.id;
+      effectiveCohort = null;
     }
 
     // Hash the provided password
@@ -78,12 +152,13 @@ router.post('/add', authenticateToken, authorizeRoles('admin', 'instructor'), as
     const newUser = new User({
       username,
       password: hashedPassword,
-      role,
+      role: effectiveRole,
       teamName,
       firstName,
       lastName,
       subject,
-      cohort: cohortId || null, // optional
+      cohort: effectiveCohort, // optional
+      addedBy: effectiveAddedBy,
     });
 
     await newUser.save();
@@ -98,24 +173,26 @@ router.post('/add', authenticateToken, authorizeRoles('admin', 'instructor'), as
  * Update user details by userId.
  * Allows changing username, role, teamName, firstName, lastName, subject,
  * and optionally password (if provided).
- * Only accessible by 'admin' or 'instructor'.
+ *  - Full instructors (instructor/admin): may update any user, including role.
+ *  - Electrical instructors: may update only their own electrical students, and
+ *    may NOT change the role (role/cohort changes are ignored for them).
  */
-router.put('/:userId', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
+router.put('/:userId', authenticateToken, authorizeRoles('admin', 'instructor', 'electrical_instructor'), async (req, res) => {
   const { userId } = req.params;
   const { username, password, role, teamName, firstName, lastName, subject, cohortId } = req.body;
+  const callerIsFull = isFullInstructor(req.user.role);
 
   try {
-    // Find the user by ID
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    // Find the user by ID (roster-scoped for electrical instructors).
+    const user = await loadManageableUser(req, res, userId);
+    if (!user) return; // response already sent
 
     // Update fields if provided
     if (username !== undefined) {
       user.username = username;
     }
-    if (role !== undefined) {
+    // Only full instructors may change a user's role.
+    if (role !== undefined && callerIsFull) {
       user.role = role;
     }
     if (teamName !== undefined) {
@@ -138,8 +215,8 @@ router.put('/:userId', authenticateToken, authorizeRoles('admin', 'instructor'),
       console.log(`Password updated for user "${user.username}" (ID: ${userId})`);
     }
 
-    // If you have cohorts to manage, handle them similarly:
-    if (cohortId !== undefined) {
+    // If you have cohorts to manage, handle them similarly (full instructors only).
+    if (cohortId !== undefined && callerIsFull) {
       user.cohort = cohortId;
     }
 
@@ -157,19 +234,17 @@ router.put('/:userId', authenticateToken, authorizeRoles('admin', 'instructor'),
  *  - Quiz Submissions in QuizSubmission collection
  *  - Evaluations in Evaluation collection (both as presenter & evaluator)
  *  - Grades in Grade collection
- * Only accessible by 'admin' or 'instructor'.
+ *  - Full instructors (instructor/admin): may delete any user.
+ *  - Electrical instructors: may delete only their own electrical students.
  */
-router.delete('/:userId', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
+router.delete('/:userId', authenticateToken, authorizeRoles('admin', 'instructor', 'electrical_instructor'), async (req, res) => {
   try {
     const userId = req.params.userId;
     console.log(`Attempting to delete user with ID: ${userId}`);
 
-    // First, find the user in DB
-    const user = await User.findById(userId);
-    if (!user) {
-      console.log(`User not found with ID: ${userId}`);
-      return res.status(404).json({ message: 'User not found' });
-    }
+    // Find the user in DB (roster-scoped for electrical instructors).
+    const user = await loadManageableUser(req, res, userId);
+    if (!user) return; // response already sent
 
     // Remove all quiz submissions for that user (as 'student')
     await QuizSubmission.deleteMany({ student: user._id });
@@ -226,11 +301,13 @@ router.put('/:id/assign-cohort', authenticateToken, authorizeRoles('admin', 'ins
  * PUT /api/users/:id/active
  * Toggle a user's isActive flag. Inactive students still log in and use the
  * app, but instructor views render them greyed out.
+ *  - Full instructors (instructor/admin): any user.
+ *  - Electrical instructors: only their own electrical students.
  */
-router.put('/:id/active', authenticateToken, authorizeRoles('admin', 'instructor'), async (req, res) => {
+router.put('/:id/active', authenticateToken, authorizeRoles('admin', 'instructor', 'electrical_instructor'), async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const user = await loadManageableUser(req, res, req.params.id);
+    if (!user) return; // response already sent
     user.isActive = !!req.body.isActive;
     await user.save();
     res.json({ _id: user._id, isActive: user.isActive });

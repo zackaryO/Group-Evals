@@ -1,8 +1,20 @@
 // student-evaluation-app\client\src\components\Auth\PrivateRoute.js
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { ROLES } from '../../utils/roles';
 
-const PrivateRoute = ({ user, children, role }) => {
+// Generic "must be logged in" guard. The two restricted roles
+// (electrical_student, electrical_instructor) are blocked from generic pages
+// unless the route explicitly opts them in, since they only get access to a
+// small slice of the site. Blocked users are sent to their own home base
+// rather than the login screen (they're authenticated, just not permitted).
+const PrivateRoute = ({
+  user,
+  children,
+  role,
+  allowElectricalStudent = false,
+  allowElectricalInstructor = false,
+}) => {
   const token = localStorage.getItem('token');
 
   if (!token || !user || !user._id) {
@@ -11,6 +23,14 @@ const PrivateRoute = ({ user, children, role }) => {
 
   if (role && user.role !== role) {
     return <Navigate to="/" />;
+  }
+
+  if (user.role === ROLES.ELECTRICAL_STUDENT && !allowElectricalStudent) {
+    return <Navigate to="/take-quiz" />;
+  }
+
+  if (user.role === ROLES.ELECTRICAL_INSTRUCTOR && !allowElectricalInstructor) {
+    return <Navigate to="/home" />;
   }
 
   return React.cloneElement(children, { user });

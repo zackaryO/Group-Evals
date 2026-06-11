@@ -32,6 +32,7 @@ import CreateCohort from './components/Cohorts/CreateCohort';
 import ManageCohorts from './components/Cohorts/ManageCohorts';
 import AssignStudents from './components/Cohorts/AssignStudents';
 import ManageUsers from './components/Instructor/ManageUsers';
+import ManageElectricalStudents from './components/Instructor/ManageElectricalStudents';
 import ResumeBuilder from './components/Instructor/ResumeBuilder';
 
 // NEW: Import Inventory Pages
@@ -88,7 +89,7 @@ const App = () => {
         <Route
           path="/"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowElectricalStudent allowElectricalInstructor>
               <Home user={user} />
             </PrivateRoute>
           }
@@ -96,7 +97,7 @@ const App = () => {
         <Route
           path="/home"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowElectricalStudent allowElectricalInstructor>
               <Home user={user} />
             </PrivateRoute>
           }
@@ -136,7 +137,7 @@ const App = () => {
         <Route
           path="/create-quiz"
           element={
-            <InstructorRoute user={user}>
+            <InstructorRoute user={user} roles={['instructor', 'admin', 'electrical_instructor']}>
               <CreateQuiz user={user} />
             </InstructorRoute>
           }
@@ -144,7 +145,7 @@ const App = () => {
         <Route
           path="/manage-quizzes"
           element={
-            <InstructorRoute user={user}>
+            <InstructorRoute user={user} roles={['instructor', 'admin', 'electrical_instructor']}>
               <ManageQuizzes user={user} />
             </InstructorRoute>
           }
@@ -152,15 +153,23 @@ const App = () => {
         <Route
           path="/manage-questions/:quizId"
           element={
-            <InstructorRoute user={user}>
+            <InstructorRoute user={user} roles={['instructor', 'admin', 'electrical_instructor']}>
               <ManageQuestions />
+            </InstructorRoute>
+          }
+        />
+        <Route
+          path="/manage-electrical-students"
+          element={
+            <InstructorRoute user={user} roles={['instructor', 'admin', 'electrical_instructor']}>
+              <ManageElectricalStudents user={user} />
             </InstructorRoute>
           }
         />
         <Route
           path="/take-quiz"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowElectricalStudent>
               <TakeQuiz user={user} />
             </PrivateRoute>
           }
@@ -168,7 +177,7 @@ const App = () => {
         <Route
           path="/quiz-gradebook"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowElectricalStudent allowElectricalInstructor>
               <QuizGradebook user={user} />
             </PrivateRoute>
           }

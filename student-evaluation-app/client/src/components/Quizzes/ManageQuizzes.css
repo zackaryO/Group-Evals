@@ -1,93 +1,203 @@
-/* student-evaluation-app\client\src\components\Quizzes\ManageQuizzes.css */
+/* student-evaluation-app\client\src\components\Quizzes\ManageQuizzes.css
+ *
+ * Class-scoped styles (with a few resets) so they override the app-wide global
+ * `button {}` / `input {}` rules in RegisterUser.css / DefineAreas.css.
+ */
 
 .manage-quizzes-container {
   max-width: 1200px;
   margin: auto;
-  padding: 20px;
-  background-color: #f9f9f9;
+  padding: 24px 20px 48px;
 }
 
 .manage-quizzes-container h2 {
   text-align: center;
-  color: #333;
-  margin-bottom: 20px;
+  color: #1e293b;
+  margin-bottom: 16px;
 }
 
-.quizzes-grid {
-  display: grid;
-  /* Responsive 3-column grid, but can shrink to 2 or 1 column as space requires */
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 20px;
-}
-
-.quiz-card {
-  background-color: #fff;
-  padding: 20px;
+.manage-quizzes-hint {
+  max-width: 760px;
+  margin: 0 auto 22px;
+  padding: 10px 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  /* Use flex column to stack content nicely */
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.quiz-card h3 {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-  color: #333;
-}
-
-.quiz-card p {
-  color: #666;
-  margin-bottom: 15px;
-}
-
-/* 
-  Allow the action buttons to wrap to a new line if needed.
-  Also add a small gap between them rather than forcing them side-by-side.
-*/
-.quiz-card .quiz-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 12px; /* space below the button row */
-}
-
-/* Remove flex:1 so each button keeps its natural width */
-.quiz-card .quiz-actions button {
-  padding: 8px 12px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
+  color: #1e3a8a;
+  font-size: 0.9rem;
   text-align: center;
 }
 
-.quiz-card .quiz-actions button:hover {
-  background-color: #0056b3;
+.mq-message {
+  max-width: 760px;
+  margin: 0 auto 20px;
+  padding: 10px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #166534;
+  font-size: 0.9rem;
+  text-align: center;
 }
 
-.quiz-card .delete-button {
-  background-color: #dc3545;
+.mq-empty {
+  text-align: center;
+  color: #94a3b8;
+  font-style: italic;
 }
 
-.quiz-card .delete-button:hover {
-  background-color: #c82333;
+/* ─────────────────────────── Sections */
+.mq-section {
+  margin-bottom: 34px;
 }
 
-.quiz-card a button {
-  background-color: #28a745;
-}
-
-.quiz-card a button:hover {
-  background-color: #218838;
-}
-
-.multiple-submissions-toggle {
+.mq-section-header {
   display: flex;
   align-items: center;
-  margin-top: auto; /* push to bottom if needed */
-  gap: 6px; /* small spacing between checkbox and text */
+  gap: 10px;
+  margin: 0 0 14px;
+}
+
+.mq-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #334155;
+}
+
+.mq-section-count {
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.mq-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 18px;
+}
+
+/* ─────────────────────────── Cards */
+.mq-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mq-card-readonly {
+  background: #f8fafc;
+  border-style: dashed;
+  border-color: #e2e8f0;
+}
+
+.mq-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* Badges */
+.mq-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mq-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.mq-badge-owner { background: #eef2ff; color: #4338ca; }
+.mq-badge-shared { background: #ecfeff; color: #0e7490; }
+.mq-badge-other { background: #f1f5f9; color: #64748b; }
+.mq-badge-published { background: #dcfce7; color: #15803d; }
+.mq-badge-unpublished { background: #f1f5f9; color: #64748b; }
+.mq-badge-assigned { background: #fef9c3; color: #854d0e; }
+
+/* Action buttons — override global button rules (max-width / align-self / margin). */
+.mq-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mq-actions button.mq-btn,
+.mq-actions a.mq-btn {
+  margin: 0;
+  max-width: none;
+  align-self: auto;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+.mq-actions button.mq-btn-publish { background: #2563eb; color: #fff; }
+.mq-actions button.mq-btn-publish:hover { background: #1d4ed8; }
+
+.mq-actions button.mq-btn-assign { background: #0d9488; color: #fff; }
+.mq-actions button.mq-btn-assign:hover { background: #0f766e; }
+.mq-actions button.mq-btn-assign.is-assigned { background: #fff; color: #0f766e; border-color: #5eead4; }
+
+.mq-actions a.mq-btn-neutral { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+.mq-actions a.mq-btn-neutral:hover { background: #e2e8f0; color: #1e293b; }
+
+.mq-actions button.mq-btn-danger { background: #fff; color: #b91c1c; border-color: #fecaca; }
+.mq-actions button.mq-btn-danger:hover { background: #fef2f2; }
+
+/* Footer toggles */
+.mq-footer {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 10px;
+}
+
+.mq-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: #475569;
+  cursor: pointer;
+}
+
+/* Keep checkboxes their natural size (global `input{width:100%}` would stretch them). */
+.mq-toggle input[type='checkbox'] {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.mq-readonly-note {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-style: italic;
+  margin: 0;
 }

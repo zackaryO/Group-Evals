@@ -39,4 +39,23 @@ const authorizeRoles = (...roles) => {
   };
 };
 
-module.exports = { authenticateToken, authorizeRoles };
+// ─────────────────────────────────────────── Role tiers
+// "Full" instructors (instructor/admin) can do everything in the app. The
+// "electrical_instructor" is a second tier: it can manage quizzes and a roster
+// of "electrical_student" users it created, but only those. The instructor tier
+// is the union — any endpoint a full instructor may hit, an electrical
+// instructor may hit too (with per-resource ownership checks applied inside).
+const FULL_INSTRUCTOR_ROLES = ['instructor', 'admin'];
+const INSTRUCTOR_TIER_ROLES = ['instructor', 'admin', 'electrical_instructor'];
+
+const isFullInstructor = (role) => FULL_INSTRUCTOR_ROLES.includes(role);
+const isInstructorTier = (role) => INSTRUCTOR_TIER_ROLES.includes(role);
+
+module.exports = {
+  authenticateToken,
+  authorizeRoles,
+  FULL_INSTRUCTOR_ROLES,
+  INSTRUCTOR_TIER_ROLES,
+  isFullInstructor,
+  isInstructorTier,
+};

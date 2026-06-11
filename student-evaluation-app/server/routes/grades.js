@@ -12,10 +12,12 @@ const {
 
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
-// Route to get all grades (accessible by instructors)
-router.get('/', authenticateToken, authorizeRoles('instructor'), getGrades);
+// Route to get all grades (instructor tier; getGrades scopes electrical
+// instructors to their own roster).
+router.get('/', authenticateToken, authorizeRoles('instructor', 'admin', 'electrical_instructor'), getGrades);
 
-// Route to get grades for a specific student (accessible by students)
+// Route to get grades for a specific student (students get their own only,
+// enforced in getGrades by role).
 router.get('/:studentId', authenticateToken, getGrades);
 
 // Route to get overall grades for all students (accessible by instructors)
@@ -27,7 +29,8 @@ router.get('/student/:studentId/progress', authenticateToken, getStudentProgress
 // Route to get progress for all students (accessible by instructors)
 router.get('/progress', authenticateToken, authorizeRoles('instructor'), getAllStudentsProgress);
 
-// Route to delete a grade
-router.delete('/:id', authenticateToken, authorizeRoles('instructor'), deleteGrade);
+// Route to delete a grade (instructor tier; deleteGrade scopes electrical
+// instructors to their own roster's scores).
+router.delete('/:id', authenticateToken, authorizeRoles('instructor', 'admin', 'electrical_instructor'), deleteGrade);
 
 module.exports = router;

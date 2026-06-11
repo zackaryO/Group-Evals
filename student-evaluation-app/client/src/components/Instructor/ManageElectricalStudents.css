@@ -1,0 +1,211 @@
+/* student-evaluation-app/client/src/components/Instructor/ManageElectricalStudents.css
+ *
+ * Scoped styles for the electrical-student roster page. Class selectors are
+ * used (and a couple of !important resets) so they override the app-wide global
+ * `input {}` / `button {}` rules declared in RegisterUser.css / DefineAreas.css,
+ * which otherwise stretch the inputs and shrink/center the buttons.
+ */
+
+.es-page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.es-page h2 {
+  text-align: center;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.es-intro {
+  text-align: center;
+  color: #475569;
+  font-size: 0.92rem;
+  margin: 0 auto 20px;
+  max-width: 660px;
+  line-height: 1.5;
+}
+
+.es-intro a {
+  color: #2563eb;
+}
+
+.es-message {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+}
+
+/* ─────────────────────────── Roster table */
+.es-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 28px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.es-table th,
+.es-table td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.es-table thead th {
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.74rem;
+}
+
+.es-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.es-empty {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.es-row-inactive td {
+  color: #9ca3af;
+  background: #fafafa;
+}
+
+/* Table action buttons — override the global button rules. */
+.es-table button.es-tbtn {
+  margin: 0 6px 0 0;
+  max-width: none;
+  align-self: auto;
+  padding: 5px 10px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+}
+
+.es-table button.es-tbtn:hover {
+  background: #e2e8f0;
+}
+
+.es-table button.es-tbtn-danger {
+  color: #b91c1c !important;
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+}
+
+/* ─────────────────────────── Add / edit form card */
+.es-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 22px 24px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.es-card h3 {
+  margin: 0 0 16px;
+  color: #1e293b;
+  font-size: 1.1rem;
+}
+
+/* Inline-grid (not flex) so it beats the global `form { flex-direction:column }`. */
+.es-form.es-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.es-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.es-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #475569;
+  margin: 0;
+}
+
+/* Scoped input that overrides the global `input, select {}` rule. */
+.es-field input.es-input {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.es-field input.es-input:focus {
+  border-color: #2563eb;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  background: #fff;
+}
+
+/* Actions row spans both grid columns. */
+.es-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* Form buttons — override the global button rules (max-width/align-self/margin). */
+.es-actions button.es-btn {
+  margin: 0;
+  max-width: none;
+  align-self: auto;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.es-actions button.es-btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.es-actions button.es-btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.es-actions button.es-btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.es-actions button.es-btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+@media (max-width: 560px) {
+  .es-form.es-form {
+    grid-template-columns: 1fr;
+  }
+}

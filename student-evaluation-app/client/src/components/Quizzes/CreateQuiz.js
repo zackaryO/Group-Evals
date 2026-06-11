@@ -12,7 +12,12 @@ const CreateQuiz = ({ user }) => {
   const handleCreateQuiz = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`${URL}/api/quizzes/create`, { title, instructorId: user._id, allowMultipleSubmissions });
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${URL}/api/quizzes/create`,
+        { title, instructorId: user._id, allowMultipleSubmissions },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       setMessage(`Quiz "${response.data.title}" created successfully!`);
       setTitle('');
       setAllowMultipleSubmissions(false);

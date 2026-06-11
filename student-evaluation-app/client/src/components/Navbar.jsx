@@ -17,8 +17,17 @@ import {
   faFolderOpen,
   faBriefcase,
   faChevronDown,
+  faBars,
+  faTimes,
 } from '@fortawesome/free-solid-svg-icons';
 import './Navbar.css';
+import {
+  isFullInstructor,
+  isElectricalInstructor,
+  isInstructorTier,
+  isElectricalStudent,
+  isRegularStudent,
+} from '../utils/roles';
 
 const handleLogout = () => {
   localStorage.removeItem('token');
@@ -30,7 +39,7 @@ const handleLogout = () => {
   window.location.href = '/login';
 };
 
-const NavDropdown = ({ id, label, icon, items, openId, setOpenId }) => {
+const NavDropdown = ({ id, label, icon, items, openId, setOpenId, onNavigate }) => {
   const wrapRef = useRef(null);
   const isOpen = openId === id;
   // Close when clicking outside or pressing Escape.
@@ -70,7 +79,7 @@ const NavDropdown = ({ id, label, icon, items, openId, setOpenId }) => {
                 to={item.to}
                 className="navbar-dropdown-link"
                 role="menuitem"
-                onClick={() => setOpenId(null)}
+                onClick={() => { setOpenId(null); if (onNavigate) onNavigate(); }}
               >
                 {item.label}
               </Link>
@@ -84,21 +93,30 @@ const NavDropdown = ({ id, label, icon, items, openId, setOpenId }) => {
 
 const Navbar = ({ user }) => {
   const [openId, setOpenId] = useState(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const closeMobile = () => { setMobileOpen(false); setOpenId(null); };
 
   const role = user?.role;
-  const isInstructor = role === 'instructor' || role === 'admin';
-  const isStudent = role === 'student';
+  const fullInstructor = isFullInstructor(role);
+  const electricalInstructor = isElectricalInstructor(role);
+  const instructorTier = isInstructorTier(role);
+  const electricalStudent = isElectricalStudent(role);
+  const regularStudent = isRegularStudent(role);
+  // Job search / evaluations are available to regular students and full
+  // instructors only — electrical instructors and electrical students are
+  // scoped to quizzes (+ the electrical roster for the instructor).
+  const showGeneralStudentTools = fullInstructor || regularStudent;
 
   // Build dropdown contents per role. Empty arrays are filtered out by
   // NavDropdown so groups disappear when they have nothing to show.
   const quizItems = [
-    isStudent && { to: '/take-quiz', label: 'Take Quiz' },
-    isInstructor && { to: '/create-quiz', label: 'Create Quiz' },
-    isInstructor && { to: '/manage-quizzes', label: 'Manage Quizzes' },
+    (regularStudent || electricalStudent) && { to: '/take-quiz', label: 'Take Quiz' },
+    instructorTier && { to: '/create-quiz', label: 'Create Quiz' },
+    instructorTier && { to: '/manage-quizzes', label: 'Manage Quizzes' },
     user && { to: '/quiz-gradebook', label: 'Quiz Gradebook' },
   ].filter(Boolean);
 
-  const jobSearchItems = user
+  const jobSearchItems = showGeneralStudentTools
     ? [
         { to: '/job-search', label: 'My Job Search' },
         { to: '/job-search/board', label: 'Class Board' },
@@ -106,25 +124,30 @@ const Navbar = ({ user }) => {
       ]
     : [];
 
-  const evalItems = user
+  const evalItems = showGeneralStudentTools
     ? [
         { to: '/evaluation', label: 'Evaluation Form' },
         { to: '/eval-gradebook', label: 'Eval Gradebook' },
-        isInstructor && { to: '/master-gradebook', label: 'Master Gradebook' },
-        isInstructor && { to: '/define-areas', label: 'Define Eval Areas' },
+        fullInstructor && { to: '/master-gradebook', label: 'Master Gradebook' },
+        fullInstructor && { to: '/define-areas', label: 'Define Eval Areas' },
       ].filter(Boolean)
     : [];
 
-  const adminItems = isInstructor
+  // Full instructors get the complete admin menu; electrical instructors get
+  // only their electrical-student roster manager.
+  const adminItems = fullInstructor
     ? [
         { to: '/manage-users', label: 'Manage Users' },
         { to: '/manage-students', label: 'Manage Students' },
+        { to: '/manage-electrical-students', label: 'A6 Prep Students' },
         { to: '/manage-cohorts', label: 'Manage Cohorts' },
         { to: '/manage-courses', label: 'Manage Courses' },
       ]
+    : electricalInstructor
+    ? [{ to: '/manage-electrical-students', label: 'A6 Prep Students' }]
     : [];
 
-  const inventoryItems = isInstructor
+  const inventoryItems = fullInstructor
     ? [
         { to: '/tools', label: 'Tools' },
         { to: '/loaner-toolboxes', label: 'Loaner Toolboxes' },
@@ -139,16 +162,26 @@ const Navbar = ({ user }) => {
 
   return (
     <nav className="navbar">
-      <ul className="navbar-list">
+      <button
+        type="button"
+        className="navbar-toggle"
+        aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={mobileOpen}
+        onClick={() => setMobileOpen((o) => !o)}
+      >
+        <FontAwesomeIcon icon={mobileOpen ? faTimes : faBars} />
+      </button>
+
+      <ul className={`navbar-list ${mobileOpen ? 'is-open' : ''}`}>
         <li className="navbar-item">
-          <Link to="/home" className="navbar-link">
+          <Link to="/home" className="navbar-link" onClick={closeMobile}>
             <FontAwesomeIcon icon={faHome} /> Home
           </Link>
         </li>
 
         {!user && (
           <li className="navbar-item">
-            <Link to="/login" className="navbar-link">
+            <Link to="/login" className="navbar-link" onClick={closeMobile}>
               <FontAwesomeIcon icon={faSignInAlt} /> Login
             </Link>
           </li>
@@ -163,6 +196,7 @@ const Navbar = ({ user }) => {
               items={quizItems}
               openId={openId}
               setOpenId={setOpenId}
+              onNavigate={closeMobile}
             />
             <NavDropdown
               id="jobsearch"
@@ -171,6 +205,7 @@ const Navbar = ({ user }) => {
               items={jobSearchItems}
               openId={openId}
               setOpenId={setOpenId}
+              onNavigate={closeMobile}
             />
             <NavDropdown
               id="evaluations"
@@ -179,6 +214,7 @@ const Navbar = ({ user }) => {
               items={evalItems}
               openId={openId}
               setOpenId={setOpenId}
+              onNavigate={closeMobile}
             />
             <NavDropdown
               id="admin"
@@ -187,6 +223,7 @@ const Navbar = ({ user }) => {
               items={adminItems}
               openId={openId}
               setOpenId={setOpenId}
+              onNavigate={closeMobile}
             />
             <NavDropdown
               id="inventory"
@@ -195,9 +232,10 @@ const Navbar = ({ user }) => {
               items={inventoryItems}
               openId={openId}
               setOpenId={setOpenId}
+              onNavigate={closeMobile}
             />
             <li className="navbar-item">
-              <Link to="/" onClick={handleLogout} className="navbar-link">
+              <Link to="/" onClick={() => { closeMobile(); handleLogout(); }} className="navbar-link">
                 <FontAwesomeIcon icon={faSignOutAlt} /> Logout
               </Link>
             </li>

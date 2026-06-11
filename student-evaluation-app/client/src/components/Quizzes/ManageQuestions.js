@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import URL from '../../backEndURL';
 import './ManageQuestions.css';
+import { isFullInstructor } from '../../utils/roles';
 
 // 👉 Replace this with your real auth-token lookup
 const getAuthToken = () => localStorage.getItem('token') || '';
@@ -11,6 +12,17 @@ const getAuthToken = () => localStorage.getItem('token') || '';
 const ManageQuestions = () => {
   const { quizId } = useParams();
   const [quiz, setQuiz] = useState(null);
+
+  // Whether the current user may edit this quiz. Mirrors the server rule: full
+  // instructors edit anything; electrical instructors edit only quizzes they
+  // own or quizzes flagged shared. Otherwise the page is read-only (view only).
+  const currentRole = localStorage.getItem('role');
+  const currentUserId = localStorage.getItem('userId');
+  const canEdit = quiz
+    ? isFullInstructor(currentRole) ||
+      String(quiz.instructor) === String(currentUserId) ||
+      !!quiz.sharedWithElectrical
+    : false;
   const [questionText, setQuestionText] = useState('');
   const [options, setOptions] = useState(['', '', '', '']);
   const [correctAnswer, setCorrectAnswer] = useState('a');
@@ -148,12 +160,19 @@ const ManageQuestions = () => {
   return (
     <div className="manage-questions-container">
       <h2>
-        Manage Questions for&nbsp;
+        {quiz && !canEdit ? 'Viewing Questions for' : 'Manage Questions for'}&nbsp;
         {quiz ? quiz.title : 'Loading…'}
       </h2>
 
+      {quiz && !canEdit && (
+        <p className="manage-questions-readonly">
+          View only — this quiz belongs to another instructor, so it can’t be edited here.
+        </p>
+      )}
+
       {message && <p style={{ color: 'red' }}>{message}</p>}
 
+      {canEdit && (
       <form onSubmit={handleAddOrEditQuestion}>
         {/* Question text */}
         <label>
@@ -203,6 +222,7 @@ const ManageQuestions = () => {
           {editingQuestion ? 'Update' : 'Add'} Question
         </button>
       </form>
+      )}
 
       {/* Existing questions */}
       {quiz?.questions?.length ? (
@@ -226,11 +246,13 @@ const ManageQuestions = () => {
                 <strong>Correct:</strong> {q.correctAnswer}
               </p>
 
-              <div className="question-actions">
-                <button onClick={() => handleEdit(q)}>Edit</button>
-                <button onClick={() => handleRegrade(q._id)}>Re-grade</button>
-                <button onClick={() => handleDelete(q._id)}>Delete</button>
-              </div>
+              {canEdit && (
+                <div className="question-actions">
+                  <button onClick={() => handleEdit(q)}>Edit</button>
+                  <button onClick={() => handleRegrade(q._id)}>Re-grade</button>
+                  <button onClick={() => handleDelete(q._id)}>Delete</button>
+                </div>
+              )}
             </div>
           ))}
         </div>
