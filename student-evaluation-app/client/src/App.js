@@ -89,7 +89,7 @@ const App = () => {
         <Route
           path="/"
           element={
-            <PrivateRoute user={user} allowElectricalStudent allowElectricalInstructor>
+            <PrivateRoute user={user} allowElectricalStudent allowElectricalInstructor allowSupportStaff>
               <Home user={user} />
             </PrivateRoute>
           }
@@ -97,7 +97,7 @@ const App = () => {
         <Route
           path="/home"
           element={
-            <PrivateRoute user={user} allowElectricalStudent allowElectricalInstructor>
+            <PrivateRoute user={user} allowElectricalStudent allowElectricalInstructor allowSupportStaff>
               <Home user={user} />
             </PrivateRoute>
           }
@@ -105,7 +105,7 @@ const App = () => {
         <Route
           path="/evaluation"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowSupportStaff>
               <EvaluationForm user={user} />
             </PrivateRoute>
           }
@@ -113,7 +113,7 @@ const App = () => {
         <Route
           path="/gradebook"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowSupportStaff>
               <Gradebook user={user} />
             </PrivateRoute>
           }
@@ -177,7 +177,7 @@ const App = () => {
         <Route
           path="/quiz-gradebook"
           element={
-            <PrivateRoute user={user} allowElectricalStudent allowElectricalInstructor>
+            <PrivateRoute user={user} allowElectricalStudent allowElectricalInstructor allowSupportStaff>
               <QuizGradebook user={user} />
             </PrivateRoute>
           }
@@ -185,7 +185,7 @@ const App = () => {
         <Route
           path="/eval-gradebook"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowSupportStaff>
               <EvalGradebook user={user} />
             </PrivateRoute>
           }
@@ -306,7 +306,7 @@ const App = () => {
         <Route
           path="/resume-builder"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowSupportStaff>
               <ResumeBuilder />
             </PrivateRoute>
           }
@@ -391,7 +391,7 @@ const App = () => {
         <Route
           path="/job-search"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowSupportStaff>
               <MyJobSearch user={user} />
             </PrivateRoute>
           }
@@ -399,7 +399,7 @@ const App = () => {
         <Route
           path="/job-search/board"
           element={
-            <PrivateRoute user={user}>
+            <PrivateRoute user={user} allowSupportStaff>
               <ClassBoard user={user} />
             </PrivateRoute>
           }
@@ -408,7 +408,7 @@ const App = () => {
         <Route
           path="/job-search/student/:studentId"
           element={
-            <InstructorRoute user={user}>
+            <InstructorRoute user={user} roles={['instructor', 'admin', 'support_staff']}>
               <MyJobSearch user={user} />
             </InstructorRoute>
           }

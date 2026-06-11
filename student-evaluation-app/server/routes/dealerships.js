@@ -19,7 +19,7 @@ const router = express.Router();
 const Dealership = require('../models/Dealership');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
-const STAFF = ['instructor', 'admin'];
+const STAFF = ['instructor', 'admin', 'support_staff'];
 
 // GET /api/dealerships?search=foo
 //   Returns list of dealerships, optionally filtered by name/city/state.

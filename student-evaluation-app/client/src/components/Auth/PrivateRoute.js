@@ -14,6 +14,7 @@ const PrivateRoute = ({
   role,
   allowElectricalStudent = false,
   allowElectricalInstructor = false,
+  allowSupportStaff = false,
 }) => {
   const token = localStorage.getItem('token');
 
@@ -30,6 +31,10 @@ const PrivateRoute = ({
   }
 
   if (user.role === ROLES.ELECTRICAL_INSTRUCTOR && !allowElectricalInstructor) {
+    return <Navigate to="/home" />;
+  }
+
+  if (user.role === ROLES.SUPPORT_STAFF && !allowSupportStaff) {
     return <Navigate to="/home" />;
   }
 

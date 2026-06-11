@@ -123,7 +123,10 @@
       "Bash(AWS_REGION=us-east-1 AWS_STORAGE_BUCKET_NAME=dummy node -e \"require\\('./routes/quizzes'\\); require\\('./routes/users'\\); require\\('./routes/grades'\\); require\\('./controllers/gradeController'\\); console.log\\('all server modules load OK'\\);\")",
       "PowerShell(Get-NetTCPConnection -LocalPort 5000 -State Listen | ForEach-Object { $p = Get-Process -Id $_.OwningProcess; [PSCustomObject]@{ PID = $p.Id; Name = $p.ProcessName; Path = $p.Path; Started = $p.StartTime } } | Format-List)",
       "PowerShell(Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime, @{N='Mem\\(MB\\)';E={[math]::Round\\($_.WorkingSet/1MB\\)}} | Sort-Object StartTime | Format-Table -AutoSize)",
-      "Bash(node scripts/flag-a6-shared.js)"
+      "Bash(node scripts/flag-a6-shared.js)",
+      "Bash(node --check routes/jobSearch.js)",
+      "Bash(node --check routes/dealerships.js)",
+      "Bash(AWS_REGION=us-east-1 AWS_STORAGE_BUCKET_NAME=dummy node -e \"require\\('./routes/quizzes'\\); require\\('./routes/grades'\\); require\\('./routes/jobSearch'\\); require\\('./routes/dealerships'\\); require\\('./controllers/gradeController'\\); console.log\\('server OK'\\);\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\zotte\\OneDrive\\Documents\\GitHub\\MBDriveJC\\public"

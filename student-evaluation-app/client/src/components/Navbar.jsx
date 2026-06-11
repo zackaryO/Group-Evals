@@ -27,6 +27,7 @@ import {
   isInstructorTier,
   isElectricalStudent,
   isRegularStudent,
+  isSupportStaff,
 } from '../utils/roles';
 
 const handleLogout = () => {
@@ -102,10 +103,11 @@ const Navbar = ({ user }) => {
   const instructorTier = isInstructorTier(role);
   const electricalStudent = isElectricalStudent(role);
   const regularStudent = isRegularStudent(role);
-  // Job search / evaluations are available to regular students and full
-  // instructors only — electrical instructors and electrical students are
-  // scoped to quizzes (+ the electrical roster for the instructor).
-  const showGeneralStudentTools = fullInstructor || regularStudent;
+  const supportStaff = isSupportStaff(role);
+  // Job search / evaluations are available to regular students, full instructors
+  // and support staff. Electrical instructors and electrical students are scoped
+  // to quizzes (+ the electrical roster for the instructor).
+  const showGeneralStudentTools = fullInstructor || regularStudent || supportStaff;
 
   // Build dropdown contents per role. Empty arrays are filtered out by
   // NavDropdown so groups disappear when they have nothing to show.

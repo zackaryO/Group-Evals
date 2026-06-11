@@ -25,10 +25,17 @@ const QuizGradebook = ({ user }) => {
   const [sortBy, setSortBy] = useState('name');
   // Full instructors (instructor/admin) see all students; electrical
   // instructors get an all-students view too, but the server scopes it to the
-  // electrical students they added. Both are treated as the "instructor view".
+  // electrical students they added; support staff see all students' scores but
+  // NOT the per-question detail and cannot delete. All three get the
+  // "instructor view" (grouped, all students).
   const isFullInstructorView = user.role === 'instructor' || user.role === 'admin';
   const isElectricalInstructorView = user.role === 'electrical_instructor';
-  const isInstructor = isFullInstructorView || isElectricalInstructorView;
+  const isSupportStaff = user.role === 'support_staff';
+  const isInstructor = isFullInstructorView || isElectricalInstructorView || isSupportStaff;
+  // Who may delete a submission and view per-question (quiz-question) detail.
+  const canDeleteGrades = isFullInstructorView || isElectricalInstructorView;
+  const showQuestionDetail = !isSupportStaff;
+  const showCohortFilter = isFullInstructorView || isSupportStaff;
 
   useEffect(() => {
     if (!zoomedImage) return undefined;
@@ -237,7 +244,7 @@ const QuizGradebook = ({ user }) => {
 
       {showToolbar && (
         <div className="quiz-gradebook-filters">
-          {isFullInstructorView && (
+          {showCohortFilter && (
             <label className="gradebook-field">
               <span className="gradebook-field-label">Cohort</span>
               <select value={cohortFilter} onChange={(e) => setCohortFilter(e.target.value)}>
@@ -265,7 +272,7 @@ const QuizGradebook = ({ user }) => {
             <span className="gradebook-field-label">Sort by</span>
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
               <option value="name">Name</option>
-              {isFullInstructorView && <option value="cohort">Cohort</option>}
+              {showCohortFilter && <option value="cohort">Cohort</option>}
               <option value="score-desc">Score (high → low)</option>
               <option value="score-asc">Score (low → high)</option>
             </select>
@@ -317,19 +324,25 @@ const QuizGradebook = ({ user }) => {
                     return (
                       <div key={quiz._id} className={`quiz-item ${deletedQuizId === quiz._id ? 'deleted' : ''}`}>
                         <div className="quiz-item-row">
-                          <button
-                            type="button"
-                            className="quiz-item-toggle"
-                            onClick={() => handleQuizSelect(quiz._id)}
-                            aria-expanded={expanded}
-                          >
-                            <span className="quiz-item-caret">{expanded ? '▾' : '▸'}</span>
-                            <span className="quiz-item-title">{quiz.quiz?.title || 'Quiz Title Missing'}</span>
-                          </button>
+                          {showQuestionDetail ? (
+                            <button
+                              type="button"
+                              className="quiz-item-toggle"
+                              onClick={() => handleQuizSelect(quiz._id)}
+                              aria-expanded={expanded}
+                            >
+                              <span className="quiz-item-caret">{expanded ? '▾' : '▸'}</span>
+                              <span className="quiz-item-title">{quiz.quiz?.title || 'Quiz Title Missing'}</span>
+                            </button>
+                          ) : (
+                            <span className="quiz-item-toggle quiz-item-toggle-static">
+                              <span className="quiz-item-title">{quiz.quiz?.title || 'Quiz Title Missing'}</span>
+                            </span>
+                          )}
                           <span className={`score-badge score-badge-${scoreTier(quiz.score)}`}>
                             {quiz.score != null ? `${quiz.score.toFixed(1)}%` : 'N/A'}
                           </span>
-                          {isInstructor && (
+                          {canDeleteGrades && (
                             <button
                               type="button"
                               className="quiz-item-delete"
@@ -339,7 +352,7 @@ const QuizGradebook = ({ user }) => {
                             </button>
                           )}
                         </div>
-                        {expanded && (
+                        {showQuestionDetail && expanded && (
                           <div className="incorrect-answers">
                             <h4>Incorrect Answers:</h4>
                             {quiz.answers

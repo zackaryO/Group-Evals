@@ -26,7 +26,10 @@ const Gradebook = ({ user }) => {
   // Instructor-only filter controls.
   const [cohortFilter, setCohortFilter] = useState('all'); // 'all' | 'active' | 'inactive' | <cohortId>
   const [sortBy, setSortBy] = useState('name'); // 'name' | 'cohort' | 'score'
-  const isInstructorView = user.role === 'instructor' || user.role === 'admin';
+  // Support staff get the same all-students evaluation view (view-only — the
+  // per-row delete control stays gated to instructors below).
+  const isInstructorView =
+    user.role === 'instructor' || user.role === 'admin' || user.role === 'support_staff';
 
   useEffect(() => {
     const fetchEvaluations = async () => {

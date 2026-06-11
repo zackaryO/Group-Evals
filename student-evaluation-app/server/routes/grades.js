@@ -12,9 +12,10 @@ const {
 
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 
-// Route to get all grades (instructor tier; getGrades scopes electrical
-// instructors to their own roster).
-router.get('/', authenticateToken, authorizeRoles('instructor', 'admin', 'electrical_instructor'), getGrades);
+// Route to get all grades (instructor tier + support staff; getGrades scopes
+// electrical instructors to their own roster and strips question content for
+// support staff).
+router.get('/', authenticateToken, authorizeRoles('instructor', 'admin', 'electrical_instructor', 'support_staff'), getGrades);
 
 // Route to get grades for a specific student (students get their own only,
 // enforced in getGrades by role).

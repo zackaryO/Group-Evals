@@ -17,7 +17,7 @@ const getGrades = async (req, res) => {
     //  - student / electrical_student: only their own submissions.
     //  - electrical_instructor: only submissions by the electrical students
     //    they added.
-    //  - instructor / admin: everything (no extra restriction).
+    //  - support_staff / instructor / admin: everything (no extra restriction).
     if (req.user.role === 'student' || req.user.role === 'electrical_student') {
       query.student = req.user.id;
     } else if (req.user.role === 'electrical_instructor') {
@@ -30,21 +30,27 @@ const getGrades = async (req, res) => {
 
     console.log('Grades Query:', query); // Log to see the query being used
 
-    // Updated: Populate the 'question' field in each answer with its details
-    const grades = await QuizSubmission.find(query)
+    let gradesQuery = QuizSubmission.find(query)
       .populate({
         path: 'student',
         select: 'username firstName lastName isActive cohort',
         populate: { path: 'cohort', select: 'name isActive' },
       })
-      .populate('quiz', 'title')
-      .populate({
+      .populate('quiz', 'title');
+
+    // Support staff may see scores but NOT quiz-question content, so we skip the
+    // answers.question population (which would expose questionText/correctAnswer)
+    // for them. Everyone else gets the per-question detail for the gradebook.
+    if (req.user.role !== 'support_staff') {
+      gradesQuery = gradesQuery.populate({
         path: 'answers.question',
         model: 'QuizQuestion', // Ensure this matches the model name
         select: 'questionText correctAnswer image', // Include fields you need
       });
+    }
 
-    console.log('Grades Fetched:', grades); // Log the grades fetched from the database
+    const grades = await gradesQuery;
+
     res.status(200).json(grades);
   } catch (error) {
     console.error('Error fetching grades:', error.message); // Log any errors

@@ -30,7 +30,7 @@ const SORTABLE_COLS = [
 
 const ClassBoard = ({ user }) => {
   const navigate = useNavigate();
-  const isStaff = !!user && (user.role === 'instructor' || user.role === 'admin');
+  const isStaff = !!user && (user.role === 'instructor' || user.role === 'admin' || user.role === 'support_staff');
   const [board, setBoard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterText, setFilterText] = useState('');

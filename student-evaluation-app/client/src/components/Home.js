@@ -9,6 +9,7 @@ import {
   isInstructorTier,
   isElectricalStudent,
   isRegularStudent,
+  isSupportStaff,
 } from '../utils/roles';
 
 const Home = ({ user }) => {
@@ -17,8 +18,10 @@ const Home = ({ user }) => {
   const instructorTier = isInstructorTier(role);
   const electricalStudent = isElectricalStudent(role);
   const regularStudent = isRegularStudent(role);
-  // Job search / evaluations are for regular students and full instructors only.
-  const showGeneralStudentTools = fullInstructor || regularStudent;
+  const supportStaff = isSupportStaff(role);
+  // Job search / evaluations are for regular students, full instructors and
+  // support staff.
+  const showGeneralStudentTools = fullInstructor || regularStudent || supportStaff;
 
   return (
     <div className="home-container">
@@ -68,7 +71,7 @@ const Home = ({ user }) => {
               </>
             )}
             <Link to="/quiz-gradebook" className="home-button">
-              {instructorTier ? 'Quiz Gradebook' : 'My Results'}
+              {instructorTier || supportStaff ? 'Quiz Gradebook' : 'My Results'}
             </Link>
           </div>
         </div>

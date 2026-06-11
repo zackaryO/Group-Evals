@@ -34,7 +34,7 @@ const { computeStagnation, countActive } = require('../utils/computeStagnation')
 const { followupSuggestion } = require('../utils/followupSuggestion');
 const { followUpUrgency, ENGAGEMENT_TYPES } = require('../utils/followUpUrgency');
 
-const STAFF = ['instructor', 'admin'];
+const STAFF = ['instructor', 'admin', 'support_staff'];
 
 // -------- Helpers ----------------------------------------------------------
 

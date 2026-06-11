@@ -747,7 +747,7 @@ const DealerApplicationPanel = ({ applicationId, user, impersonatingStudent, onC
     return String(ownerId) === String(user._id);
   }, [app, user]);
 
-  const isStaff = !!user && (user.role === 'instructor' || user.role === 'admin');
+  const isStaff = !!user && (user.role === 'instructor' || user.role === 'admin' || user.role === 'support_staff');
   // Both owner and staff can edit. canEdit gates form inputs/buttons; the
   // server independently enforces the same rule via loadOwnedApplication.
   const canEdit = isOwner || isStaff;

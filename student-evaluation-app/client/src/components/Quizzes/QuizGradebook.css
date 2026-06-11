@@ -198,6 +198,15 @@
   background-color: #ececef;
 }
 
+/* Static (non-expandable) title used for support staff, who don't see the
+   per-question detail. */
+.quiz-item-toggle-static {
+  cursor: default;
+}
+.quiz-item-toggle-static:hover {
+  background-color: transparent;
+}
+
 .quiz-item-caret {
   color: #999;
   font-size: 0.8rem;

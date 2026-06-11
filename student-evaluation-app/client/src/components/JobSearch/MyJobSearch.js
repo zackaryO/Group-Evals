@@ -203,7 +203,7 @@ const MyJobSearch = ({ user }) => {
   const navigate = useNavigate();
   const targetStudentId = params.studentId || null;
 
-  const isStaff = !!user && (user.role === 'instructor' || user.role === 'admin');
+  const isStaff = !!user && (user.role === 'instructor' || user.role === 'admin' || user.role === 'support_staff');
   const isImpersonating = !!targetStudentId && String(targetStudentId) !== String(user?._id);
 
   // Block non-staff impersonation attempts (defense-in-depth; the route element also gates it).

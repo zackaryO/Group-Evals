@@ -239,6 +239,10 @@ router.get('/', authenticateToken, authorizeRoles(...INSTRUCTOR_TIER_ROLES), asy
  */
 router.get('/published', authenticateToken, async (req, res) => {
   try {
+    // Support staff never take quizzes and must not see quiz questions.
+    if (req.user.role === 'support_staff') {
+      return res.json([]);
+    }
     if (req.user.role === 'electrical_student') {
       const me = await User.findById(req.user.id).select('addedBy');
       if (!me || !me.addedBy) {

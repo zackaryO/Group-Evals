@@ -22,6 +22,7 @@ const InstructorRoute = ({
   if (!roles.includes(role)) {
     if (role === ROLES.ELECTRICAL_STUDENT) return <Navigate to="/take-quiz" />;
     if (role === ROLES.ELECTRICAL_INSTRUCTOR) return <Navigate to="/home" />;
+    if (role === ROLES.SUPPORT_STAFF) return <Navigate to="/home" />;
     return <Navigate to="/" />;
   }
 

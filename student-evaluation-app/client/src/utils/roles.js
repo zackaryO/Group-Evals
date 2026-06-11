@@ -16,6 +16,9 @@ export const ROLES = {
   ELECTRICAL_INSTRUCTOR: 'electrical_instructor',
   STUDENT: 'student',
   ELECTRICAL_STUDENT: 'electrical_student',
+  // Support staff: broad student-support access (all grades view-only, full job
+  // board, resume, evaluations) but NO access to quiz questions of any kind.
+  SUPPORT_STAFF: 'support_staff',
 };
 
 // Full instructors can do everything in the app.
@@ -31,6 +34,8 @@ export const isInstructorTier = (role) =>
 
 export const isElectricalStudent = (role) =>
   role === ROLES.ELECTRICAL_STUDENT;
+
+export const isSupportStaff = (role) => role === ROLES.SUPPORT_STAFF;
 
 export const isRegularStudent = (role) => role === ROLES.STUDENT;
 
