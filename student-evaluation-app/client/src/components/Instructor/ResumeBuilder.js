@@ -1048,6 +1048,24 @@ const ResumeBuilder = () => {
       // Wait a frame so the DOM expands before capture
       await new Promise((r) => setTimeout(r, 250));
     }
+
+    // Ask where to save up front (Chrome/Edge): the File System Access API
+    // requires a fresh user gesture, and the render below can outlive the
+    // gesture-validity window. Browsers without the API (Firefox/Safari)
+    // fall back to a normal download into the browser's Downloads location
+    // (their "Always ask where to save files" setting controls prompting).
+    let saveHandle = null;
+    if (typeof window.showSaveFilePicker === 'function') {
+      try {
+        saveHandle = await window.showSaveFilePicker({
+          suggestedName: pdfFilename(),
+          types: [{ description: 'PDF document', accept: { 'application/pdf': ['.pdf'] } }],
+        });
+      } catch (err) {
+        if (err && err.name === 'AbortError') return; // user cancelled Save As
+        saveHandle = null; // API hiccup — fall back to plain download below
+      }
+    }
     setPdfBusy(true);
 
     // Render an isolated off-screen clone at native 816px width so the
@@ -1193,7 +1211,14 @@ const ResumeBuilder = () => {
         });
       } catch { /* links are best-effort */ }
 
-      pdf.save(pdfFilename());
+      if (saveHandle) {
+        // Write into the file the user picked in the Save As dialog.
+        const writable = await saveHandle.createWritable();
+        await writable.write(pdf.output('blob'));
+        await writable.close();
+      } else {
+        pdf.save(pdfFilename());
+      }
     } catch (err) {
       window.alert(`PDF export failed: ${err.message}`);
     } finally {

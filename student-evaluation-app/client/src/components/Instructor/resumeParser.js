@@ -148,18 +148,48 @@ const splitSections = (lines) => {
 
 /* ---------------------------- list-section parse ------------------------- */
 
+/* An item that ends mid-phrase (trailing comma/colon/ampersand/hyphen) very
+   likely continues on the next extracted line. */
+const ITEM_CONNECTOR_END_RE = /[,;:&\-–]$/;
+
 const parseListSection = (rawLines) => {
   const out = [];
+  let prevRowIdxs = []; // indexes into `out` of the previous visual row's items
   for (const raw of rawLines) {
-    const line = stripBullet(norm(raw));
-    if (!line) continue;
-    // Many resumes lay these out as 2-column tables that get flattened with "  " or tabs;
-    // also split on " | " or "  " when the line looks like two items.
-    const parts = line.split(/\s{2,}|\t+|\s+\|\s+/).map((p) => p.trim()).filter(Boolean);
-    if (parts.length > 1 && parts.every((p) => p.length < 80)) {
-      parts.forEach((p) => out.push(p));
-    } else {
-      out.push(line);
+    if (!raw || !norm(raw)) { prevRowIdxs = []; continue; }
+    // Split flattened 2-column rows into their items. IMPORTANT: split the
+    // RAW line — norm() collapses the "  " column marker the PDF extractor
+    // inserts down to a single space, which used to fuse the two columns'
+    // items into one bullet.
+    let parts = raw.split(/\s{2,}|\t+|\s+\|\s+/).map((p) => stripBullet(norm(p))).filter(Boolean);
+    if (parts.length > 1 && !parts.every((p) => p.length < 80)) {
+      // A wide internal gap inside prose — treat the line as one item.
+      parts = [stripBullet(norm(raw))].filter(Boolean);
+    }
+    if (parts.length === 0) continue;
+    // Wrapped-line continuation: PDFs wrap long bullets onto a new line with
+    // no marker of their own (e.g. "...WIS, DWD, StarTek NG," / "etc.").
+    // A lone fragment starting lowercase, or following an item that ends
+    // mid-phrase, is the tail of a previous-row item — not a new bullet.
+    const isContinuation =
+      parts.length === 1 &&
+      prevRowIdxs.length > 0 &&
+      (/^[a-z]/.test(parts[0]) || prevRowIdxs.some((i) => ITEM_CONNECTOR_END_RE.test(out[i])));
+    if (isContinuation) {
+      // Attach to the previous-row item that clearly ends mid-phrase (in a
+      // 2-column row the wrap belongs to the column whose text trails off);
+      // fall back to the row's first item.
+      const target =
+        prevRowIdxs.find((i) => ITEM_CONNECTOR_END_RE.test(out[i])) ?? prevRowIdxs[0];
+      out[target] = out[target].endsWith('-')
+        ? `${out[target]}${parts[0]}` // hyphenated mid-word wrap
+        : `${out[target]} ${parts[0]}`;
+      continue; // keep prevRowIdxs so a second wrapped line can attach too
+    }
+    prevRowIdxs = [];
+    for (const p of parts) {
+      prevRowIdxs.push(out.length);
+      out.push(p);
     }
   }
   return out;
@@ -167,7 +197,10 @@ const parseListSection = (rawLines) => {
 
 /* ----------------------- structured entries parse ----------------------- */
 
-const DATE_RANGE_RE = /\b((?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s*\d{4}|\d{4}|present|current|expected[^,\n]*?\d{0,4})\b/gi;
+// Alternatives ordered longest-first so "Expected July 2026" matches whole
+// (the old lazy `expected[^,\n]*?\d{0,4}` matched just "Expected", splitting
+// the rest of the phrase off into a third bogus date).
+const DATE_RANGE_RE = /\b(?:expected\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s*\d{4}\b|\b(?:expected\s+)?\d{4}\b|\bpresent\b|\bcurrent\b|\bexpected\b/gi;
 const HAS_DATE_RE = /\b(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*\.?\s*\d{4}|\d{4}|present|current)\b/i;
 const BULLET_RE = /^[\s•·●○*\-–—►▪]/;
 
@@ -237,8 +270,9 @@ const parseStructuredEntries = (rawLines, kind /* 'education' | 'work' */) => {
       entry.title = trimmed;
       metaConsumed = 1;
     } else if (metaConsumed === 1) {
-      // institution/company line — may contain location after a wide gap
-      const segs = trimmed.split(/\s{2,}|\t+|\s+\|\s+/);
+      // institution/company line — may contain location after a wide gap.
+      // Split the RAW line: norm() collapses the extractor's "  " column gap.
+      const segs = raw.split(/\s{2,}|\t+|\s+\|\s+/).map((s) => norm(s)).filter(Boolean);
       if (kind === 'education') {
         entry.institution = segs[0] || trimmed;
         if (segs[1] && !entry.location) entry.location = segs[1];
@@ -253,9 +287,13 @@ const parseStructuredEntries = (rawLines, kind /* 'education' | 'work' */) => {
       if (dates.length >= 1) {
         entry.startDate = dates[0];
         if (dates.length >= 2) entry.endDate = dates[1];
+        // Strip only the date matches and the leftover range separators at
+        // the edges — interior punctuation like the comma in "Clearfield, UT"
+        // must survive (the old global cleanup flattened it to "Clearfield UT").
         const remainder = trimmed
           .replace(DATE_RANGE_RE, '')
-          .replace(/[\s\-–—|,]+/g, ' ')
+          .replace(/^[\s\-–—|,]+|[\s\-–—|,]+$/g, '')
+          .replace(/\s{2,}/g, ' ')
           .trim();
         if (remainder && !entry.location) entry.location = remainder;
       } else if (!entry.location) {
@@ -263,7 +301,18 @@ const parseStructuredEntries = (rawLines, kind /* 'education' | 'work' */) => {
       }
       metaConsumed = 3;
     } else {
-      details.push(trimmed);
+      // PDF line-wrap: a marker-less line starting lowercase, or following a
+      // detail that ends mid-phrase, is the wrapped tail of the previous
+      // detail — not a new bullet ("...15 Mercedes-Benz instructor-led" /
+      // "courses in an 18-week, factory-aligned program").
+      const prev = details.length ? details[details.length - 1] : null;
+      if (prev && (/^[a-z]/.test(trimmed) || ITEM_CONNECTOR_END_RE.test(prev))) {
+        details[details.length - 1] = prev.endsWith('-')
+          ? `${prev}${trimmed}`
+          : `${prev} ${trimmed}`;
+      } else {
+        details.push(trimmed);
+      }
     }
   }
   flush();
@@ -373,7 +422,12 @@ export const extractFromPdf = async (file) => {
       if (!item.str) continue;
       const y = Math.round(item.transform[5]);
       if (!itemsByY.has(y)) itemsByY.set(y, []);
-      itemsByY.get(y).push({ x: item.transform[4], str: item.str, width: item.width });
+      itemsByY.get(y).push({
+        x: item.transform[4],
+        str: item.str,
+        width: item.width,
+        fontPx: Math.abs(item.transform[0]) || 0, // horizontal font scale ≈ font size
+      });
     }
     const sortedY = [...itemsByY.keys()].sort((a, b) => b - a); // top to bottom
 
@@ -401,14 +455,23 @@ export const extractFromPdf = async (file) => {
       let lastEnd = -Infinity;
       for (const it of row) {
         const gap = it.x - lastEnd;
+        // Column boundary: any gap much wider than a word space at this font
+        // size. The old fixed 30px threshold missed narrow column gaps — a
+        // wrapped line that nearly fills its column ends ~25px before the
+        // next column starts, which fused both columns' text with a single
+        // space ("...StarTek NG, Customer communication").
+        const colGap = Math.max(12, (it.fontPx || 11) * 1.1);
         if (line) {
-          if (gap > 30) line += '  ';                                  // column gap
+          if (gap > colGap) line += '  ';                              // column gap
           else if (gap > 2 && !line.endsWith(' ') && !it.str.startsWith(' ')) line += ' ';
           // else: adjacent text runs ("20"+"18" -> "2018"), no space
         }
         line += it.str;
         // Use pdfjs's reported width when available; fall back to a rough estimate.
-        const width = typeof it.width === 'number' && it.width > 0 ? it.width : it.str.length * 5;
+        const width =
+          typeof it.width === 'number' && it.width > 0
+            ? it.width
+            : it.str.length * ((it.fontPx || 10) * 0.5);
         lastEnd = it.x + width;
       }
       linesOut.push(line);
