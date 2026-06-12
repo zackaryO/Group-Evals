@@ -990,16 +990,39 @@
     padding: 0;
   }
 
+  /* Fixed physical width (8.5in = the on-screen 816px) instead of `100%`.
+     With 100%, the page tracked the printable area, which varies by machine:
+     printers with hardware margins or browsers defaulting to A4 narrowed the
+     page while the absolutely-positioned 200px logo stayed fixed, so the
+     header proportions (logo vs. centered name/contacts) came out wrong on
+     some computers. A fixed width keeps layout identical everywhere; if the
+     printable area is narrower the browser scales the whole page uniformly. */
   .resume-page,
   .transcript-page {
     box-shadow: none;
-    margin: 0;
-    width: 100%;
+    margin: 0 auto;
+    width: 8.5in;
     min-height: 0;
     max-height: unset;
     overflow: visible;
     padding: 0.5in;
     box-sizing: border-box;
+  }
+
+  /* Print backgrounds/colors exactly as on screen (transcript header fill,
+     section divider grays, link/institution colors) on every browser. */
+  .resume-page,
+  .resume-page *,
+  .transcript-page,
+  .transcript-page * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Belt-and-suspenders: never let the logo be resized by print reflow. */
+  .resume-logo {
+    width: 200px !important;
+    height: auto !important;
   }
 
   /* Flex containers suppress page-break-* on their children in many engines.

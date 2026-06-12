@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './ResumeBuilder.css';
-import { importResumeFile } from './resumeParser';
+import { importResumeFile, EMBED_MARKER } from './resumeParser';
 import TranscriptAddendum from './TranscriptAddendum';
 
 const PAGE_HEIGHT_PX = 1056; // 11in at 96 DPI
+const PAGE_WIDTH_PX = 816;   // 8.5in at 96 DPI
 const MAX_PAGES = 5;
 const STORAGE_KEY = 'resumeBuilder.profiles.v1';
 const SCHOOL_URL = 'https://mbdrivejc.com/';
@@ -327,6 +328,7 @@ const ResumeBuilder = () => {
   const [fitResult, setFitResult] = useState({ fits: true, pages: 1, overflow: 0, usedPct: 0 });
   const [allowPagination, setAllowPagination] = useState(false);
   const [breakWarnings, setBreakWarnings] = useState([]);
+  const [pdfBusy, setPdfBusy] = useState(false);
   const [showPreviewHint, setShowPreviewHint] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null); // { kind, msg }
@@ -480,11 +482,12 @@ const ResumeBuilder = () => {
       }
     };
 
-    // Deferring the layout-mutating work to the next animation frame
-    // prevents the "ResizeObserver loop completed with undelivered
-    // notifications" warning, which fires when an observer callback
-    // synchronously mutates layout (panel.style.width).
+    // ALL layout-mutating work is deferred to the next animation frame:
+    // mutating layout synchronously inside a ResizeObserver callback (even
+    // just label.style.flex) is what triggers the "ResizeObserver loop
+    // completed with undelivered notifications" runtime error.
     let rafScheduled = false;
+    const pendingPins = new Map(); // label -> textarea/input to pin it to
     const handleResize = (entries) => {
       for (const entry of entries) {
         const el = entry.target;
@@ -493,18 +496,20 @@ const ResumeBuilder = () => {
         // Only the .grid-two layout needs its cell's flex pinned so
         // siblings can be pushed. Standalone labels just need the panel
         // to be wide enough; growForOverflow() handles that.
-        if (isInGridTwo(label)) {
+        if (isInGridTwo(label)) pendingPins.set(label, el);
+      }
+      if (rafScheduled) return;
+      rafScheduled = true;
+      requestAnimationFrame(() => {
+        rafScheduled = false;
+        for (const [label, el] of pendingPins) {
           if (el.style.width) {
             label.style.flex = `0 0 ${el.offsetWidth}px`;
           } else if (label.style.flex) {
             label.style.flex = '';
           }
         }
-      }
-      if (rafScheduled) return;
-      rafScheduled = true;
-      requestAnimationFrame(() => {
-        rafScheduled = false;
+        pendingPins.clear();
         // Once the user has chosen a panel width via the handle, never auto-
         // grow the panel again — that was the source of the snap-back fight.
         if (panelWidthPinnedRef.current) return;
@@ -1023,13 +1028,179 @@ const ResumeBuilder = () => {
     doPrint();
   };
 
-  // "Export PDF" routes through the exact same browser print-to-PDF path as the
-  // Print button, so both produce identical output and the same
-  // "<Full Name> - Resume.pdf" filename (the browser's Save-as-PDF dialog
-  // defaults to the document title that doPrint sets). This replaced an
-  // html2canvas/jsPDF rasterizer that produced large, image-only PDFs named
-  // "<Full_Name>.pdf" — inconsistent with Print, and unreadable by the importer.
-  const exportPDF = handlePrint;
+  /* "Export PDF" downloads a PDF file directly with no print dialog. It uses
+     the same filename convention as Print -> Save as PDF ("<Full Name> -
+     Resume.pdf") and embeds the full resume payload in the PDF metadata so the
+     Upload Resume flow round-trips it losslessly. Print remains the path for
+     paper copies / a selectable-text PDF. */
+  const pdfFilename = () =>
+    `${(data.fullName || 'Resume').replace(/[\\/:*?"<>|]/g, '-').trim()} - Resume.pdf`;
+
+  const exportPDF = async () => {
+    const source = documentRef.current;
+    if (!source) return;
+    if (!fitResult.fits && !allowPagination) {
+      const ok = window.confirm(
+        `Current content requires approximately ${fitResult.pages} pages. Allow pagination (up to ${MAX_PAGES} pages)?`
+      );
+      if (!ok) return;
+      setAllowPagination(true);
+      // Wait a frame so the DOM expands before capture
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    setPdfBusy(true);
+
+    // Render an isolated off-screen clone at native 816px width so the
+    // capture isn't affected by viewport size, horizontal scroll position,
+    // shadow cropping, or media queries.
+    const stage = document.createElement('div');
+    stage.className = 'resume-export-stage';
+    stage.style.width = `${PAGE_WIDTH_PX}px`;
+    const clone = source.cloneNode(true);
+    // Strip preview-only visuals on the clone (box-shadow, gap, etc).
+    clone.style.gap = '0';
+    clone.querySelectorAll('.resume-page, .transcript-page').forEach((el) => {
+      el.style.boxShadow = 'none';
+      el.style.margin = '0';
+    });
+    stage.appendChild(clone);
+    document.body.appendChild(stage);
+
+    try {
+      const html2canvasMod = await import('html2canvas');
+      const { jsPDF } = await import('jspdf');
+      const html2canvas = html2canvasMod.default || html2canvasMod;
+
+      // Let layout settle and images load before capture.
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const imgs = Array.from(clone.querySelectorAll('img'));
+      await Promise.all(
+        imgs.map((img) =>
+          img.complete
+            ? Promise.resolve()
+            : new Promise((res) => {
+                img.onload = res;
+                img.onerror = res;
+              })
+        )
+      );
+
+      const fullHeight = stage.scrollHeight;
+      // scale: 3 gives ~288 dpi at letter size, which keeps text edges crisp.
+      // Paired with high-quality JPEG below: at this resolution the JPEG
+      // artifacts are invisible, while lossless PNG ran ~20 MB/page and made
+      // 60+ MB files that couldn't be emailed or re-imported.
+      const canvas = await html2canvas(stage, {
+        scale: 3,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        logging: false,
+        width: PAGE_WIDTH_PX,
+        height: fullHeight,
+        windowWidth: PAGE_WIDTH_PX,
+        windowHeight: fullHeight,
+        scrollX: 0,
+        scrollY: 0,
+      });
+
+      const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
+
+      // Embed the full resume payload in the PDF's Keywords metadata so the
+      // Upload Resume flow can round-trip our own PDFs losslessly.
+      try {
+        const payload = JSON.stringify({ version: 1, profile: activeProfile, data, settings });
+        pdf.setProperties({
+          title: `${data.fullName || 'Resume'} - Resume`,
+          subject: 'Resume',
+          author: data.fullName || '',
+          keywords: `${EMBED_MARKER}${payload}`,
+          creator: 'MB Drive JC Resume Builder',
+        });
+      } catch { /* metadata is best-effort */ }
+
+      const pageWidthIn = 8.5;
+      const pageHeightIn = 11;
+      const pxPerIn = canvas.width / pageWidthIn;
+      const pageSlicePx = pageHeightIn * pxPerIn;
+
+      // Prefer to break at the natural document boundaries (.resume-page,
+      // .transcript-page). We find their on-stage tops, scale to canvas px,
+      // and use them as cut points so a section never gets sliced across
+      // pages.
+      const stageRect = stage.getBoundingClientRect();
+      const breakNodes = Array.from(clone.querySelectorAll('.resume-page, .transcript-page'));
+      const scale = canvas.height / stage.scrollHeight;
+      const breakOffsetsPx = breakNodes
+        .map((el) => Math.round((el.getBoundingClientRect().top - stageRect.top) * scale))
+        .filter((y) => y > 0);
+      const cutPoints = [0, ...breakOffsetsPx, canvas.height];
+
+      let isFirst = true;
+      // Canvas-Y range each emitted PDF page covers, so link annotations
+      // below can be placed on the right page.
+      const pageRanges = [];
+      for (let i = 0; i < cutPoints.length - 1; i++) {
+        const yStart = cutPoints[i];
+        const yEnd = cutPoints[i + 1];
+        const blockHeight = yEnd - yStart;
+        if (blockHeight <= 1) continue;
+        // Within a logical block, slice into letter-page chunks.
+        let yOff = 0;
+        while (yOff < blockHeight - 1) {
+          const sliceH = Math.min(pageSlicePx, blockHeight - yOff);
+          const slice = document.createElement('canvas');
+          slice.width = canvas.width;
+          slice.height = Math.ceil(sliceH);
+          const ctx = slice.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, slice.width, slice.height);
+          ctx.drawImage(canvas, 0, -(yStart + yOff));
+          // High-quality JPEG (0.92): visually indistinguishable from lossless
+          // at the scale-3 capture resolution, ~20-30x smaller than PNG. The
+          // slice is pre-filled white above, so JPEG's lack of alpha is fine.
+          const dataUrl = slice.toDataURL('image/jpeg', 0.92);
+          if (!isFirst) pdf.addPage();
+          pdf.addImage(dataUrl, 'JPEG', 0, 0, pageWidthIn, sliceH / pxPerIn);
+          pageRanges.push({ start: yStart + yOff, end: yStart + yOff + sliceH });
+          yOff += sliceH;
+          isFirst = false;
+        }
+      }
+
+      // The page images themselves are not clickable, so overlay invisible
+      // link annotations at each anchor's rendered position (email, LinkedIn,
+      // school site, ...). Best-effort: a failure here must not block export.
+      try {
+        const scaleX = canvas.width / stageRect.width;
+        clone.querySelectorAll('a[href]').forEach((a) => {
+          const href = a.href; // resolved absolute URL; mailto: kept as-is
+          if (!href) return;
+          const r = a.getBoundingClientRect();
+          if (r.width <= 0 || r.height <= 0) return;
+          const cx = (r.left - stageRect.left) * scaleX;
+          const cyTop = (r.top - stageRect.top) * scale;
+          const cyMid = cyTop + (r.height * scale) / 2;
+          const pageIdx = pageRanges.findIndex((p) => cyMid >= p.start && cyMid < p.end);
+          if (pageIdx === -1) return;
+          pdf.setPage(pageIdx + 1);
+          pdf.link(
+            cx / pxPerIn,
+            (cyTop - pageRanges[pageIdx].start) / pxPerIn,
+            (r.width * scaleX) / pxPerIn,
+            (r.height * scale) / pxPerIn,
+            { url: href }
+          );
+        });
+      } catch { /* links are best-effort */ }
+
+      pdf.save(pdfFilename());
+    } catch (err) {
+      window.alert(`PDF export failed: ${err.message}`);
+    } finally {
+      if (stage.parentNode) stage.parentNode.removeChild(stage);
+      setPdfBusy(false);
+    }
+  };
 
   /* ====================== RENDER ====================== */
   const fillBarColor =
@@ -1559,8 +1730,8 @@ const ResumeBuilder = () => {
             Reset Layout
           </button>
           <button type="button" onClick={handlePrint}>Print</button>
-          <button type="button" onClick={exportPDF} title="Opens the browser print dialog, then choose Save as PDF">
-            Export PDF
+          <button type="button" onClick={exportPDF} disabled={pdfBusy} title="Download the resume as a PDF file">
+            {pdfBusy ? 'Generating PDF…' : 'Export PDF'}
           </button>
         </div>
 

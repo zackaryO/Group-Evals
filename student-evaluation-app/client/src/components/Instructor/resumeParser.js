@@ -16,7 +16,9 @@ const emptyWork = () => ({
 });
 
 const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/;
-const PHONE_RE = /(\+?\d[\d().\-\s]{8,}\d)/;
+// Leading \(? so "(619) 746-2432" keeps its opening paren (it used to import
+// as "619) 746-2432").
+const PHONE_RE = /(\+?\(?\d[\d().\-\s]{8,}\d)/;
 const URL_RE = /\b((?:https?:\/\/|www\.)[^\s<>"']+|(?:[\w-]+\.)+(?:com|org|net|io|dev|app|co|gov|edu)(?:\/[^\s<>"']*)?)/i;
 const LINKEDIN_RE = /(linkedin\.com\/[\w\-./%]+|linkedin\.com\b)/i;
 
@@ -46,22 +48,44 @@ const matchSectionHeader = (lineRaw) => {
 
 const stripBullet = (line) => line.replace(/^[\s•·●○*\-–—►▪]+/, '').trim();
 
+// Unicode-aware: accented names (José, Muñoz, García...) used to fail the
+// ASCII-only pattern and import with an empty name.
+const NAME_RE = /^[\p{L}][\p{L}'.,\- ]{1,80}$/u;
+const looksLikeName = (s) => {
+  if (!NAME_RE.test(s)) return false;
+  const words = s.split(/\s+/).length;
+  return words >= 2 && words <= 6;
+};
+
+/* Remove contact tokens (email / phone / URLs / "Cell:" labels / separators)
+   from a line so a name or title sharing the line with them can still be
+   recognized — e.g. "John Smith | john@x.com | (555) 123-4567". */
+const stripContactTokens = (s) =>
+  norm(
+    (s || '')
+      .replace(new RegExp(EMAIL_RE.source, 'gi'), ' ')
+      .replace(new RegExp(LINKEDIN_RE.source, 'gi'), ' ')
+      .replace(new RegExp(URL_RE.source, 'gi'), ' ')
+      .replace(new RegExp(PHONE_RE.source, 'g'), ' ')
+      .replace(/\b(cell|phone|tel|mobile|fax|email|e-mail)\b\s*:?/gi, ' ')
+      .replace(/[|•·]+/g, ' ')
+  ).replace(/^[\s\-–—,;:]+|[\s\-–—,;:]+$/g, '');
+
 const parseHeader = (lines) => {
   const out = { fullName: '', title: '', email: '', phone: '', linkedinUrl: '' };
-  const consumedIndexes = new Set();
 
   for (let i = 0; i < Math.min(lines.length, 12); i++) {
     const l = norm(lines[i]);
     if (!l) continue;
     if (!out.email) {
       const m = l.match(EMAIL_RE);
-      if (m) { out.email = m[0]; consumedIndexes.add(i); }
+      if (m) out.email = m[0];
     }
     if (!out.phone) {
       const m = l.match(PHONE_RE);
       if (m) {
         const digits = m[1].replace(/\D/g, '');
-        if (digits.length >= 10) { out.phone = m[1].trim(); consumedIndexes.add(i); }
+        if (digits.length >= 10) out.phone = m[1].trim();
       }
     }
     if (!out.linkedinUrl) {
@@ -70,29 +94,33 @@ const parseHeader = (lines) => {
         let u = m[1];
         if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
         out.linkedinUrl = u;
-        consumedIndexes.add(i);
       }
     }
   }
 
-  // Name = first non-empty, non-contact line near the top
+  // Name = first line near the top that looks like a person's name, after
+  // stripping any contact tokens that share the line with it.
   for (let i = 0; i < Math.min(lines.length, 6); i++) {
-    if (consumedIndexes.has(i)) continue;
     const l = norm(lines[i]);
     if (!l) continue;
     if (matchSectionHeader(l)) break;
-    if (EMAIL_RE.test(l) || PHONE_RE.test(l) || URL_RE.test(l)) continue;
-    // Likely the name if it contains 2+ words and no role-y words
-    if (/^[A-Za-z][A-Za-z'.\- ]{1,80}$/.test(l) && l.split(/\s+/).length >= 2 && l.split(/\s+/).length <= 6) {
-      out.fullName = l;
+    const hasContact = EMAIL_RE.test(l) || PHONE_RE.test(l) || URL_RE.test(l);
+    const candidate = hasContact ? stripContactTokens(l) : l;
+    if (!candidate) continue;
+    if (looksLikeName(candidate)) {
+      out.fullName = candidate;
       // Title is often the next non-contact line
       for (let j = i + 1; j < Math.min(lines.length, i + 5); j++) {
         const lj = norm(lines[j]);
         if (!lj) continue;
         if (matchSectionHeader(lj)) break;
-        if (EMAIL_RE.test(lj) || PHONE_RE.test(lj) || URL_RE.test(lj)) continue;
-        if (lj.length > 80) break;
-        out.title = lj;
+        let t = lj;
+        if (EMAIL_RE.test(t) || PHONE_RE.test(t) || URL_RE.test(t)) {
+          t = stripContactTokens(t);
+          if (!t) continue;
+        }
+        if (t.length > 80) break;
+        out.title = t;
         break;
       }
       break;
