@@ -417,6 +417,7 @@ const TakeQuiz = ({ user }) => {
   const [message, setMessage]                   = useState('');           // Success / error feedback
   const [isLoading, setIsLoading]               = useState(false);        // Fetch / submit activity
   const [previousSubmissions, setPreviousSubs]  = useState({});           // { [quizId]: submission }
+  const [highlightUnanswered, setHighlightUnanswered] = useState(false);  // Flag unanswered questions after a blocked submit
 
   // Tick once per second so the session-expiry banner can update its
   // countdown. We only mount the timer while the student is actively
@@ -483,6 +484,7 @@ const TakeQuiz = ({ user }) => {
     setAnswers({});
     setScore(null);
     setMessage('');
+    setHighlightUnanswered(false);
   };
 
   // Return to the "Take a Quiz / Select a Quiz" list view from the result panel.
@@ -512,10 +514,33 @@ const TakeQuiz = ({ user }) => {
     selectedQuiz &&
     selectedQuiz.questions.every((q) => answers[q._id] !== undefined);
 
+  // Questions still missing an answer, in their on-screen order.
+  const unansweredQuestions = selectedQuiz
+    ? selectedQuiz.questions.filter((q) => answers[q._id] === undefined)
+    : [];
+  const unansweredCount = unansweredQuestions.length;
+
+  // Smooth-scroll the topmost unanswered question into view (and flag the
+  // unanswered ones so they're easy to spot).
+  const scrollToFirstUnanswered = useCallback(() => {
+    setHighlightUnanswered(true);
+    const first = selectedQuiz?.questions.find((q) => answers[q._id] === undefined);
+    if (!first) return;
+    const el = document.getElementById(`tq-q-${first._id}`);
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [selectedQuiz, answers]);
+
   /* Submit for grading */
   const handleSubmitQuiz = async (e) => {
     e.preventDefault();
-    if (!isQuizComplete()) return;
+    // Block submission until every question is answered, but tell the student
+    // exactly why (count) and take them to the first one that needs answering.
+    if (!isQuizComplete()) {
+      scrollToFirstUnanswered();
+      return;
+    }
 
     setIsLoading(true);
     try {
@@ -624,17 +649,32 @@ const TakeQuiz = ({ user }) => {
     );
   };
 
-  const renderQuestion = (question) => (
+  const renderQuestion = (question) => {
+    const isUnanswered = answers[question._id] === undefined;
+    const flagged = highlightUnanswered && isUnanswered;
+    return (
     <div
       key={question._id}
+      id={`tq-q-${question._id}`}
       style={{
         borderBottom: '1px solid #ddd',
-        padding: '15px 0',
+        // When flagged after a blocked submit, outline the whole question so
+        // it's unmistakable which ones still need an answer.
+        border: flagged ? '2px solid #dc2626' : undefined,
+        borderRadius: flagged ? 8 : undefined,
+        background: flagged ? '#fef2f2' : undefined,
+        padding: '15px',
         marginBottom: '15px',
+        scrollMarginTop: '90px',
       }}
     >
       <p style={{ fontWeight: 'bold', marginBottom: '10px' }}>
         {question.questionText}
+        {flagged && (
+          <span style={{ color: '#dc2626', fontWeight: 700, marginLeft: 8, fontSize: '0.85rem' }}>
+            ● Needs an answer
+          </span>
+        )}
       </p>
 
       {/* Optional question image */}
@@ -685,7 +725,8 @@ const TakeQuiz = ({ user }) => {
         })}
       </div>
     </div>
-  );
+    );
+  };
 
   const renderQuizForm = () => (
     <form onSubmit={handleSubmitQuiz}>
@@ -693,10 +734,68 @@ const TakeQuiz = ({ user }) => {
         {selectedQuiz.title}
       </h3>
       {selectedQuiz.questions.map(renderQuestion)}
+
+      {/* Why-can't-I-submit banner. Always visible while any question is
+          unanswered so the student knows what's blocking them, with a button
+          that scrolls to the first one needing an answer. */}
+      {unansweredCount > 0 && (
+        <div
+          role="status"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            background: '#fff7ed',
+            border: '1px solid #fdba74',
+            color: '#9a3412',
+            padding: '12px 16px',
+            borderRadius: 8,
+            margin: '4px 0 16px',
+            fontWeight: 600,
+          }}
+        >
+          <span>
+            {unansweredCount} of {selectedQuiz.questions.length} question
+            {selectedQuiz.questions.length === 1 ? '' : 's'} still unanswered. Answer every
+            question to submit.
+          </span>
+          <button
+            type="button"
+            onClick={scrollToFirstUnanswered}
+            style={{
+              padding: '8px 14px',
+              background: '#ea580c',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 6,
+              fontWeight: 700,
+              cursor: 'pointer',
+              maxWidth: 'none',
+              margin: 0,
+              alignSelf: 'auto',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Go to first unanswered
+          </button>
+        </div>
+      )}
+
       <button
         type="submit"
-        style={primaryButtonStyle}
-        disabled={!isQuizComplete() || isLoading}
+        style={{
+          ...primaryButtonStyle,
+          // Keep the button clickable even while incomplete so a click can
+          // explain why and jump to the first unanswered question; only dim it
+          // (and disable) during the actual submit request.
+          opacity: isLoading ? 0.6 : 1,
+          backgroundColor: unansweredCount > 0 ? '#94a3b8' : primaryButtonStyle.backgroundColor,
+          cursor: isLoading ? 'wait' : 'pointer',
+        }}
+        disabled={isLoading}
+        aria-disabled={unansweredCount > 0}
       >
         {isLoading ? 'Submitting...' : 'Submit Quiz'}
       </button>
