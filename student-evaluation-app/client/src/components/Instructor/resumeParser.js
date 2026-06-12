@@ -435,10 +435,21 @@ export const importResumeFile = async (file) => {
 
   // Lossless path: embedded JSON wins.
   if (extracted.embeddedJson) {
+    // Our exported payloads are wrapped as { version, profile, data, settings }.
+    // extractFromJson already unwraps to the inner data object, but the PDF
+    // embed path hands back the whole wrapper. Normalize both here so the inner
+    // resume fields (fullName, certifications, education, ...) reach migrateData
+    // rather than the wrapper — otherwise the import silently produced an
+    // empty/default resume.
+    const payload = extracted.embeddedJson;
+    const isWrapper =
+      payload && typeof payload === 'object' && payload.data && !payload.fullName;
+    const data = isWrapper ? payload.data : payload;
+    const settings = extracted.settings || (isWrapper ? payload.settings : null) || null;
     return {
       source: isJson ? 'json' : 'embedded',
-      data: extracted.embeddedJson,
-      settings: extracted.settings || null,
+      data,
+      settings,
     };
   }
 

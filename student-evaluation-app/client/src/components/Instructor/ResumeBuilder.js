@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import './ResumeBuilder.css';
-import { importResumeFile, EMBED_MARKER } from './resumeParser';
+import { importResumeFile } from './resumeParser';
 import TranscriptAddendum from './TranscriptAddendum';
 
 const PAGE_HEIGHT_PX = 1056; // 11in at 96 DPI
-const PAGE_WIDTH_PX = 816;   // 8.5in at 96 DPI
 const MAX_PAGES = 5;
 const STORAGE_KEY = 'resumeBuilder.profiles.v1';
 const SCHOOL_URL = 'https://mbdrivejc.com/';
@@ -328,7 +327,6 @@ const ResumeBuilder = () => {
   const [fitResult, setFitResult] = useState({ fits: true, pages: 1, overflow: 0, usedPct: 0 });
   const [allowPagination, setAllowPagination] = useState(false);
   const [breakWarnings, setBreakWarnings] = useState([]);
-  const [pdfBusy, setPdfBusy] = useState(false);
   const [showPreviewHint, setShowPreviewHint] = useState(false);
   const [uploadBusy, setUploadBusy] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null); // { kind, msg }
@@ -1025,139 +1023,13 @@ const ResumeBuilder = () => {
     doPrint();
   };
 
-  const exportPDF = async () => {
-    const source = documentRef.current;
-    if (!source) return;
-    const wasPaginated = allowPagination;
-    if (!fitResult.fits && !wasPaginated) {
-      const ok = window.confirm(
-        `Current content requires approximately ${fitResult.pages} pages. Allow pagination (up to ${MAX_PAGES} pages)?`
-      );
-      if (!ok) return;
-      setAllowPagination(true);
-      // Wait a frame so the DOM expands before capture
-      await new Promise((r) => setTimeout(r, 250));
-    }
-    setPdfBusy(true);
-
-    // Render an isolated off-screen clone at native 816px width so the
-    // capture isn't affected by viewport size, horizontal scroll position,
-    // shadow cropping, or media queries.
-    const stage = document.createElement('div');
-    stage.className = 'resume-export-stage';
-    stage.style.width = `${PAGE_WIDTH_PX}px`;
-    const clone = source.cloneNode(true);
-    // Strip preview-only visuals on the clone (box-shadow, gap, etc).
-    clone.style.gap = '0';
-    clone.querySelectorAll('.resume-page, .transcript-page').forEach((el) => {
-      el.style.boxShadow = 'none';
-      el.style.margin = '0';
-    });
-    stage.appendChild(clone);
-    document.body.appendChild(stage);
-
-    try {
-      const html2canvasMod = await import('html2canvas');
-      const { jsPDF } = await import('jspdf');
-      const html2canvas = html2canvasMod.default || html2canvasMod;
-
-      // Let layout settle and images load before capture.
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      const imgs = Array.from(clone.querySelectorAll('img'));
-      await Promise.all(
-        imgs.map((img) =>
-          img.complete
-            ? Promise.resolve()
-            : new Promise((res) => {
-                img.onload = res;
-                img.onerror = res;
-              })
-        )
-      );
-
-      const fullHeight = stage.scrollHeight;
-      // scale: 3 gives ~288 dpi at letter size (vs ~192 at scale 2). Combined
-      // with PNG output below this keeps text edges crisp instead of the
-      // mushy JPEG-artifacted look at scale 2 + JPEG.
-      const canvas = await html2canvas(stage, {
-        scale: 3,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        logging: false,
-        width: PAGE_WIDTH_PX,
-        height: fullHeight,
-        windowWidth: PAGE_WIDTH_PX,
-        windowHeight: fullHeight,
-        scrollX: 0,
-        scrollY: 0,
-      });
-
-      const pdf = new jsPDF({ unit: 'in', format: 'letter', orientation: 'portrait' });
-
-      // Embed the full resume payload in the PDF's Keywords metadata so the
-      // Upload Resume flow can round-trip our own PDFs losslessly.
-      try {
-        const payload = JSON.stringify({ version: 1, profile: activeProfile, data, settings });
-        pdf.setProperties({
-          title: `${data.fullName || 'Resume'}`,
-          subject: 'Resume',
-          author: data.fullName || '',
-          keywords: `${EMBED_MARKER}${payload}`,
-          creator: 'MB Drive JC Resume Builder',
-        });
-      } catch { /* metadata is best-effort */ }
-
-      const pageWidthIn = 8.5;
-      const pageHeightIn = 11;
-      const pxPerIn = canvas.width / pageWidthIn;
-      const pageSlicePx = pageHeightIn * pxPerIn;
-
-      // Prefer to break at the natural document boundaries (.resume-page,
-      // .transcript-page). We find their on-stage tops, scale to canvas px,
-      // and use them as cut points so a section never gets sliced across
-      // pages.
-      const stageRect = stage.getBoundingClientRect();
-      const breakNodes = Array.from(clone.querySelectorAll('.resume-page, .transcript-page'));
-      const scale = canvas.height / stage.scrollHeight;
-      const breakOffsetsPx = breakNodes
-        .map((el) => Math.round((el.getBoundingClientRect().top - stageRect.top) * scale))
-        .filter((y) => y > 0);
-      const cutPoints = [0, ...breakOffsetsPx, canvas.height];
-
-      let isFirst = true;
-      for (let i = 0; i < cutPoints.length - 1; i++) {
-        let yStart = cutPoints[i];
-        const yEnd = cutPoints[i + 1];
-        const blockHeight = yEnd - yStart;
-        if (blockHeight <= 1) continue;
-        // Within a logical block, slice into letter-page chunks.
-        let yOff = 0;
-        while (yOff < blockHeight - 1) {
-          const sliceH = Math.min(pageSlicePx, blockHeight - yOff);
-          const slice = document.createElement('canvas');
-          slice.width = canvas.width;
-          slice.height = Math.ceil(sliceH);
-          const ctx = slice.getContext('2d');
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, slice.width, slice.height);
-          ctx.drawImage(canvas, 0, -(yStart + yOff));
-          // PNG is lossless — keeps text edges crisp. Files are larger than
-          // JPEG but for a resume this is well worth the quality bump.
-          const dataUrl = slice.toDataURL('image/png');
-          if (!isFirst) pdf.addPage();
-          pdf.addImage(dataUrl, 'PNG', 0, 0, pageWidthIn, sliceH / pxPerIn);
-          yOff += sliceH;
-          isFirst = false;
-        }
-      }
-      pdf.save(`${safeFilename(data.fullName)}.pdf`);
-    } catch (err) {
-      window.alert(`PDF export failed: ${err.message}`);
-    } finally {
-      if (stage.parentNode) stage.parentNode.removeChild(stage);
-      setPdfBusy(false);
-    }
-  };
+  // "Export PDF" routes through the exact same browser print-to-PDF path as the
+  // Print button, so both produce identical output and the same
+  // "<Full Name> - Resume.pdf" filename (the browser's Save-as-PDF dialog
+  // defaults to the document title that doPrint sets). This replaced an
+  // html2canvas/jsPDF rasterizer that produced large, image-only PDFs named
+  // "<Full_Name>.pdf" — inconsistent with Print, and unreadable by the importer.
+  const exportPDF = handlePrint;
 
   /* ====================== RENDER ====================== */
   const fillBarColor =
@@ -1687,8 +1559,8 @@ const ResumeBuilder = () => {
             Reset Layout
           </button>
           <button type="button" onClick={handlePrint}>Print</button>
-          <button type="button" onClick={exportPDF} disabled={pdfBusy}>
-            {pdfBusy ? 'Generating PDF…' : 'Export PDF'}
+          <button type="button" onClick={exportPDF} title="Opens the browser print dialog, then choose Save as PDF">
+            Export PDF
           </button>
         </div>
 
