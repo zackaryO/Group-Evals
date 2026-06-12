@@ -6,6 +6,7 @@ import axios from 'axios';
 import URL from '../../backEndURL';
 import './ManageQuizzes.css';
 import { isFullInstructor } from '../../utils/roles';
+import { printQuiz } from '../../utils/printQuiz';
 
 /**
  * ManageQuizzes Component
@@ -125,6 +126,16 @@ const ManageQuizzes = ({ user }) => {
     }
   };
 
+  // Print the instructor (answer key) or student (blank) version of a quiz.
+  // The quiz list is fetched with its questions already populated, so we can
+  // build the printout straight from state without another round-trip.
+  const handlePrint = (quiz, instructor) => {
+    const opened = printQuiz(quiz, { instructor });
+    if (!opened) {
+      setMessage('Could not open the print window. Please allow pop-ups for this site and try again.');
+    }
+  };
+
   const handleDeleteQuiz = async (quizId) => {
     if (!window.confirm('Delete this quiz and all its questions and submissions? This cannot be undone.')) return;
     try {
@@ -169,6 +180,20 @@ const ManageQuizzes = ({ user }) => {
           <Link to={`/manage-questions/${quiz._id}`} className="mq-btn mq-btn-neutral">
             Manage Questions
           </Link>
+          <button
+            type="button"
+            className="mq-btn mq-btn-print"
+            onClick={() => handlePrint(quiz, false)}
+          >
+            Print Student Version
+          </button>
+          <button
+            type="button"
+            className="mq-btn mq-btn-print-instructor"
+            onClick={() => handlePrint(quiz, true)}
+          >
+            Print Instructor Version
+          </button>
           {canDelete(quiz) && (
             <button type="button" className="mq-btn mq-btn-danger" onClick={() => handleDeleteQuiz(quiz._id)}>
               Delete

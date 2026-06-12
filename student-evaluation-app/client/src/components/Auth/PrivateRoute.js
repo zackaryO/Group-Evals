@@ -2,6 +2,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ROLES } from '../../utils/roles';
+import { isTokenValid } from '../../utils/auth';
 
 // Generic "must be logged in" guard. The two restricted roles
 // (electrical_student, electrical_instructor) are blocked from generic pages
@@ -18,7 +19,10 @@ const PrivateRoute = ({
 }) => {
   const token = localStorage.getItem('token');
 
-  if (!token || !user || !user._id) {
+  // Missing token, missing user, OR an expired/invalid token all mean "not
+  // authenticated" → send to login. The app-level watchdog clears the stale
+  // localStorage; here we just refuse to render the protected page.
+  if (!token || !isTokenValid(token) || !user || !user._id) {
     return <Navigate to="/login" />;
   }
 

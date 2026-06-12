@@ -16,10 +16,16 @@ const TOKEN_KEYS = ['token', 'userId', 'role', 'username', 'firstName', 'lastNam
 
 let alreadyHandlingExpiry = false;
 
+// Purge every stored auth key. Exported so the app-level session watchdog can
+// reuse the exact same key list instead of duplicating it.
+export function clearAuthStorage() {
+  TOKEN_KEYS.forEach((k) => localStorage.removeItem(k));
+}
+
 export function forceLogoutAndRedirect(reason = 'session_expired') {
   if (alreadyHandlingExpiry) return;
   alreadyHandlingExpiry = true;
-  TOKEN_KEYS.forEach((k) => localStorage.removeItem(k));
+  clearAuthStorage();
   // Full nav (not React Router) so every component remounts with no stale
   // user state. Pass a query so the login page can show a friendly note.
   const target = `/login?reason=${encodeURIComponent(reason)}`;

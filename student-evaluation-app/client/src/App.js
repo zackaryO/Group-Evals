@@ -1,7 +1,9 @@
 // student-evaluation-app/client/src/App.js
 
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { isTokenValid } from './utils/auth';
+import { forceLogoutAndRedirect, clearAuthStorage } from './authInterceptor';
 import Navbar from './components/Navbar';
 import Home from './components/Home';
 import Login from './components/Auth/Login';
@@ -72,6 +74,39 @@ const App = () => {
 
     return null;
   });
+
+  // Session watchdog: the route guards block navigation to protected pages once
+  // a token is expired, but a user can also be sitting idle on an already-open
+  // page (making no API calls) when their 2h token lapses. This polls the token
+  // and, the moment it's expired, clears the stale session and bounces to
+  // /login — so no page stays viewable past expiry. We also re-check on tab
+  // focus / visibility so a laptop reopened "days later" redirects at once.
+  useEffect(() => {
+    const enforceSession = () => {
+      const token = localStorage.getItem('token');
+      if (!token) return; // not logged in — nothing to enforce
+      if (isTokenValid(token)) return; // still valid
+
+      // Expired/invalid. If we're already on the login screen, just purge the
+      // stale creds quietly; otherwise force a full logout + redirect.
+      if (window.location.pathname === '/login') {
+        clearAuthStorage();
+        setUser(null);
+      } else {
+        forceLogoutAndRedirect('session_expired');
+      }
+    };
+
+    enforceSession();
+    const intervalId = setInterval(enforceSession, 30 * 1000);
+    window.addEventListener('focus', enforceSession);
+    document.addEventListener('visibilitychange', enforceSession);
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', enforceSession);
+      document.removeEventListener('visibilitychange', enforceSession);
+    };
+  }, []);
 
   return (
     <Router>
@@ -413,6 +448,9 @@ const App = () => {
             </InstructorRoute>
           }
         />
+        {/* Catch-all: route unknown paths through the protected home, which
+            redirects to /login when the session is missing or expired. */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

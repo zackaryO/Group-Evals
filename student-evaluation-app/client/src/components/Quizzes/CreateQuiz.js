@@ -1,6 +1,7 @@
 // student-evaluation-app/client/src/components/Quizzes/CreateQuiz.js
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import URL from '../../backEndURL';
 import './CreateQuiz.css'; // Import the CSS
 
@@ -8,6 +9,7 @@ const CreateQuiz = ({ user }) => {
   const [title, setTitle] = useState('');
   const [allowMultipleSubmissions, setAllowMultipleSubmissions] = useState(false);
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   const handleCreateQuiz = async (e) => {
     e.preventDefault();
@@ -21,6 +23,11 @@ const CreateQuiz = ({ user }) => {
       setMessage(`Quiz "${response.data.title}" created successfully!`);
       setTitle('');
       setAllowMultipleSubmissions(false);
+      // Send the instructor straight to the new quiz's question manager so they
+      // can start adding questions immediately.
+      if (response.data?._id) {
+        navigate(`/manage-questions/${response.data._id}`);
+      }
     } catch (error) {
       setMessage('Error creating quiz: ' + error.message);
     }

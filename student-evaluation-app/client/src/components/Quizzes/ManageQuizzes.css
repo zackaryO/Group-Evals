@@ -166,6 +166,13 @@
 .mq-actions a.mq-btn-neutral { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
 .mq-actions a.mq-btn-neutral:hover { background: #e2e8f0; color: #1e293b; }
 
+/* Print buttons: student (neutral) + instructor/answer-key (red accent). */
+.mq-actions button.mq-btn-print { background: #fff; color: #334155; border-color: #cbd5e1; }
+.mq-actions button.mq-btn-print:hover { background: #f1f5f9; color: #1e293b; }
+
+.mq-actions button.mq-btn-print-instructor { background: #fff; color: #b91c1c; border-color: #fecaca; }
+.mq-actions button.mq-btn-print-instructor:hover { background: #fef2f2; }
+
 .mq-actions button.mq-btn-danger { background: #fff; color: #b91c1c; border-color: #fecaca; }
 .mq-actions button.mq-btn-danger:hover { background: #fef2f2; }
 

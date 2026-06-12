@@ -2,6 +2,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { ROLES } from '../../utils/roles';
+import { isTokenValid } from '../../utils/auth';
 
 // Role-gated route. Defaults to full instructors (instructor/admin). Pass a
 // `roles` array to widen access — e.g. quiz pages also allow
@@ -15,7 +16,8 @@ const InstructorRoute = ({
   const token = localStorage.getItem('token');
   const role = user?.role || localStorage.getItem('role');
 
-  if (!token) {
+  // No token or an expired/invalid one → not authenticated → login.
+  if (!token || !isTokenValid(token)) {
     return <Navigate to="/login" />;
   }
 
