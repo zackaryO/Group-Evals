@@ -131,7 +131,8 @@
       "Bash(echo \"exit:$?\")",
       "Bash(node -e \"const {isStaff}=require\\('./utils/redactPay'\\); console.log\\('support_staff isStaff:', isStaff\\({role:'support_staff'}\\)\\); console.log\\('student isStaff:', isStaff\\({role:'student'}\\)\\);\")",
       "PowerShell(git -C \"c:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" log --oneline -15 -- \"student-evaluation-app/client/src/components/Instructor/ResumeBuilder.js\" \"student-evaluation-app/client/src/components/Instructor/resumeParser.js\")",
-      "PowerShell(git -C \"c:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" status --short)"
+      "PowerShell(git -C \"c:\\\\Users\\\\zotte\\\\OneDrive\\\\Documents\\\\GitHub\\\\Group-Evals\" status --short)",
+      "Bash(npm run *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\zotte\\OneDrive\\Documents\\GitHub\\MBDriveJC\\public"

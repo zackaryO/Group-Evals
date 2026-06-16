@@ -3,6 +3,10 @@ const mongoose = require('mongoose');
 
 const QuizSchema = new mongoose.Schema({
   title: { type: String, required: true },
+  // Optional special-flow marker. When set (e.g. 'mechanical-aptitude'), the
+  // student take-quiz UI launches a custom staged experience instead of the
+  // generic flat form. null for ordinary quizzes.
+  template: { type: String, default: null },
   questions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'QuizQuestion' }],
   instructor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   isPublished: { type: Boolean, default: false },

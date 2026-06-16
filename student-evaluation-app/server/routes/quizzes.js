@@ -623,38 +623,60 @@ router.post('/:quizId/submit', authenticateToken, async (req, res) => {
       }
     }
 
-    let correctAnswers = 0;
+    // Tally auto-gradable (multiple-choice) points and capture free-response
+    // text. Open-ended answers are stored but left ungraded (pointsAwarded
+    // undefined) for an instructor to score by hand; the provisional score
+    // below reflects only the auto-graded portion.
+    let autoPoints = 0;       // points earned on auto-graded questions
+    let autoGradable = 0;     // number of auto-graded (non-open-ended) questions
+    let needsGrading = false; // any open-ended answer awaiting a human grade
     const answerArray = [];
 
     quiz.questions.forEach((question) => {
-      const selectedAnswer = answers[question._id];
-      let isCorrect = false;
+      const provided = answers[question._id];
 
-      // For multiple-choice questions, check if selected answer is correct.
-      // Uses the shared normalizer so whitespace differences don't mark a right answer wrong.
-      if (question.questionType === 'multiple-choice') {
-        isCorrect = normalizeAnswer(selectedAnswer) === normalizeAnswer(question.correctAnswer);
-        if (isCorrect) correctAnswers++;
+      if (question.questionType === 'open-ended') {
+        needsGrading = true;
+        answerArray.push({
+          question: question._id,
+          typedAnswer: typeof provided === 'string' ? provided : '',
+          // isCorrect / pointsAwarded intentionally left undefined until graded.
+        });
+        return;
       }
+
+      // Auto-graded path (multiple-choice, or legacy questions with an
+      // undefined questionType). Uses the shared normalizer so whitespace
+      // differences don't mark a right answer wrong.
+      autoGradable += 1;
+      const isCorrect =
+        normalizeAnswer(provided) === normalizeAnswer(question.correctAnswer);
+      if (isCorrect) autoPoints += 1;
       answerArray.push({
         question: question._id,
-        selectedAnswer,
+        selectedAnswer: provided,
         isCorrect,
+        pointsAwarded: isCorrect ? 1 : 0,
       });
     });
 
-    const score = (correctAnswers / quiz.questions.length) * 100;
+    // Provisional score = auto-graded points over auto-gradable questions. For
+    // all-multiple-choice quizzes this equals the old correct/total formula.
+    // Mixed quizzes get a manual-grading pass that recomputes the final score
+    // across every question (see /submission/:id/grade).
+    const score = autoGradable > 0 ? (autoPoints / autoGradable) * 100 : 0;
 
     const quizSubmission = new QuizSubmission({
       student: studentId,
       quiz: quiz._id,
       score: score,
       answers: answerArray,
+      needsGrading,
     });
 
     await quizSubmission.save();
 
-    res.json({ score });
+    res.json({ score, needsGrading });
   } catch (error) {
     console.error('Error submitting quiz:', error.message);
     res.status(500).json({ message: 'Error submitting quiz' });
@@ -690,5 +712,76 @@ router.put(
     res.status(500).json({ message: error.message });
   }
 });
+
+/**
+ * @route PUT /api/quizzes/:quizId/submission/:submissionId/grade
+ * @desc Award points (0..1 per question) to the free-response answers of a
+ *       submission, then recompute the overall score across every question and
+ *       clear `needsGrading` once no open-ended answer is left ungraded.
+ *       Body: { grades: { [questionId]: number } }.
+ *       Instructor-tier; same edit permission as the quiz itself.
+ */
+router.put(
+  '/:quizId/submission/:submissionId/grade',
+  authenticateToken,
+  authorizeRoles(...INSTRUCTOR_TIER_ROLES),
+  requireQuizPermission(canEditQuiz),
+  async (req, res) => {
+    try {
+      const submission = await QuizSubmission.findById(req.params.submissionId);
+      if (!submission) {
+        return res.status(404).json({ message: 'Submission not found' });
+      }
+      if (String(submission.quiz) !== String(req.params.quizId)) {
+        return res.status(400).json({ message: 'Submission does not belong to this quiz.' });
+      }
+
+      // Map questionId -> questionType so we know which answers are open-ended.
+      const quiz = await Quiz.findById(req.params.quizId).populate('questions', 'questionType');
+      const typeById = new Map(
+        (quiz?.questions || []).map((q) => [String(q._id), q.questionType])
+      );
+
+      // Apply the instructor's awarded points (clamped to 0..1) to matching answers.
+      const { grades } = req.body;
+      if (grades && typeof grades === 'object') {
+        submission.answers.forEach((answer) => {
+          const qid = String(answer.question);
+          if (Object.prototype.hasOwnProperty.call(grades, qid)) {
+            const raw = Number(grades[qid]);
+            if (Number.isFinite(raw)) {
+              answer.pointsAwarded = Math.max(0, Math.min(1, raw));
+            }
+          }
+        });
+      }
+
+      // Recompute the final score over all questions (1 point each). Any
+      // open-ended answer still missing a points value keeps the submission in
+      // the "needs grading" state and counts as 0 toward the provisional total.
+      let needsGrading = false;
+      let earned = 0;
+      const total = submission.answers.length;
+      submission.answers.forEach((answer) => {
+        const isOpen = typeById.get(String(answer.question)) === 'open-ended';
+        const hasPoints = typeof answer.pointsAwarded === 'number';
+        if (hasPoints) earned += answer.pointsAwarded;
+        if (isOpen && !hasPoints) needsGrading = true;
+      });
+
+      submission.score = total > 0 ? (earned / total) * 100 : 0;
+      submission.needsGrading = needsGrading;
+      await submission.save();
+
+      res.json({
+        score: submission.score,
+        needsGrading: submission.needsGrading,
+        submission,
+      });
+    } catch (error) {
+      res.status(400).json({ message: error.message });
+    }
+  }
+);
 
 module.exports = router;

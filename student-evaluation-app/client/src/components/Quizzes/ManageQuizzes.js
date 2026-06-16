@@ -180,6 +180,11 @@ const ManageQuizzes = ({ user }) => {
           <Link to={`/manage-questions/${quiz._id}`} className="mq-btn mq-btn-neutral">
             Manage Questions
           </Link>
+          {(quiz.questions || []).some((q) => q && q.questionType === 'open-ended') && (
+            <Link to={`/grade-responses/${quiz._id}`} className="mq-btn mq-btn-neutral">
+              Grade Responses
+            </Link>
+          )}
           <button
             type="button"
             className="mq-btn mq-btn-print"

@@ -32,6 +32,10 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBook, faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
 import URL from '../../backEndURL';
+import AptitudeTest from './AptitudeTest';
+
+/** Quizzes carrying this template launch the custom staged flow. */
+const APTITUDE_TEMPLATE = 'mechanical-aptitude';
 
 /** Passing threshold (percent). At or above this counts as a pass. */
 const PASS_THRESHOLD = 80;
@@ -813,11 +817,14 @@ const TakeQuiz = ({ user }) => {
   };
 
   // The quiz-selection grid benefits from a wider canvas so cards fill the
-  // viewport; the quiz-taking form stays narrow for readability.
+  // viewport; the quiz-taking form stays narrow for readability. The staged
+  // aptitude test (side-by-side manual + notes, gear diagram) wants a bit more.
   const isListView = score === null && !selectedQuiz;
+  const isAptitude = selectedQuiz?.template === APTITUDE_TEMPLATE;
+  const canvasWidth = isListView ? 1100 : isAptitude ? 980 : 800;
 
   return (
-    <div style={{ ...containerStyle, maxWidth: isListView ? 1100 : 800 }}>
+    <div style={{ ...containerStyle, maxWidth: canvasWidth }}>
       <h2 style={{ textAlign: 'center', color: '#333' }}>Take a Quiz</h2>
 
       {/* Session-expiry warning. Banner appears in the last 10 minutes of
@@ -852,11 +859,27 @@ const TakeQuiz = ({ user }) => {
       {/* Loading indicator (simple text, replace with spinner if desired) */}
       {isLoading && !selectedQuiz && <p style={{ textAlign: 'center' }}>Loading…</p>}
 
-      {/* Score → QuizForm → QuizList cascade */}
+      {/* Score → AptitudeTest (template) → QuizForm → QuizList cascade.
+          The aptitude test owns its own multi-phase flow and results screen, so
+          it renders in place of the generic form when its template is set. */}
       {score !== null
         ? <ScoreCard score={score} onBack={handleBackToList} />
         : selectedQuiz
-          ? renderQuizForm()
+          ? isAptitude
+            ? (
+              <AptitudeTest
+                quiz={selectedQuiz}
+                user={user}
+                onBack={handleBackToList}
+                onSubmitted={(s) =>
+                  setPreviousSubs((prev) => ({
+                    ...prev,
+                    [selectedQuiz._id]: { quiz: selectedQuiz, score: s },
+                  }))
+                }
+              />
+            )
+            : renderQuizForm()
           : renderQuizList()}
 
       {/* Bouncing hint that there's more content below the fold. */}

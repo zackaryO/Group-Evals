@@ -19,6 +19,7 @@ import TakeQuiz from './components/Quizzes/TakeQuiz';
 import QuizGradebook from './components/Quizzes/QuizGradebook';
 import EvalGradebook from './components/Evaluation/Gradebook';
 import MissedQuestions from './components/Quizzes/MissedQuestions';
+import GradeResponses from './components/Quizzes/GradeResponses';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import InstructorRoute from './components/Auth/InstructorRoute';
 import CreateCourse from './components/Courses/CreateCourse';
@@ -190,6 +191,14 @@ const App = () => {
           element={
             <InstructorRoute user={user} roles={['instructor', 'admin', 'electrical_instructor']}>
               <ManageQuestions />
+            </InstructorRoute>
+          }
+        />
+        <Route
+          path="/grade-responses/:quizId"
+          element={
+            <InstructorRoute user={user} roles={['instructor', 'admin', 'electrical_instructor']}>
+              <GradeResponses user={user} />
             </InstructorRoute>
           }
         />

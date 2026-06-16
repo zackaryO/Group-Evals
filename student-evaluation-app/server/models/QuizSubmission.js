@@ -14,6 +14,11 @@ const QuizSubmissionSchema = new mongoose.Schema({
       pointsAwarded: { type: Number },
     },
   ],
+  // True when the submission contains free-response (open-ended) answers that an
+  // instructor still has to grade by hand. Set at submit time and cleared once
+  // every open-ended answer has points awarded. Ordinary all-multiple-choice
+  // quizzes leave this false.
+  needsGrading: { type: Boolean, default: false },
   date: { type: Date, default: Date.now },
 });
 

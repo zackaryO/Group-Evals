@@ -45,7 +45,9 @@ const getGrades = async (req, res) => {
       gradesQuery = gradesQuery.populate({
         path: 'answers.question',
         model: 'QuizQuestion', // Ensure this matches the model name
-        select: 'questionText correctAnswer image', // Include fields you need
+        // questionType/key/section let the manual-grading UI tell free-response
+        // answers apart and order them within a template-driven quiz.
+        select: 'questionText correctAnswer image options questionType key section',
       });
     }
 

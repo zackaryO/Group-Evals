@@ -12,6 +12,17 @@ const scoreTier = (score) => {
   return 'low';
 };
 
+// Count correct answers among the auto-graded (non open-ended) questions of a
+// submission. Used to present a clear "preliminary" grade while free-response
+// answers still await instructor grading. Returns { correct, total }; total is
+// 0 when question detail isn't available (e.g. support-staff view).
+const autoGradedTally = (sub) => {
+  const mc = (sub?.answers || []).filter(
+    (a) => a.question && a.question.questionType !== 'open-ended'
+  );
+  return { correct: mc.filter((a) => a.isCorrect).length, total: mc.length };
+};
+
 const QuizGradebook = ({ user }) => {
   const [grades, setGrades] = useState([]);
   const [message, setMessage] = useState('');
@@ -321,6 +332,9 @@ const QuizGradebook = ({ user }) => {
                 <div className="quiz-list">
                   {quizzes.map((quiz) => {
                     const expanded = selectedQuizId === quiz._id;
+                    // Submissions with free-response answers stay "preliminary"
+                    // (auto-graded portion only) until an instructor grades them.
+                    const ag = quiz.needsGrading ? autoGradedTally(quiz) : null;
                     return (
                       <div key={quiz._id} className={`quiz-item ${deletedQuizId === quiz._id ? 'deleted' : ''}`}>
                         <div className="quiz-item-row">
@@ -339,9 +353,19 @@ const QuizGradebook = ({ user }) => {
                               <span className="quiz-item-title">{quiz.quiz?.title || 'Quiz Title Missing'}</span>
                             </span>
                           )}
-                          <span className={`score-badge score-badge-${scoreTier(quiz.score)}`}>
-                            {quiz.score != null ? `${quiz.score.toFixed(1)}%` : 'N/A'}
-                          </span>
+                          {quiz.needsGrading ? (
+                            <span
+                              className="score-badge"
+                              style={{ background: '#fef3c7', color: '#92400e', border: '1px solid #fcd34d' }}
+                              title="Preliminary score: auto-graded questions only, pending instructor grading"
+                            >
+                              {ag.total > 0 ? `Preliminary ${ag.correct}/${ag.total}` : 'Preliminary'}
+                            </span>
+                          ) : (
+                            <span className={`score-badge score-badge-${scoreTier(quiz.score)}`}>
+                              {quiz.score != null ? `${quiz.score.toFixed(1)}%` : 'N/A'}
+                            </span>
+                          )}
                           {canDeleteGrades && (
                             <button
                               type="button"
@@ -352,11 +376,37 @@ const QuizGradebook = ({ user }) => {
                             </button>
                           )}
                         </div>
+                        {quiz.needsGrading && (
+                          <div
+                            style={{
+                              background: '#fffbeb',
+                              border: '1px solid #fcd34d',
+                              color: '#92400e',
+                              borderRadius: 8,
+                              padding: '10px 14px',
+                              margin: '8px 0',
+                            }}
+                          >
+                            <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: 2 }}>
+                              Preliminary grade, not final
+                            </div>
+                            <div style={{ fontWeight: 600, fontSize: '0.9rem', lineHeight: 1.4 }}>
+                              {ag.total > 0
+                                ? `${ag.correct} of ${ag.total} auto-graded question${ag.total === 1 ? '' : 's'} correct so far. `
+                                : ''}
+                              The written responses still need to be graded by an instructor. This score reflects only the
+                              automatically-graded questions and will change once grading is complete.
+                            </div>
+                          </div>
+                        )}
                         {showQuestionDetail && expanded && (
                           <div className="incorrect-answers">
                             <h4>Incorrect Answers:</h4>
                             {quiz.answers
-                              .filter((answer) => !answer.isCorrect)
+                              // Free-response answers are graded by hand and have
+                              // no correct option, so they don't belong in the
+                              // auto-graded "incorrect answers" review.
+                              .filter((answer) => !answer.isCorrect && answer.question?.questionType !== 'open-ended')
                               .map((answer, index) => {
                                 const imageSrc = answer.question?.image;
                                 return (
@@ -385,7 +435,7 @@ const QuizGradebook = ({ user }) => {
                                   </div>
                                 );
                               })}
-                            {quiz.answers.filter((answer) => !answer.isCorrect).length === 0 && (
+                            {quiz.answers.filter((answer) => !answer.isCorrect && answer.question?.questionType !== 'open-ended').length === 0 && (
                               <p>All answers were correct!</p>
                             )}
                           </div>

@@ -69,7 +69,11 @@ const MissedQuestions = () => {
           }
 
           grade.answers
-            .filter((answer) => !answer.isCorrect)
+            // Only auto-graded (multiple-choice) answers have a meaningful
+            // right/wrong outcome. Free-response answers are graded by hand and
+            // have no correct option, so they must not pollute the missed-
+            // question analytics.
+            .filter((answer) => !answer.isCorrect && answer.question?.questionType !== 'open-ended')
             .forEach((answer) => {
               const questionId = answer.question?._id || answer._id || `${quizId}-unknown`;
               const questionText = answer.question?.questionText || 'Question text missing';
