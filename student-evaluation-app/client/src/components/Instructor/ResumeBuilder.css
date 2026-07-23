@@ -296,6 +296,12 @@
   color: #f85149;
 }
 
+/* Multi-page is an intended state (single page preferred, not forced), so it
+   reads as an amber note rather than a red error. */
+.fit-indicator.multipage {
+  color: #d29922;
+}
+
 /* ===== Resume preview shell ===== */
 .resume-preview-shell {
   overflow: auto;
@@ -696,7 +702,7 @@
 }
 
 .page-fill-meta .overflow-hint {
-  color: #f85149;
+  color: #d29922;
   font-weight: 600;
 }
 

@@ -326,7 +326,6 @@ const ResumeBuilder = () => {
   const [profiles, setProfiles] = useState(initial.profiles);
   const [activeProfile, setActiveProfile] = useState(initial.activeProfile);
   const [fitResult, setFitResult] = useState({ fits: true, pages: 1, overflow: 0, usedPct: 0 });
-  const [allowPagination, setAllowPagination] = useState(false);
   const [breakWarnings, setBreakWarnings] = useState([]);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [showPreviewHint, setShowPreviewHint] = useState(false);
@@ -401,13 +400,18 @@ const ResumeBuilder = () => {
   const measureFit = useCallback(() => {
     const node = resumeRef.current;
     if (!node) return;
-    const overflow = Math.max(node.scrollHeight - node.clientHeight, 0);
-    const totalHeight = allowPagination ? node.scrollHeight : node.scrollHeight; // both: use real content height
-    const pages = Math.min(MAX_PAGES, Math.max(1, Math.ceil(totalHeight / PAGE_HEIGHT_PX)));
-    const usedPct = Math.min(500, Math.round((node.scrollHeight / PAGE_HEIGHT_PX) * 100));
-    setFitResult({ fits: overflow <= 0, pages, overflow: Math.round(overflow), usedPct });
+    // scrollHeight is the true content height in BOTH the clipped and grown
+    // modes (min-height keeps it at exactly one page when content is short),
+    // so we compare it against a single page rather than the clipped client
+    // box. Measuring against clientHeight broke once the page grew, because
+    // then clientHeight equals scrollHeight and overflow always read as 0.
+    const contentHeight = node.scrollHeight;
+    const overflow = Math.max(contentHeight - PAGE_HEIGHT_PX, 0);
+    const pages = Math.min(MAX_PAGES, Math.max(1, Math.ceil(contentHeight / PAGE_HEIGHT_PX)));
+    const usedPct = Math.min(500, Math.round((contentHeight / PAGE_HEIGHT_PX) * 100));
+    setFitResult({ fits: overflow <= 1, pages, overflow: Math.round(overflow), usedPct });
 
-    if (allowPagination && pages > 1) {
+    if (pages > 1) {
       const headers = Array.from(node.querySelectorAll('h3'));
       const warnings = [];
       headers.forEach((h) => {
@@ -424,13 +428,13 @@ const ResumeBuilder = () => {
     } else if (breakWarnings.length > 0) {
       setBreakWarnings([]);
     }
-  }, [allowPagination, breakWarnings.length]);
+  }, [breakWarnings.length]);
 
   useEffect(() => {
     measureFit();
     const raf = requestAnimationFrame(measureFit);
     return () => cancelAnimationFrame(raf);
-  }, [data, settings, allowPagination, measureFit]);
+  }, [data, settings, measureFit]);
 
   /* ---- Push-to-grow: when a textarea is user-resized, expand its label
      (pushing siblings) and grow the panel if the row would overflow.
@@ -1016,15 +1020,9 @@ const ResumeBuilder = () => {
     document.title = orig;
   };
   const handlePrint = () => {
-    if (!fitResult.fits && !allowPagination) {
-      const ok = window.confirm(
-        `Current content requires approximately ${fitResult.pages} pages. Allow pagination (up to ${MAX_PAGES} pages)?`
-      );
-      if (!ok) return;
-      setAllowPagination(true);
-      setTimeout(doPrint, 200);
-      return;
-    }
+    // The preview and print stylesheet both grow to as many pages as the
+    // content needs (the browser paginates naturally on print), so there is
+    // nothing to confirm here — just print what is shown.
     doPrint();
   };
 
@@ -1039,15 +1037,6 @@ const ResumeBuilder = () => {
   const exportPDF = async () => {
     const source = documentRef.current;
     if (!source) return;
-    if (!fitResult.fits && !allowPagination) {
-      const ok = window.confirm(
-        `Current content requires approximately ${fitResult.pages} pages. Allow pagination (up to ${MAX_PAGES} pages)?`
-      );
-      if (!ok) return;
-      setAllowPagination(true);
-      // Wait a frame so the DOM expands before capture
-      await new Promise((r) => setTimeout(r, 250));
-    }
 
     // Ask where to save up front (Chrome/Edge): the File System Access API
     // requires a fresh user gesture, and the render below can outlive the
@@ -1081,6 +1070,10 @@ const ResumeBuilder = () => {
       el.style.boxShadow = 'none';
       el.style.margin = '0';
     });
+    // Never clip the resume body during capture: force it to grow to its full
+    // height so a multi-page resume is sliced into multiple PDF pages instead
+    // of being cut off at one sheet.
+    clone.querySelectorAll('.resume-page').forEach((el) => el.classList.add('allow-pagination'));
     stage.appendChild(clone);
     document.body.appendChild(stage);
 
@@ -1230,6 +1223,12 @@ const ResumeBuilder = () => {
   /* ====================== RENDER ====================== */
   const fillBarColor =
     fitResult.usedPct < 90 ? '#3fb950' : fitResult.usedPct <= 100 ? '#d29922' : '#f85149';
+
+  // Grow the preview page to as many pages as the content needs instead of
+  // clipping it to a single sheet. A single page stays *preferred* (Auto-fit
+  // and the fit meter still push toward one page), but overflow now flows onto
+  // additional pages rather than being cut off.
+  const isMultiPage = !fitResult.fits;
 
   return (
     <div className="resume-builder-page">
@@ -1723,18 +1722,6 @@ const ResumeBuilder = () => {
           </div>
         </fieldset>
 
-        {/* ---- Pagination toggle ---- */}
-        <div className="pagination-toggle">
-          <label>
-            <input
-              type="checkbox"
-              checked={allowPagination}
-              onChange={(e) => setAllowPagination(e.target.checked)}
-            />
-            Allow multi-page (up to {MAX_PAGES} pages)
-          </label>
-        </div>
-
         {/* ---- Transcript-addendum toggle ---- */}
         <div className="pagination-toggle">
           <label title="Append the MB Drive JC course-list transcript as the final pages of the printed/exported resume.">
@@ -1777,15 +1764,15 @@ const ResumeBuilder = () => {
           <div className="page-fill-meta">
             <span>{fitResult.usedPct}% of page 1</span>
             {!fitResult.fits && (
-              <span className="overflow-hint">Overflow {fitResult.overflow}px · ~{fitResult.pages} pages</span>
+              <span className="overflow-hint">~{fitResult.pages} pages</span>
             )}
           </div>
         </div>
 
-        <p className={`fit-indicator ${fitResult.fits ? 'fits' : 'overflow'}`}>
+        <p className={`fit-indicator ${fitResult.fits ? 'fits' : 'multipage'}`}>
           {fitResult.fits
             ? 'Fits on one page.'
-            : `Overflow detected (${fitResult.overflow}px). Estimated pages: ${fitResult.pages}.`}
+            : `Spans about ${fitResult.pages} pages. Single page is preferred but not forced; extra content flows onto more pages.`}
         </p>
 
         {breakWarnings.length > 0 && (
@@ -1817,7 +1804,7 @@ const ResumeBuilder = () => {
       <div className="resume-preview-shell" ref={previewShellRef}>
        <div className="resume-document" ref={documentRef}>
         <div
-          className={`resume-page ${allowPagination ? 'allow-pagination' : ''}`}
+          className={`resume-page ${isMultiPage ? 'allow-pagination' : ''}`}
           ref={resumeRef}
           style={styles}
         >
